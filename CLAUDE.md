@@ -39,7 +39,7 @@ After **every** change the user asked for, publish a changes page as an Artifact
 
 ## Cinematics (scripts/cine)
 
-Offline-rendered films: `app/assets/cine/intro.webm` (prologue, plays on Begin) and `outro.webm`
+Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) and `outro.mp4`
 (epilogue, plays after the ending, before the credits). The user asked not to be told what the ending
 film shows; keep its content out of pages and summaries.
 
@@ -51,7 +51,7 @@ film shows; keep its content out of pages and summaries.
 - Grade: `<art venv>/python scripts/cine/post.py <frames> <out> --exposure=E` turns passes into the
   game's engraving (same ink/paper/line maths as `app/src/shaders.js`; lines anchored in world space).
 - Edit: `<art venv>/python scripts/cine/edit.py intro|outro` cuts, adds title/fade, mixes the soundtrack
-  from `app/assets/audio`, encodes VP9/Opus. `preview_all.sh` renders half-res stills of every shot.
+  from `app/assets/audio`, encodes H.264/AAC (VP9 1080p fails to decode in Electron here). `preview_all.sh` renders half-res stills of every shot.
 - EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
   negatives (offsets go through math nodes).
 

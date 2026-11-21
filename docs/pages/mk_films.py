@@ -81,7 +81,7 @@ def build(extra_links, runtime_intro, runtime_outro, size_mb):
     </ul>
     <p style="margin-top:16px">Where it is:</p>
     <ul class="what">
-      <li>The films are <code>app/assets/cine/intro.webm</code> and <code>outro.webm</code>. Everything that makes them is in <code>scripts/cine/</code>, and <code>CLAUDE.md</code> explains how to re-render a shot.</li>
+      <li>The films are <code>app/assets/cine/intro.mp4</code> and <code>outro.mp4</code>. Everything that makes them is in <code>scripts/cine/</code>, and <code>CLAUDE.md</code> explains how to re-render a shot.</li>
     </ul>
   </div>
 

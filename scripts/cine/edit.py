@@ -5,7 +5,7 @@
 Picture: graded PNG frames per shot (post.py) joined with cuts and dissolves; the prologue ends on an engraved
 title card, the epilogue fades to paper. Sound: the game's own recordings (app/assets/audio, credited in its
 CREDITS.md) placed on the edit's timeline, plus a few synthesised sounds (candle crackle, a breath).
-Output: app/assets/cine/<film>.webm (VP9 + Opus)."""
+Output: app/assets/cine/<film>.mp4 (H.264 + AAC; VP9 at 1080p failed to hardware-decode in Electron here)."""
 import glob
 import math
 import os
@@ -288,11 +288,11 @@ def main():
     wav = soundtrack(film, cuts, len(seq))
     out_dir = os.path.join(ROOT, 'app', 'assets', 'cine')
     os.makedirs(out_dir, exist_ok=True)
-    out = os.path.join(out_dir, f'{film}.webm')
+    out = os.path.join(out_dir, f'{film}.mp4')
     crf = '40' if draft else '31'
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', str(FPS), '-i', os.path.join(od, '%05d.jpg'), '-i', wav,
-                    '-c:v', 'libvpx-vp9', '-crf', crf, '-b:v', '0', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '2',
-                    '-pix_fmt', 'yuv420p', '-c:a', 'libopus', '-b:a', '128k', '-shortest', out], check=True)
+                    '-c:v', 'libx264', '-crf', '23', '-preset', 'slow', '-tune', 'grain', '-maxrate', '7M', '-bufsize', '12M',
+                    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '160k', '-shortest', out], check=True)
     print('wrote', out, os.path.getsize(out) // 1024, 'KB', len(seq), 'frames', flush=True)
     print('cuts', {k: round(v / FPS, 2) for k, v in cuts.items()})
 

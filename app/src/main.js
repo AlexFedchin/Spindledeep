@@ -323,7 +323,7 @@ function playCine(name, onEnd) {
   state = 'cine';
   show($('title'), false);
   A.master.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
-  v.src = 'assets/cine/' + name + '.webm';
+  v.src = 'assets/cine/' + name + '.mp4';
   v.volume = Math.min(1, settings.volume ?? 1);
   v.onended = endCine; v.onerror = endCine;
   v.play().then(() => show(v, true)).catch(endCine);
