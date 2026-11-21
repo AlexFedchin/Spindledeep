@@ -5,6 +5,7 @@ import { World } from './world.js';
 import { Drawer } from './draw.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
+import { SWING } from './player.js';
 import * as L from './level.js';
 import { clamp, damp, lerp, smooth } from './util.js';
 
@@ -66,7 +67,7 @@ async function boot() {
   show($('loading'), false);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, begin: () => startGame(false), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
   requestAnimationFrame(tick);
 }
 
@@ -323,7 +324,7 @@ function updateCamera(dt) {
   }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
-  cam.viewH = damp(cam.viewH, vh, 1.2, dt);
+  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, 1.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
   cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);

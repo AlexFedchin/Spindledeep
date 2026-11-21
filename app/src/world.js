@@ -3,6 +3,7 @@ import * as L from './level.js';
 import { Thread, SP } from './thread.js';
 import { Player } from './player.js';
 import { clamp, rand, mulberry, lerp } from './util.js';
+import { buildLore, loreLights } from './props.js';
 
 const BASE_YARN = 92, SKEIN_YARN = 14;
 const RED = [1.0, 0.16, 0.12];
@@ -34,6 +35,7 @@ export class World {
     this.memories = L.MEMORIES.map((m) => ({ ...m, ...nearestOn(this.grey, m.x, m.y), heard: false }));
     this.finale = { ...L.FINALE, ...nearestOn(this.grey, L.FINALE.x, L.FINALE.y) };
     this.lamps = L.LIGHTS;
+    this.lore = buildLore(T);
     this.nests = L.NESTS.map((n) => ({ ...n, spawned: 0 }));
     this.moths = [];
     this.events = [];
@@ -346,6 +348,7 @@ export class World {
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     if (vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
+    if (!this.noLore) out.push(...loreLights(this.lore, t, vis));
     if (this.extraLights) out.push(...this.extraLights);
     return out;
   }

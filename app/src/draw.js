@@ -3,6 +3,7 @@
 import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
 import { SNAG_R } from './player.js';
+import { drawLore } from './props.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -19,6 +20,7 @@ export class Drawer {
       return top;
     });
     this.tuft = { a: 0, v: 0 };
+    this.lore = world.lore;
   }
 
   // world → screen
@@ -48,6 +50,7 @@ export class Drawer {
     this.ambientFx(dt);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
+    drawLore(this, ctx, ectx);
     this.drawThorns(ctx, ectx);
     this.drawGates(ctx, ectx);
     this.drawHooks(ctx, ectx);
@@ -302,13 +305,34 @@ export class Drawer {
 
     // ── lean-to woodshed on the left, its logs stacked under the eave ──
     poly([[gx - 2.5, gy - 0.2], [gx - 2.5, gy + 1.7], [gx, base + 2.4], [gx, gy - 0.2]], 0.16, 0.03);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-      const cx = gx - 2.2 + c * 0.55 + (r % 2) * 0.27, cy = gy + 0.12 + r * 0.33;
-      ctx.beginPath(); ctx.ellipse(X(cx), Y(cy), 0.16 * k, 0.15 * k, 0, 0, TAU); ctx.fillStyle = g(0.62); ctx.fill(); ctx.strokeStyle = g(0.05); ctx.lineWidth = lw(0.02); ctx.stroke();
-      ctx.beginPath(); ctx.arc(X(cx), Y(cy), 0.06 * k, 0, TAU); ctx.strokeStyle = g(0.35); ctx.stroke();
-    }
+    this._woodpile ||= makeWoodpile(gx, gy, base);
+    for (const lg of this._woodpile) drawLogEnd(ctx, X(lg.x), Y(lg.y), lg, k);
+    // a dusting of snow blown in over the top of the pile
+    ctx.fillStyle = g(0.93);
+    for (const lg of this._woodpile) if (lg.top) { ctx.beginPath(); ctx.ellipse(X(lg.x - 0.02), Y(lg.y + lg.r * 0.86), lg.r * 0.8 * k, lg.r * 0.28 * k, -0.1, Math.PI, TAU); ctx.fill(); }
     poly([[gx - 2.9, gy + 1.55], [gx + 0.1, base + 2.65], [gx + 0.1, base + 2.4], [gx - 2.9, gy + 1.3]], 0.22, 0.03);
     poly([[gx - 3.0, gy + 1.58], [gx + 0.1, base + 2.7], [gx + 0.1, base + 2.86], [gx - 2.6, gy + 1.82]], 0.95, null);
+    // chopping block in the snow by the shed, the axe left in it, split wood and chips around it
+    {
+      const bx = gx - 3.25, by = L.surfaceY(bx) - 0.05;
+      ctx.fillStyle = g(0.9);
+      for (const [cx, cy, a] of [[-0.62, 0.02, 0.4], [0.5, 0.0, -0.7], [0.75, 0.03, 0.2], [-0.35, -0.01, 1.2], [0.25, 0.02, 2.1]]) {
+        ctx.save(); ctx.translate(X(bx + cx), Y(by + cy)); ctx.rotate(a);
+        ctx.fillStyle = g(0.6); ctx.fillRect(-0.05 * k, -0.018 * k, 0.1 * k, 0.036 * k); ctx.restore();
+      }
+      const sw = 0.36, sh = 0.46;
+      ctx.beginPath(); ctx.moveTo(X(bx - sw - 0.05), Y(by - 0.04)); ctx.lineTo(X(bx - sw), Y(by + sh)); ctx.lineTo(X(bx + sw), Y(by + sh + 0.03)); ctx.lineTo(X(bx + sw + 0.06), Y(by - 0.04)); ctx.closePath();
+      ctx.fillStyle = g(0.3); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.025); ctx.stroke();
+      for (let i = 0; i < 5; i++) line(bx - sw + 0.1 + i * 0.13, by + 0.02, bx - sw + 0.08 + i * 0.13 + (i % 2) * 0.03, by + sh - 0.04, 0.12, 0.012);
+      ctx.beginPath(); ctx.ellipse(X(bx), Y(by + sh + 0.015), sw * k, 0.07 * k, -0.04, 0, TAU); ctx.fillStyle = g(0.66); ctx.fill(); ctx.stroke();
+      for (const rr of [0.1, 0.19, 0.27]) { ctx.beginPath(); ctx.ellipse(X(bx + 0.03), Y(by + sh + 0.015), rr * k, rr * 0.19 * k, -0.04, 0, TAU); ctx.strokeStyle = g(0.42); ctx.lineWidth = lw(0.01); ctx.stroke(); }
+      // the axe: blade bitten into the block, haft angled up
+      const ax0 = bx + 0.05, ay0 = by + sh + 0.02, ax1 = bx + 0.62, ay1 = by + sh + 0.62;
+      ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.075); ctx.beginPath(); ctx.moveTo(X(ax0), Y(ay0)); ctx.lineTo(X(ax1), Y(ay1)); ctx.stroke();
+      ctx.strokeStyle = g(0.58); ctx.lineWidth = lw(0.04); ctx.beginPath(); ctx.moveTo(X(ax0), Y(ay0)); ctx.lineTo(X(ax1), Y(ay1)); ctx.stroke();
+      poly([[ax0 - 0.17, ay0 - 0.05], [ax0 + 0.07, ay0 + 0.09], [ax0 + 0.11, ay0 + 0.02], [ax0 - 0.1, ay0 - 0.12]], 0.7, 0.03, 0.02);
+      ctx.fillStyle = g(0.93); ctx.beginPath(); ctx.ellipse(X(bx - 0.1), Y(by + sh + 0.05), 0.2 * k, 0.05 * k, 0, Math.PI, TAU); ctx.fill();
+    }
 
     // ── stone footing: three courses running down into the ground ──
     for (let row = 0; row < 2; row++) {
@@ -877,4 +901,69 @@ function makeForeground(world) {
     out.push({ type: rng() < 0.6 ? 'grass' : 'mound', x, y: gy - 0.6, len: 0.4 + rng() * 0.8, w: 0.6 + rng() * 1.4, seed: rng() * 10 });
   }
   return out;
+}
+
+// ── the woodpile: logs dropped one by one until each rests on the ground or on two others, so the
+// pile is a heap of touching rounds and splits instead of a grid
+function makeWoodpile(gx, gy, base) {
+  const rng = mulberry(913);
+  const x0 = gx - 2.38, x1 = gx - 0.06, floor = (x) => Math.max(gy, L.surfaceY(x)) - 0.03;
+  const roof = (x) => gy + 1.62 + (x - (gx - 2.5)) / 2.5 * (base + 2.4 - gy - 1.7) - 0.12;
+  const logs = [];
+  const restY = (x, r) => {
+    let y = floor(x) + r, by = null;
+    for (const o of logs) {
+      const dx = x - o.x, rr = r + o.r;
+      if (Math.abs(dx) < rr) { const yy = o.y + Math.sqrt(rr * rr - dx * dx); if (yy > y) { y = yy; by = o; } }
+    }
+    return [y, by];
+  };
+  for (let i = 0; i < 70 && logs.length < 34; i++) {
+    const r = 0.1 + rng() * 0.1;
+    let x = x0 + r + rng() * (x1 - x0 - 2 * r);
+    let [y, on] = restY(x, r);
+    // roll off a single support until it is cradled by two, or reaches the ground or a wall
+    for (let it = 0; it < 60 && on; it++) {
+      const side = x === on.x ? (rng() < 0.5 ? -1 : 1) : Math.sign(x - on.x);
+      const nx = x + side * 0.02;
+      if (nx - r < x0 || nx + r > x1) break;
+      const [ny, non] = restY(nx, r);
+      if (ny > y - 0.001 && non !== on) break;   // now resting in a saddle
+      x = nx; y = ny; on = non;
+    }
+    if (y + r > roof(x)) continue;
+    const kind = rng() < 0.3 ? 'split' : 'round';
+    logs.push({ x, y, r, kind, rot: rng() * TAU, tone: 0.5 + rng() * 0.2, cx: (rng() - 0.5) * 0.3, cy: (rng() - 0.5) * 0.3, crack: rng() * TAU, sq: 0.9 + rng() * 0.18, span: Math.PI * (rng() < 0.5 ? 0.5 + rng() * 0.2 : 0.95 + rng() * 0.1) });
+  }
+  // which logs have nothing above them (they catch the snow)
+  for (const a of logs) a.top = !logs.some((b) => b !== a && b.y > a.y && Math.abs(b.x - a.x) < (a.r + b.r) * 0.8);
+  logs.sort((a, b) => b.y - a.y);
+  return logs;
+}
+function drawLogEnd(ctx, X, Y, lg, k) {
+  const r = lg.r * k;
+  ctx.save(); ctx.translate(X, Y); ctx.rotate(lg.rot);
+  ctx.beginPath();
+  if (lg.kind === 'split') { ctx.moveTo(0, 0); ctx.ellipse(0, 0, r * 1.05, r * lg.sq * 1.05, 0, 0, lg.span); ctx.closePath(); }
+  else ctx.ellipse(0, 0, r * 1.03, r * lg.sq * 1.03, 0, 0, TAU);
+  ctx.fillStyle = g(0.14); ctx.fill();                                  // bark
+  ctx.beginPath();
+  if (lg.kind === 'split') { ctx.moveTo(0, 0); ctx.ellipse(0, 0, r * 0.84, r * lg.sq * 0.84, 0, 0.08, lg.span - 0.08); ctx.closePath(); }
+  else ctx.ellipse(0, 0, r * 0.84, r * lg.sq * 0.84, 0, 0, TAU);
+  ctx.fillStyle = g(lg.tone); ctx.fill();                               // end grain
+  ctx.strokeStyle = g(lg.tone - 0.2); ctx.lineWidth = Math.max(0.6, k * 0.008);
+  const ox = lg.cx * r, oy = lg.cy * r;
+  for (const f of [0.22, 0.42, 0.62]) {
+    ctx.beginPath();
+    if (lg.kind === 'split') ctx.ellipse(lg.kind === 'split' ? 0 : ox, lg.kind === 'split' ? 0 : oy, r * f, r * f * lg.sq, 0, 0.2, lg.span - 0.2);
+    else ctx.ellipse(ox, oy, r * f, r * f * lg.sq, 0, 0, TAU);
+    ctx.stroke();
+  }
+  if (lg.kind === 'round') { ctx.strokeStyle = g(0.06); ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(Math.cos(lg.crack) * r * 0.84, Math.sin(lg.crack) * r * 0.84 * lg.sq); ctx.stroke(); }
+  ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.018);
+  ctx.beginPath();
+  if (lg.kind === 'split') { ctx.moveTo(0, 0); ctx.ellipse(0, 0, r * 1.05, r * lg.sq * 1.05, 0, 0, lg.span); ctx.closePath(); }
+  else ctx.ellipse(0, 0, r * 1.03, r * lg.sq * 1.03, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
 }

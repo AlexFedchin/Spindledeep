@@ -140,6 +140,7 @@ export class Thread {
     // unwrap
     while (this.pivots.length > 1) {
       const C = this.pivots[this.pivots.length - 1], A = this.pivots[this.pivots.length - 2];
+      if (C.hook) break;   // a thread through a ring stays through it, however far back she swings
       const s = (C.x - A.x) * (by - C.y) - (C.y - A.y) * (bx - C.x);
       if (s * C.sign < 0) {
         this.pivots.pop();

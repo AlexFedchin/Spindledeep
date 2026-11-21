@@ -3,6 +3,9 @@ import { clamp, damp } from './util.js';
 
 const R = 0.3;
 const RUN = 5.0, ACC_G = 42, ACC_A = 20, GRAV = 30, JUMP = 10.6, MAXFALL = 21;
+// swinging: the doll is small and weak. A catch soaks up most of her speed, the arc is slow (low
+// swing gravity, a little slack on the catch), and she only builds height by leaning into each swing.
+export const SWING = { grav: 0.34, catchKeep: 0.25, catchSlack: 0.25, pumpWith: 7.5, pumpAgainst: 2.0, drag: 0.32, letgoCap: 9 };
 export const SNAG_R = 2.2;
 
 export class Player {
@@ -85,8 +88,9 @@ export class Player {
       const g = this.grounded;
       // horizontal control
       if (th.locked && !g) {
-        this.vx += ax * 11 * h;                    // pump the swing
-        this.vx *= Math.exp(-0.15 * h);
+        // pump: leaning with the swing adds height, leaning against it barely does anything
+        this.vx += ax * (ax * this.vx > 0 ? SWING.pumpWith : SWING.pumpAgainst) * h;
+        this.vx *= Math.exp(-SWING.drag * h); this.vy *= Math.exp(-SWING.drag * 0.5 * h);
       } else {
         const target = ax * RUN, acc = g ? ACC_G : ACC_A;
         const dv = target - this.vx;
@@ -100,7 +104,7 @@ export class Player {
       }
       // gravity
       const swinging = th.locked && !g;
-      this.vy = Math.max(this.vy - GRAV * (swinging ? 0.62 : 1) * h, -MAXFALL);
+      this.vy = Math.max(this.vy - GRAV * (swinging ? SWING.grav : 1) * h, -MAXFALL);
       if (g && !this.jumping) {
         // stick to slopes when idle
         if (!ax && this.vy < 0) this.vy = Math.max(this.vy, -2);
@@ -145,7 +149,7 @@ export class Player {
         // let go mid-swing with a little lift
         th.release(this.bx, this.by);
         const sp = Math.hypot(this.vx, this.vy);
-        if (sp > 10) { this.vx *= 10 / sp; this.vy *= 10 / sp; }
+        if (sp > SWING.letgoCap) { this.vx *= SWING.letgoCap / sp; this.vy *= SWING.letgoCap / sp; }
         this.vy = Math.max(this.vy, 0) + 5; this.vx += this.facing * 1.0;
         this.jumping = true; this.jumpBuf = 0; this.gripLock = true;
         this.squash = -0.25; this.events.push('letgo');
@@ -159,7 +163,11 @@ export class Player {
         const d = Math.hypot(hk.x - this.bx, hk.y - this.by);
         if (d < bd && hk.y > this.by - 0.2 && !th.hasHook(hk) && T.ray(hk.x, hk.y - 0.2, this.bx, this.by, 0.02) < 0) { best = hk; bd = d; }
       }
-      if (best) { th.snag(best, this.bx, this.by); this.events.push('snag'); best.ring = 1; }
+      if (best) {
+        th.snag(best, this.bx, this.by); th.Lfree += SWING.catchSlack;
+        this.vx *= SWING.catchKeep; this.vy *= SWING.catchKeep;
+        this.events.push('snag'); best.ring = 1;
+      }
     }
     // landing / animation bookkeeping
     if (this.grounded && !wasGrounded) {
