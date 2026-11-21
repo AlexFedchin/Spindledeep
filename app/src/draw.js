@@ -21,6 +21,8 @@ export class Drawer {
     });
     this.tuft = { a: 0, v: 0 };
     this.lore = world.lore;
+    this.wind = 4; this.gust = 0; this.out = 1;
+    this.fog = makeFog();
   }
 
   // world → screen
@@ -46,8 +48,9 @@ export class Drawer {
     ectx.setTransform(0.5, 0, 0, 0.5, 0, 0);
     ectx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    this.time = time;
+    this.time = time; this.dtLast = dt;
     this.ambientFx(dt);
+    this.drawFog(ctx, false);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
     drawLore(this, ctx, ectx);
@@ -64,6 +67,7 @@ export class Drawer {
     for (const m of w.moths) if (this.vis(m.x, m.y)) this.drawMoth(ctx, ectx, m);
     this.drawDoll(ctx, ectx, dt);
     this.drawFx(ctx, ectx, dt, true);
+    this.drawFog(ctx, true);
     this.drawForeground(ctx);
   }
 
@@ -80,7 +84,7 @@ export class Drawer {
     const sq = p.squash;
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
     // springs: the yarn tuft and the ribbon tails lag behind the motion
-    this.tuft.v += (-p.vx * 0.08 - this.tuft.a * 30) * dt - this.tuft.v * 6 * dt;
+    this.tuft.v += (-p.vx * 0.08 - this.wind * this.out * 0.035 * (1 + Math.sin(this.time * 9) * 0.3) - this.tuft.a * 30) * dt - this.tuft.v * 6 * dt;
     this.tuft.a += this.tuft.v * dt * 10;
     const rib = clamp(-p.vx * 0.06 * f + p.vy * 0.03, -0.6, 0.6) + Math.sin(this.time * 2.6) * 0.06;
 
@@ -441,7 +445,7 @@ export class Drawer {
     }
     poly([[cx0 - 0.1, ct], [cx0 + cw + 0.16, ct], [cx0 + cw + 0.12, ct + 0.18], [cx0 - 0.06, ct + 0.18]], 0.55, 0.03);
     poly([[cx0 - 0.12, ct + 0.17], [cx0 + cw + 0.18, ct + 0.17], [cx0 + cw + 0.05, ct + 0.32], [cx0 + 0.02, ct + 0.34]], 0.97, null);
-    if (Math.random() < 0.07) this.spawn('smoke', cx0 + cw / 2, ct + 0.35, 1, { speed: 0.2, vy: 0.6, vx: 0.25, life: 4.5, r: 0.5 });
+    if (Math.random() < 0.07) this.spawn('smoke', cx0 + cw / 2, ct + 0.35, 1, { speed: 0.2, vy: 0.5, vx: this.wind * 0.3, life: 3.5, r: 0.5 });
 
     // ── yard: a rain barrel, a broken fence, snow banked against the walls ──
     const bx = gx + W + 0.45;
@@ -474,6 +478,11 @@ export class Drawer {
   drawTrees(ctx) {
     for (const t of this.trees) {
       if (!this.vis(t.x, t.y + 4, 8)) continue;
+      // bend: tips move downwind with the square of their height, and shiver in the gusts
+      const bend = (this.wind * 0.0016 + Math.sin(this.time * 2.1 + t.x) * 0.0012 * (0.4 + this.gust)) * this.out;
+      const bx = (x, y) => x + bend * (y - t.y) * (y - t.y);
+      if (!t.b0) t.b0 = t.branches.map((b) => ({ ...b }));
+      t.branches.forEach((b, i) => { const o = t.b0[i]; b.x0 = bx(o.x0, o.y0); b.cx = bx(o.cx, o.cy); b.x1 = bx(o.x1, o.y1); });
       ctx.strokeStyle = g(0.06);
       for (const b of t.branches) {
         ctx.lineWidth = Math.max(1, b.w * this.k);
@@ -731,32 +740,95 @@ export class Drawer {
 
   // ── particles ─────────────────────────────────────────────────────────
   ambientFx(dt) {
-    const c = this.cam, area = this.w.area();
+    const c = this.cam, area = this.w.area(), t = this.time;
     const R = (a, b) => a + Math.random() * (b - a);
     const vw = this.viewW, vh = this.viewH;
-    if (area.id === 'brink' || (area.id === 'throat' && c[1] > -30)) {
-      for (let i = 0; i < 3; i++) if (Math.random() < dt * 40) this.fx.push({ kind: 'snow', x: c[0] + R(-vw / 2 - 4, vw / 2 + 4), y: c[1] + vh / 2 + 1, vx: R(-0.3, 0.6), vy: R(-1.4, -0.7), life: 14, t: 0, r: R(0.5, 1.4), rot: R(0, 6), par: R(0.85, 1.25) });
-    } else {
-      if (Math.random() < dt * 9) this.fx.push({ kind: 'dust', x: c[0] + R(-vw / 2, vw / 2), y: c[1] + R(-vh / 2, vh / 2), vx: R(-0.1, 0.1), vy: R(-0.05, 0.08), life: R(5, 9), t: 0, r: R(0.6, 1.4), rot: R(0, 6), par: R(0.9, 1.15) });
+    // the storm: how "outside" the camera is (full on the Brink, gone a few metres into the Throat),
+    // and a wind that never stops but comes in gusts
+    const out = area.id === 'brink' || area.id === 'throat' ? clamp((c[1] + 7) / 9, 0, 1) : 0;
+    this.out = out;
+    const gn = Math.sin(t * 0.21) * 0.5 + Math.sin(t * 0.57 + 1.3) * 0.32 + Math.sin(t * 1.43 + 0.4) * 0.18;
+    this.gust = clamp(gn * 0.75 + 0.45, 0, 1);
+    this.wind = 3.2 + this.gust * 9.5;
+    const W = this.wind, sp = (n) => { let k = Math.floor(n * dt); if (Math.random() < n * dt - k) k++; return k; };
+    if (out > 0.01) {
+      // driven snow in the play plane: spawned upwind and above, flying as streaks
+      for (let i = sp(520 * out); i-- > 0;) this.fx.push({ kind: 'snow', x: c[0] + R(-vw / 2 - W * 1.6, vw / 2), y: c[1] + R(-vh / 2, vh / 2 + 3), vx: R(0.75, 1.15), vy: R(-1.1, -2.6), life: R(1.8, 3), t: 0, r: R(0.5, 1.3), rot: R(0, 6), par: 1 });
+      // a far curtain of small flakes (slower parallax): this is what reads as "thick"
+      for (let i = sp(260 * out); i-- > 0;) this.fx.push({ kind: 'snowfar', x: c[0] + R(-vw * 0.8 - W * 2, vw * 0.8), y: c[1] + R(-vh * 0.8, vh * 0.8), vx: R(0.6, 0.9), vy: R(-0.8, -1.8), life: R(2.5, 4), t: 0, r: R(0.5, 1.1), rot: R(0, 6), par: 0.62 });
+      // a few big flakes rushing past right in front of the lens
+      for (let i = sp(16 * out); i-- > 0;) this.fx.push({ kind: 'snownear', x: c[0] + R(-vw * 0.5 - W, vw * 0.3), y: c[1] + R(-vh * 0.45, vh * 0.45), vx: R(1.3, 1.8), vy: R(-1.5, -3.5), life: R(0.9, 1.6), t: 0, r: R(0.8, 1.5), rot: R(0, 6), par: 1.55 });
+      // spindrift: snow torn off the ground in the gusts, skimming low
+      for (let i = sp(90 * out * this.gust * this.gust); i-- > 0;) {
+        const x = c[0] + R(-vw / 2 - 6, vw / 2), gy = L.surfaceY(x);
+        if (Math.abs(gy - c[1]) < vh) this.fx.push({ kind: 'drift', x, y: gy + R(0.0, 0.35), vx: R(0.9, 1.3), vy: R(0.1, 0.9), life: R(0.8, 1.8), t: 0, r: R(0.6, 1.2), rot: R(0, 6), par: 1 });
+      }
+    }
+    if (area.id === 'throat' && c[1] < -1 && c[1] > -40) {
+      // down in the pit the air is still: a few flakes that blew over the lip drift straight down
+      const k = clamp((c[1] + 40) / 34, 0, 1) * (1 - out);
+      for (let i = sp(22 * k); i-- > 0;) this.fx.push({ kind: 'fall', x: c[0] + R(-vw / 2, vw / 2), y: c[1] + vh / 2 + 1, vx: R(-0.15, 0.15), vy: R(-0.5, -0.9), life: 20, t: 0, r: R(0.5, 1.2), rot: R(0, 6), par: 1 });
+    }
+    if (out < 0.99 && area.id !== 'brink') {
+      if (Math.random() < dt * 9 * (1 - out)) this.fx.push({ kind: 'dust', x: c[0] + R(-vw / 2, vw / 2), y: c[1] + R(-vh / 2, vh / 2), vx: R(-0.1, 0.1), vy: R(-0.05, 0.08), life: R(5, 9), t: 0, r: R(0.6, 1.4), rot: R(0, 6), par: R(0.9, 1.15) });
       if (area.id === 'gardens' && Math.random() < dt * 5) this.fx.push({ kind: 'spore', x: c[0] + R(-vw / 2, vw / 2), y: c[1] - vh / 2, vx: R(-0.2, 0.2), vy: R(0.2, 0.5), life: 14, t: 0, r: R(0.6, 1.2), rot: 0, par: 1 });
+    }
+  }
+  // whiteout: big soft sheets of blown snow drifting across the Brink, some behind the play plane, one in front
+  drawFog(ctx, front) {
+    if (this.out < 0.01) return;
+    const k = this.k, vw = this.viewW;
+    if (front) { ctx.fillStyle = g(0.92, this.out * (0.04 + this.gust * 0.1)); ctx.fillRect(0, 0, this.W, this.H); }   // the whole view greys out in a gust
+    for (const f of this.fog) {
+      if (f.front !== front) continue;
+      f.x += this.wind * f.speed * (this.dtLast || 0);
+      const span = vw / f.par + f.rx * 2 + 10;
+      const rel = ((f.x - this.cam[0] * f.par) % span + span * 1.5) % span - span / 2;
+      const X = this.W / 2 + rel * f.par * k, Y = this.sy(f.y, f.par);
+      const a = f.a * this.out * (0.45 + this.gust * 0.9);
+      ctx.save(); ctx.translate(X, Y); ctx.scale(1, f.ry / f.rx);
+      const R = f.rx * f.par * k;
+      const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+      gr.addColorStop(0, g(0.97, a)); gr.addColorStop(0.55, g(0.95, a * 0.55)); gr.addColorStop(1, g(0.95, 0));
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+      ctx.restore();
     }
   }
   drawFx(ctx, ectx, dt, front) {
     const k = this.k;
     const keep = [];
+    const snowB = [];
     for (const p of this.fx) {
       p.t += dt;
       if (p.t > p.life) continue;
       keep.push(p);
-      const isFront = p.kind === 'fiber' || p.kind === 'spark' || p.kind === 'snow';
+      const isFront = p.kind === 'fiber' || p.kind === 'spark' || p.kind === 'snow' || p.kind === 'snownear' || p.kind === 'drift' || p.kind === 'fall';
       if (isFront !== front) continue;
       const a = Math.min(1, p.t * 3, (p.life - p.t) * 1.5);
       switch (p.kind) {
-        case 'snow': {
-          p.x += (p.vx + Math.sin(this.time * 0.8 + p.rot) * 0.4) * dt; p.y += p.vy * dt;
+        case 'snow': case 'snowfar': case 'snownear': case 'drift': {
+          // flakes ride the wind (vx is a share of it), wobble, and draw as streaks along their motion;
+          // segments are batched by kind and brightness and stroked together after the loop
+          const wob = Math.sin(this.time * 2.3 + p.rot) * 0.6;
+          const ux = this.wind * p.vx + wob, uy = p.vy + Math.cos(this.time * 1.9 + p.rot) * 0.4 + (p.kind === 'drift' ? -p.t * 1.2 : 0);
+          p.x += ux * dt; p.y += uy * dt;
+          if (p.kind !== 'snownear' && p.kind !== 'snowfar' && this.w.T.d(p.x, p.y) < 0) { p.t = p.life; break; }
+          const par = p.par, X = this.W / 2 + (p.x - this.cam[0]) * par * k, Y = this.H / 2 - (p.y - this.cam[1]) * par * k;
+          if (X < -60 || X > this.W + 60 || Y < -60 || Y > this.H + 60) break;
+          // lens flakes only over open sky, never smeared across the rock face
+          if (p.kind === 'snownear' && this.w.T.d(this.cam[0] + (X - this.W / 2) / k, this.cam[1] - (Y - this.H / 2) / k) < 0.3) break;
+          const fade = a * (p.kind === 'drift' ? 0.6 : p.kind === 'snowfar' ? 0.5 : p.kind === 'snownear' ? 0.3 : 0.85) * this.out;
+          if (fade <= 0.02) break;
+          const st = (p.kind === 'snownear' ? 0.045 : 0.03) * par * (0.55 + p.r * 0.45);
+          const kind = p.kind === 'snownear' ? 0 : p.kind === 'snowfar' ? 1 : 2;
+          (snowB[kind * 4 + Math.min(3, (fade * 4) | 0)] ||= []).push(X, Y, X - ux * st * k, Y + uy * st * k);
+          break;
+        }
+        case 'fall': {
+          p.x += (p.vx + Math.sin(this.time * 0.8 + p.rot) * 0.25) * dt; p.y += p.vy * dt;
           if (this.w.T.d(p.x, p.y) < 0) { p.t = p.life; break; }
-          ctx.fillStyle = g(0.97, a * 0.9);
-          ctx.beginPath(); ctx.arc(this.sx(p.x, p.par) + (this.cam[0] * (p.par - 1)) * 0, this.sy(p.y), Math.max(1, p.r * 0.035 * k), 0, TAU); ctx.fill();
+          ctx.fillStyle = g(0.97, a * 0.8);
+          ctx.beginPath(); ctx.arc(this.sx(p.x), this.sy(p.y), Math.max(1, p.r * 0.03 * k), 0, TAU); ctx.fill();
           break;
         }
         case 'dust': case 'spore': {
@@ -810,7 +882,18 @@ export class Drawer {
         }
       }
     }
-    this.fx = keep.length > 1500 ? keep.slice(-1500) : keep;
+    // stroke the batched snow: one path per kind and brightness band, plus a cold glint on the emissive layer
+    const LW = [0.07, 0.022, 0.034];
+    snowB.forEach((seg, idx) => {
+      if (!seg) return;
+      const kind = (idx / 4) | 0, f = ((idx % 4) + 0.5) / 4;
+      ctx.beginPath(); ectx.beginPath();
+      for (let i = 0; i < seg.length; i += 4) { ctx.moveTo(seg[i], seg[i + 1]); ctx.lineTo(seg[i + 2], seg[i + 3]); if (kind !== 1) { ectx.moveTo(seg[i], seg[i + 1]); ectx.lineTo(seg[i + 2], seg[i + 3]); } }
+      const w = Math.max(1, LW[kind] * k * (kind === 0 ? 1.4 : kind === 1 ? 0.62 : 1));
+      ctx.strokeStyle = g(0.97, f); ctx.lineWidth = w; ctx.stroke();
+      if (kind !== 1) { ectx.strokeStyle = `rgba(205,215,235,${f * (kind === 0 ? 0.2 : 0.4)})`; ectx.lineWidth = w; ectx.stroke(); }
+    });
+    this.fx = keep.length > 2400 ? keep.slice(-2400) : keep;
   }
 
   // ── foreground silhouettes (in front of the play plane, drifting faster) ─
@@ -966,4 +1049,14 @@ function drawLogEnd(ctx, X, Y, lg, k) {
   else ctx.ellipse(0, 0, r * 1.03, r * lg.sq * 1.03, 0, 0, TAU);
   ctx.stroke();
   ctx.restore();
+}
+
+function makeFog() {
+  const rng = mulberry(57), out = [];
+  for (let i = 0; i < 9; i++) {
+    const front = i === 8;
+    out.push({ x: rng() * 80, y: (front ? 0.5 : -1 + rng() * 9), rx: front ? 9 : 7 + rng() * 9, ry: front ? 1.6 : 1.4 + rng() * 2.6,
+      a: front ? 0.2 : 0.16 + rng() * 0.18, par: front ? 1.4 : 0.55 + rng() * 0.4, speed: 0.55 + rng() * 0.35, front });
+  }
+  return out;
 }

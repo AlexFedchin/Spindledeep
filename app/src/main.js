@@ -415,7 +415,7 @@ function tick(now) {
     const p = W.player, th = W.thread;
     const swing = th.locked && !p.grounded ? clamp(Math.hypot(p.vx, p.vy) / 9, 0, 1) * 0.5 : 0;
     let md = 99; for (const m of W.moths) md = Math.min(md, Math.hypot(m.x - cam.x, m.y - cam.y));
-    A.update(dt, { cam: [cam.x, cam.y], swing: paused ? 0 : swing, moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 });
+    A.update(dt, { cam: [cam.x, cam.y], swing: paused ? 0 : swing, moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0, out: state === 'title' ? 1 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
   }
 
   // render

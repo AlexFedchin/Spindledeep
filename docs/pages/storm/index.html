@@ -1,0 +1,185 @@
+<title>Spindledeep Snowstorm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+ul.what li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 16px; }
+ul.what li::before { content: ''; width: 8px; height: 8px; margin-top: 10px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; change 4 of 5</div>
+    <h1>The Storm Above</h1>
+    <p class="tag">A blizzard on the Brink<span></span>and dead calm a few metres down</p>
+  </header>
+
+  <div class="col summary">
+    <p>The surface is now in a snowstorm: wind-driven snow in three layers, gusts that come and go, snow torn off the ground, and white sheets of blown snow crossing the view. Trees bend and the chimney smoke streams sideways. A few metres into the pit, all of it stops. The wind sound fades to a faint moan, and only a few stray flakes drift straight down.</p>
+  </div>
+
+  <h2>Outside</h2>
+  <p class="ask">There should be a clear distinction between the ambience outside and in the caves: a snowstorm outside.</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/cottage_before.jpg" alt="Before: the cottage under a light, still snowfall">
+      <img class="after" src="img/cottage_after.jpg" alt="After: the cottage in a blizzard, snow streaking sideways and the trees bent">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-cottage" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/open_before.jpg" alt="Before: the open Brink with sparse falling dots">
+      <img class="after" src="img/open_after.jpg" alt="After: the open Brink with dense driven snow and a white haze over the hills">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-open" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>Three layers of snow.</b> A far curtain of fine flakes moves slower than the play area, which gives the storm depth. The main layer flies past as streaks along the wind. A few large flakes rush by right in front of the lens, but only over open sky, never across the rock.</li>
+      <li><b>Gusts.</b> The wind never stops, but it rises and falls between about 3 and 13 m/s on overlapping slow cycles, so it doesn't repeat in an obvious rhythm. Everything follows it: how fast the snow flies, how far the trees bend, how thick the haze gets, and how loud the wind is.</li>
+      <li><b>Spindrift.</b> In the strong gusts, snow is torn off the ground and skims along just above it.</li>
+      <li><b>Whiteout.</b> Big soft sheets of blown snow drift across the Brink, most behind the play area and one in front. In a gust the whole view greys out a little.</li>
+      <li><b>Flakes catch the light.</b> Each flake has a faint cold glint, so the storm still reads against the dark sky.</li>
+      <li><b>The world reacts.</b> The trees bend downwind from the root up and shiver in the gusts. The chimney smoke streams sideways, and the yarn tuft on the doll's head blows back.</li>
+    </ul>
+  </div>
+
+  <h2>The edge of the pit</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/lip_before.jpg" alt="Before: the lip of the pit with a few dots of snow">
+      <img class="after" src="img/lip_after.jpg" alt="After: the lip of the pit in the storm, with snow driving out over the drop">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lip" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>The storm fades by height, not by area. It's at full strength on the surface and dies away over the first few metres down the Throat. Climbing down out of the wind feels like stepping indoors.</p>
+  </div>
+
+  <h2>Inside</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/throat_before.jpg" alt="Before: the first ledge in the Throat with snow dots in the air">
+      <img class="after" src="img/throat_after.jpg" alt="After: the same ledge, still and dark, with no snow in the air">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-throat" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>Still air.</b> Below the lip, only a few flakes that blew over the edge drift straight down, slowly, and they thin out as you go deeper. In the deeper caves there's only slow dust, as before.</li>
+      <li><b>Sound.</b> The wind used to be one fixed volume per area. It now follows the storm: loud and gusting on the Brink, with its pitch rising in the gusts. In the Throat it drops to a faint moan, and below the Throat it's gone. The Throat's cave echo and drips are a little louder to fill the space.</li>
+    </ul>
+  </div>
+
+  <h2>Where it is</h2>
+  <div class="col">
+    <ul class="what">
+      <li>The storm is in <code>ambientFx</code> and <code>drawFog</code> in <code>app/src/draw.js</code>. The wind sound is in <code>Audio.update</code> in <code>app/src/audio.js</code>.</li>
+      <li>The snow is drawn in batches (one stroke per layer and brightness band), so well over a thousand flakes on screen cost only a handful of draw calls.</li>
+    </ul>
+    <p style="margin-top:16px">Not checked:</p>
+    <ul class="what open">
+      <li>The wind sound itself. The mix was changed in code and the game loads all its sounds without errors, but I can't listen to it.</li>
+      <li>Frame rate on your machine with the storm running. The screenshots above were rendered without problems.</li>
+    </ul>
+  </div>
+
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/JzmLpGyUBh3znCBjUsrkhB">1. swing</a> &middot; <a href="https://claude.ai/artifact/NWsF2b8neqxPDeXkb87drj">2. woodpile</a> &middot; <a href="https://claude.ai/artifact/2SAfoyAEphasPyCVz1D1Ac">3. relics</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

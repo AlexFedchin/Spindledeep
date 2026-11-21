@@ -8,8 +8,8 @@ const FILES = [
   'mus_title', 'mus_gardens', 'mus_gallery', 'mus_mere', 'mus_loom', 'mus_end',
 ];
 const AREA_BEDS = {
-  brink: { amb_wind: 0.55, amb_cave: 0.0 },
-  throat: { amb_wind: 0.28, amb_cave: 0.35, amb_drips: 0.25 },
+  brink: { amb_cave: 0.0 },
+  throat: { amb_cave: 0.4, amb_drips: 0.25 },
   gardens: { amb_cave: 0.45, amb_drips: 0.4, amb_hum: 0.18 },
   gallery: { amb_cave: 0.55, amb_hum: 0.25, amb_drips: 0.15 },
   mere: { amb_cave: 0.45, amb_ink: 0.45, amb_drips: 0.3 },
@@ -113,7 +113,7 @@ export class Audio {
   }
   setArea(id) {
     const beds = AREA_BEDS[id] || {};
-    for (const n of ['amb_wind', 'amb_cave', 'amb_drips', 'amb_ink', 'amb_hum']) this.loop(n, beds[n] || 0);
+    for (const n of ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum']) this.loop(n, beds[n] || 0);
     if (!this.endMusic) this.setMusic(AREA_MUSIC[id] ?? null);
   }
   setMusic(name, fade = 4) {
@@ -131,6 +131,16 @@ export class Audio {
   update(dt, s) {
     this.listener = s.cam;
     this.loop('creak', s.swing, 'sfx');
+    // the storm is continuous: loud and gusting on the Brink, a faint moan down the pit, silent below
+    if (s.out !== undefined) {
+      this.loop('amb_wind', 0.0001);
+      const L = this.loops.amb_wind;
+      if (L) {
+        const t = this.ctx.currentTime, v = s.out * (0.38 + 0.75 * s.gust) + (1 - s.out) * s.under * 0.06;
+        L.vol = v; L.gn.gain.setTargetAtTime(v, t, 0.25);
+        L.src.playbackRate.setTargetAtTime(0.88 + 0.26 * s.gust * s.out, t, 0.4);
+      }
+    }
     this.loop('moth', s.moth, 'sfx');
     const target = s.voice ? 0.35 : 1;
     this.duck += (target - this.duck) * Math.min(1, dt * 3);
