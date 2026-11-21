@@ -1,0 +1,5 @@
+node_modules/
+release/
+scripts/**/.cache/
+__pycache__/
+*.log

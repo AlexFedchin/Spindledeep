@@ -1,0 +1,32 @@
+{
+  "name": "spindledeep",
+  "productName": "Spindledeep",
+  "version": "1.0.0",
+  "description": "Spindledeep - a small, lonely descent on a single red thread.",
+  "author": "Alex",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder --win portable nsis --x64 --publish never",
+    "dist:portable": "electron-builder --win portable --x64 --publish never",
+    "smoke": "electron . --smoke"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.spindledeep.game",
+    "productName": "Spindledeep",
+    "copyright": "Copyright (c) 2026",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["electron/**/*", "app/**/*", "package.json"],
+    "asar": true,
+    "win": { "icon": "build/icon.ico", "artifactName": "Spindledeep-${version}-${arch}-${target}.${ext}" },
+    "portable": { "artifactName": "Spindledeep-${version}-portable.exe" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "Spindledeep-${version}-setup.exe" }
+  }
+}

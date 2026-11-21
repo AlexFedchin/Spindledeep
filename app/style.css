@@ -1,0 +1,66 @@
+@font-face { font-family: 'Fell'; src: url('assets/fonts/IMFeENrm28P.ttf'); }
+@font-face { font-family: 'Fell'; font-style: italic; src: url('assets/fonts/IMFeENit28P.ttf'); }
+@font-face { font-family: 'FellSC'; src: url('assets/fonts/IMFeENsc28P.ttf'); }
+
+:root {
+  --ink: #0b0a10;
+  --paper: #e8dcc4;
+  --paper-dim: rgba(232, 220, 196, 0.62);
+  --red: #d8262c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden; cursor: default; user-select: none; }
+body { font-family: 'Fell', Georgia, serif; color: var(--paper); }
+#view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+.hidden { opacity: 0; pointer-events: none; }
+
+#loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: var(--ink); transition: opacity 1.2s; z-index: 50; }
+.ld-title { font-family: 'FellSC'; font-size: 54px; letter-spacing: 0.18em; }
+.ld-msg { font-style: italic; color: var(--paper-dim); font-size: 19px; }
+.ld-bar { width: 220px; height: 1px; background: rgba(232, 220, 196, 0.15); }
+.ld-bar i { display: block; height: 1px; width: 0; background: var(--red); box-shadow: 0 0 8px var(--red); transition: width 0.3s; }
+
+#title { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 11vh; transition: opacity 1.6s; z-index: 10;
+  background: radial-gradient(ellipse at 50% 30%, rgba(8,7,12,0.0) 0%, rgba(8,7,12,0.35) 60%, rgba(8,7,12,0.7) 100%); }
+#title h1 { font-family: 'FellSC'; font-weight: normal; font-size: clamp(56px, 8.2vw, 132px); letter-spacing: 0.16em; margin: 0; color: var(--paper);
+  text-shadow: 0 0 1px #000, 0 2px 18px rgba(0,0,0,0.9); }
+#title .tag { font-style: italic; font-size: clamp(17px, 1.6vw, 25px); color: var(--paper-dim); margin-top: 4px; letter-spacing: 0.04em; text-shadow: 0 1px 10px #000; }
+#title .tag::before, #title .tag::after { content: ''; display: inline-block; width: 60px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 16px; box-shadow: 0 0 6px var(--red); }
+nav { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: auto; margin-bottom: 14vh; }
+nav button { font-family: 'Fell'; font-size: clamp(20px, 1.7vw, 27px); background: none; border: none; color: var(--paper-dim); cursor: pointer; padding: 4px 26px; position: relative; transition: color 0.25s, letter-spacing 0.35s; letter-spacing: 0.05em; text-shadow: 0 1px 8px #000; }
+nav button.sel, nav button:hover { color: var(--paper); letter-spacing: 0.1em; }
+nav button.sel::before { content: ''; position: absolute; left: -8px; right: -8px; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, var(--red) 20%, transparent 21%, transparent 79%, var(--red) 80%, transparent); box-shadow: 0 0 6px var(--red); }
+#title .foot { position: absolute; bottom: 3.5vh; font-style: italic; font-size: 15px; color: rgba(232,220,196,0.35); }
+
+#card { position: fixed; left: 0; right: 0; top: 13vh; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity 1.8s; pointer-events: none; z-index: 5; }
+#card .name { font-family: 'FellSC'; font-size: clamp(34px, 3.6vw, 60px); letter-spacing: 0.22em; text-shadow: 0 2px 16px #000, 0 0 2px #000; }
+#card .rule { width: min(420px, 50vw); height: 14px; background:
+  radial-gradient(circle at 50% 50%, var(--paper) 0 2px, transparent 2.5px),
+  linear-gradient(90deg, transparent, var(--paper-dim) 35%, transparent 46%, transparent 54%, var(--paper-dim) 65%, transparent) center / 100% 1px no-repeat; }
+
+#sub { position: fixed; left: 50%; bottom: 9vh; transform: translateX(-50%); width: min(980px, 82vw); text-align: center; font-style: italic;
+  font-size: clamp(19px, 1.65vw, 27px); line-height: 1.45; color: var(--paper); text-shadow: 0 0 2px #000, 0 2px 14px #000, 0 0 30px #000; transition: opacity 1.2s; pointer-events: none; z-index: 6; }
+
+#hint, #prompt, #toast { position: fixed; left: 50%; transform: translateX(-50%); font-size: clamp(15px, 1.15vw, 19px); color: var(--paper-dim); text-shadow: 0 1px 8px #000, 0 0 2px #000;
+  transition: opacity 0.8s; pointer-events: none; white-space: nowrap; display: flex; align-items: center; gap: 10px; z-index: 6; font-style: italic; }
+#hint { bottom: 3.2vh; }
+#prompt { bottom: 17vh; color: var(--paper); }
+#toast { top: 7vh; font-family: 'FellSC'; font-style: normal; letter-spacing: 0.12em; }
+kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(--paper); border: 1px solid rgba(232,220,196,0.5); border-radius: 2px; padding: 0 7px 1px; letter-spacing: 0.05em;
+  box-shadow: inset 0 0 0 2px rgba(11,10,16,0.9), inset 0 0 0 3px rgba(232,220,196,0.18); background: rgba(11,10,16,0.55); }
+
+#pause { position: fixed; inset: 0; background: rgba(8,7,12,0.72); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s; z-index: 20; }
+#pause .ptitle { font-family: 'FellSC'; font-size: 44px; letter-spacing: 0.2em; margin-bottom: 26px; }
+#pause nav { margin: 0; }
+
+#credits { position: fixed; inset: 0; background: var(--ink); transition: opacity 2.5s; overflow: hidden; z-index: 30; }
+#credits .roll { position: absolute; left: 0; right: 0; top: 100%; text-align: center; }
+#credits.rolling .roll { animation: roll 70s linear forwards; }
+@keyframes roll { to { transform: translateY(calc(-100% - 100vh)); } }
+#credits h1 { font-family: 'FellSC'; font-weight: normal; font-size: 72px; letter-spacing: 0.18em; margin: 0 0 8px; }
+#credits h3 { font-family: 'FellSC'; font-weight: normal; color: var(--red); letter-spacing: 0.2em; font-size: 17px; margin: 56px 0 8px; text-shadow: 0 0 8px rgba(216,38,44,0.5); }
+#credits p { margin: 0; font-size: 21px; line-height: 1.5; color: var(--paper-dim); }
+#credits .it { font-style: italic; }
+#credits .end { margin-top: 140px; font-size: 26px; color: var(--paper); }
+
+#fatal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 40px; font-size: 22px; line-height: 1.6; background: var(--ink); z-index: 60; transition: opacity .5s; white-space: pre-line; }
