@@ -101,7 +101,7 @@ function enterTitle() {
   const has = !!loadSave(true);
   const items = [];
   if (has) items.push({ label: 'Continue', fn: () => startGame(true) });
-  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => startGame(false) });
+  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => playCine('intro', () => startGame(false)) });
   items.push({ label: 'Fullscreen', fn: toggleFullscreen });
   items.push({ label: 'Leave', fn: () => window.host?.quit?.() ?? window.close() });
   menu($('menu'), items);
@@ -302,11 +302,52 @@ function endingUpdate(dt) {
   if (e.said && e.t > 2.5 + e.dur + 9 && !e.done) {
     e.done = true;
     localStorage.removeItem(SAVE_KEY);
-    state = 'credits';
-    show($('credits'), true);
-    setTimeout(() => $('credits').classList.add('rolling'), 2500);
-    setTimeout(() => { $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }, 76000);
+    playCine('outro', rollCredits);
   }
+}
+
+function rollCredits() {
+  state = 'credits';
+  show($('credits'), true);
+  setTimeout(() => $('credits').classList.add('rolling'), 2500);
+  setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }, 76000);
+}
+
+// ── cinematics ──────────────────────────────────────────────────────────
+// Offline-rendered films (scripts/cine) shown full screen; hold any action to skip. If a film is missing
+// or can't play, the game simply carries on.
+let cine = null;
+function playCine(name, onEnd) {
+  const v = $('cine');
+  cine = { onEnd, hold: 0, hint: 0, done: false, prev: state };
+  state = 'cine';
+  show($('title'), false);
+  A.master.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
+  v.src = 'assets/cine/' + name + '.webm';
+  v.volume = Math.min(1, settings.volume ?? 1);
+  v.onended = endCine; v.onerror = endCine;
+  v.play().then(() => show(v, true)).catch(endCine);
+}
+function endCine() {
+  if (!cine || cine.done) return;
+  cine.done = true;
+  const v = $('cine'), f = cine.onEnd;
+  show(v, false); show($('skip'), false);
+  setTimeout(() => { v.pause(); v.removeAttribute('src'); v.load(); }, 900);
+  A.setVolume(A.volume);
+  cine = null;
+  f();
+}
+function cineUpdate(dt) {
+  if (!cine) return;
+  const anyHeld = I.held.act || I.held.jump || I.held.pause || I.held.grip;
+  const anyPressed = Object.values(I.pressed).some(Boolean);
+  if (anyPressed) cine.hint = 2.5;
+  cine.hint = Math.max(0, cine.hint - dt);
+  cine.hold = anyHeld ? cine.hold + dt : Math.max(0, cine.hold - dt * 2);
+  show($('skip'), cine.hint > 0 || cine.hold > 0);
+  $('skip').querySelector('i').style.width = Math.min(100, cine.hold / 0.9 * 100) + '%';
+  if (cine.hold > 0.9) endCine();
 }
 
 // ── camera ───────────────────────────────────────────────────────────────
@@ -392,9 +433,10 @@ function tick(now) {
   if (state === 'title') navInput($('menu'));
   else if (paused) { navInput($('pmenu')); if (I.pressed.pause) setPaused(false); }
   else if (state === 'play' && I.pressed.pause) setPaused(true);
+  if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
   if (state === 'credits' && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }
 
-  if (!paused && state !== 'credits') {
+  if (!paused && state !== 'credits' && state !== 'cine') {
     acc += dt;
     let steps = 0;
     while (acc >= FIXED && steps < 10) {

@@ -37,6 +37,24 @@ After **every** change the user asked for, publish a changes page as an Artifact
   positions must be re-verified for all 12 ring gaps.
 - Python here defaults to cp1251: run edit scripts with `PYTHONUTF8=1` or pass `encoding='utf-8'`.
 
+## Cinematics (scripts/cine)
+
+Offline-rendered films: `app/assets/cine/intro.webm` (prologue, plays on Begin) and `outro.webm`
+(epilogue, plays after the ending, before the credits). The user asked not to be told what the ending
+film shows; keep its content out of pages and summaries.
+
+- Blender 4.2.3 portable lives in `scripts/cine/.cache/blender-4.2.3-windows-x64/` (ignored by git).
+- `lib.py` (materials, doll, knitter, snow, threads), `sets.py` (exterior, interior, Loom, shaft),
+  `shots.py` (one function per shot, `INTRO`/`OUTRO` lists, per-shot post exposure).
+- Render: `blender -b -P scripts/cine/render.py -- <shot> [--preview] [--still=F]` writes 16-bit PNG
+  passes (sqrt beauty, normal, encoded world position, aux masks, log depth) to `.cache/frames/<shot>`.
+- Grade: `<art venv>/python scripts/cine/post.py <frames> <out> --exposure=E` turns passes into the
+  game's engraving (same ink/paper/line maths as `app/src/shaders.js`; lines anchored in world space).
+- Edit: `<art venv>/python scripts/cine/edit.py intro|outro` cuts, adds title/fade, mixes the soundtrack
+  from `app/assets/audio`, encodes VP9/Opus. `preview_all.sh` renders half-res stills of every shot.
+- EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
+  negatives (offsets go through math nodes).
+
 ## Builds
 
 `build.cmd` writes `release/Spindledeep-1.0.0-portable.exe` and `-setup.exe`.
