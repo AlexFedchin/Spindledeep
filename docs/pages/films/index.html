@@ -1,0 +1,179 @@
+<title>Spindledeep Films</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+ul.what li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 16px; }
+ul.what li::before { content: ''; width: 8px; height: 8px; margin-top: 10px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; change 5 of 5</div>
+    <h1>Two Films</h1>
+    <p class="tag">A prologue before the first step<span></span>and an epilogue after the last</p>
+  </header>
+
+  <style>
+    .stills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 22px; }
+    .stills figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+    .stills img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+    .stills figcaption { font-family: var(--fell); font-style: italic; font-size: 14px; color: var(--paper-dim); line-height: 1.35; }
+    .sealed { border: 1px solid var(--rule); background: var(--ink-2); padding: 28px 22px; text-align: center; display: grid; gap: 10px; margin: 8px 0 22px; }
+    .sealed .seal { width: 46px; height: 46px; margin: 0 auto; border-radius: 50%; border: 1px solid var(--red); box-shadow: 0 0 14px rgba(216,38,44,0.45), inset 0 0 10px rgba(216,38,44,0.35); display: grid; place-items: center; font-family: var(--display); color: var(--red); font-size: 22px; }
+    .sealed p { margin: 0; font-family: var(--fell); font-style: italic; color: var(--paper-dim); }
+    @media (max-width: 640px) { .stills { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+
+  <div class="col summary">
+    <p>The game now opens with a prologue film and closes with an epilogue film. Both are full 3D scenes built and rendered offline in Blender, then engraved frame by frame with the same line work, ink and paper as the game, so they cut straight into play without changing style.</p>
+    <p>The prologue runs about 61 seconds. The epilogue runs about 43 seconds. Together they add about 85 MB to the game.</p>
+  </div>
+
+  <h2>The prologue</h2>
+  <p class="ask">Add cinematic cutscenes to the beginning and the ending of the game. They can be full 3D, rendered offline for the best quality. Be a real cinematographer.</p>
+  <div class="col">
+    <p>The prologue plays when you choose <b>Begin</b>. It has no dialogue: her voice belongs to the memories you find on the way down, so the film shows the night she left and leaves the telling to the game.</p>
+  </div>
+  <div class="stills">
+      <figure><img src="img/p1.jpg" alt="The Brink in a blizzard: one window lit at the edge of the pit"><figcaption>The Brink in a blizzard: one window lit at the edge of the pit</figcaption></figure>
+      <figure><img src="img/p2.jpg" alt="Through the glass, her silhouette bent over her work"><figcaption>Through the glass, her silhouette bent over her work</figcaption></figure>
+      <figure><img src="img/p3.jpg" alt="The last red stitch, by candlelight"><figcaption>The last red stitch, by candlelight</figcaption></figure>
+      <figure><img src="img/p4.jpg" alt="The flame leans toward the window"><figcaption>The flame leans toward the window</figcaption></figure>
+      <figure><img src="img/p5.jpg" alt="A loop of red thread drawn tight"><figcaption>A loop of red thread drawn tight</figcaption></figure>
+      <figure><img src="img/p6.jpg" alt="The door opens on the storm"><figcaption>The door opens on the storm</figcaption></figure>
+      <figure><img src="img/p7.jpg" alt="Her lantern crossing the snow to the lip"><figcaption>Her lantern crossing the snow to the lip</figcaption></figure>
+      <figure><img src="img/p8.jpg" alt="The doll on the sill, alone"><figcaption>The doll on the sill, alone</figcaption></figure>
+      <figure><img src="img/p9.jpg" alt="Its hand closes on the thread"><figcaption>Its hand closes on the thread</figcaption></figure>
+  </div>
+  <div class="col">
+    <ul class="what">
+      <li><b>The shape of it.</b> It opens wide and far away and closes in: the storm, then the window, then her hands, then the doll's face. Then it pushes back out into the cold with her and ends close on the doll again, alone. The last shot is the doll's hand closing on the thread, and the next thing you do in the game is hold that thread.</li>
+      <li><b>Light tells the story.</b> The warm window is the only colour in the storm. Inside, the candle and the hearth throw her shadow big across the wall. When the door opens, the candle dies, and from then on the room is lit only by the cold from outside.</li>
+      <li><b>Her face is never shown.</b> We see her as a silhouette, a shadow, a shape with a lantern. She stays a presence you're going after, not a character you've met.</li>
+      <li><b>Lenses and movement.</b> Wide lenses for the storm, long lenses with a shallow focus for the table, and a little hand-held drift in every camera so nothing feels mechanical. Dissolves only where time passes; everywhere else it cuts.</li>
+      <li><b>Sound.</b> The storm is loud outside and muffled through the walls inside. You hear the candle crackling, the thread pulling through, the loop tightening, the door. Under the doll on the sill, the open door bangs once. It is all mixed from the game's own recordings.</li>
+    </ul>
+  </div>
+
+  <h2>The epilogue</h2>
+  <div class="col">
+    <div class="sealed"><div class="seal">&#x2766;</div><p>You said you don't know the ending yet and didn't want it spoiled, so nothing from the epilogue is on this page.</p></div>
+    <p>It plays after the final scene in the Loom, right before the credits. It's made the same way as the prologue and runs a little shorter.</p>
+  </div>
+
+  <h2>How the films are made</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Built in code.</b> Every set, prop, light and camera move is a Python script for Blender 4.2: the cottage log by log, the woodpile dropped log by log like the one in the game, the doll with its button eye, ribbon and patch, the knitter, the spinning wheel, the pit. Snow is thousands of wind-driven streaks recomputed every frame.</li>
+      <li><b>Rendered as data, not pictures.</b> Each frame comes out of Blender as lighting, depth, surface direction, world position and a mask for the red thread, the snow and the warm lamps.</li>
+      <li><b>Engraved afterwards.</b> A GPU pass turns those into the game's intaglio plate using the same maths as the game's shader. The difference is that the lines are fixed to the surfaces in the world rather than to the screen, so they stay on the walls and the snow as the camera moves. Line spacing follows how each surface faces the camera, so it stays even on foreshortened ground. Like the game's, the lines shift slightly a few times a second (six here, five in the game), so the plate feels hand-cut.</li>
+      <li><b>Cut and mixed by script.</b> A last script joins the shots with cuts and dissolves, adds the engraved title card, lays the soundtrack and encodes for the game.</li>
+    </ul>
+  </div>
+
+  <h2>In the game</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Begin</b> plays the prologue, then starts the game at the cottage. <b>Continue</b> skips it.</li>
+      <li>The epilogue plays after the final scene, then the credits roll as before.</li>
+      <li>Hold any action key or button for about a second to skip a film. A thin red bar fills up while you hold.</li>
+      <li>The game's own sound is muted while a film plays and comes back after.</li>
+    </ul>
+    <p style="margin-top:16px">Where it is:</p>
+    <ul class="what">
+      <li>The films are <code>app/assets/cine/intro.mp4</code> and <code>outro.mp4</code>. Everything that makes them is in <code>scripts/cine/</code>, and <code>CLAUDE.md</code> explains how to re-render a shot.</li>
+    </ul>
+  </div>
+
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/JzmLpGyUBh3znCBjUsrkhB">1. swing</a> &middot; <a href="https://claude.ai/artifact/NWsF2b8neqxPDeXkb87drj">2. woodpile</a> &middot; <a href="https://claude.ai/artifact/2SAfoyAEphasPyCVz1D1Ac">3. relics</a> &middot; <a href="https://claude.ai/artifact/Nh1VeLbx1fMGjRYnnwYxuB">4. storm</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>
