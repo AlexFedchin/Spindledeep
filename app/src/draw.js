@@ -316,6 +316,9 @@ export class Drawer {
       ctx.beginPath(); ctx.arc(X, Y, 0.22 * k, 0, TAU); ctx.stroke();
       ctx.lineWidth = Math.max(0.8, k * 0.02); ctx.strokeStyle = g(0.75);
       ctx.beginPath(); ctx.arc(X, Y, 0.22 * k, -2.4, -1.2); ctx.stroke();
+      const pl = this.w.player;
+      const near = !pl.grounded && !pl.dead && Math.hypot(h.x - pl.bx, h.y - pl.by) < 5.5 && h.y > pl.by - 0.2;
+      if (near) { ectx.strokeStyle = `rgba(255,70,50,${0.35 + 0.25 * Math.sin(this.time * 12)})`; ectx.lineWidth = 2; ectx.beginPath(); ectx.arc(X, Y, 0.3 * k, 0, TAU); ectx.stroke(); }
       if (h.ring > 0) { ectx.strokeStyle = `rgba(255,80,60,${h.ring * 0.7})`; ectx.lineWidth = 2; ectx.beginPath(); ectx.arc(X, Y, 0.22 * k, 0, TAU); ectx.stroke(); }
     });
   }
@@ -350,8 +353,9 @@ export class Drawer {
         ectx.fillStyle = gr; ectx.fillRect(tipx - 1.4 * k, tipy - 1.1 * k, 2.8 * k, 2.8 * k);
       } else if (b.gate) {
         // unrung bells that a veil listens for breathe faintly
-        ectx.fillStyle = `rgba(210,220,230,${0.08 + 0.06 * Math.sin(this.time * 1.5 + b.x)})`;
-        ectx.beginPath(); ectx.arc(tipx, tipy + 0.3 * k, 0.25 * k, 0, TAU); ectx.fill();
+        const gr = ectx.createRadialGradient(tipx, tipy + 0.3 * k, 0, tipx, tipy + 0.3 * k, 0.45 * k);
+        gr.addColorStop(0, `rgba(210,220,230,${0.07 + 0.04 * Math.sin(this.time * 1.5 + b.x)})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        ectx.fillStyle = gr; ectx.fillRect(tipx - 0.5 * k, tipy - 0.2 * k, k, k);
       }
     }
   }
@@ -529,6 +533,12 @@ export class Drawer {
           p.x += (p.vx + Math.sin(this.time * 0.5 + p.rot) * 0.08) * dt; p.y += p.vy * dt;
           ctx.fillStyle = g(0.92, a * 0.7);
           ctx.beginPath(); ctx.arc(this.sx(p.x), this.sy(p.y), Math.max(0.8, p.r * (p.kind === 'spore' ? 0.035 : 0.02) * k), 0, TAU); ctx.fill();
+          break;
+        }
+        case 'puff': {
+          p.vx *= 0.9; p.vy = p.vy * 0.9 - 0.5 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+          ctx.fillStyle = g(0.85, a * 0.5);
+          ctx.beginPath(); ctx.arc(this.sx(p.x), this.sy(p.y), (0.05 + p.t * 0.25) * k * p.r, 0, TAU); ctx.fill();
           break;
         }
         case 'smoke': {

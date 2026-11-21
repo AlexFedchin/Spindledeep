@@ -3,7 +3,7 @@ import { clamp, damp } from './util.js';
 
 const R = 0.3;
 const RUN = 5.0, ACC_G = 42, ACC_A = 20, GRAV = 30, JUMP = 10.6, MAXFALL = 21;
-const SNAG_R = 4.6;
+export const SNAG_R = 5.5;
 
 export class Player {
   constructor(T) { this.T = T; this.r = R; this.reset(0, 0); }
@@ -89,7 +89,8 @@ export class Player {
         if (ay < 0 && !th.forced && ctx.budgetLeft() > 0) th.Lfree += 4.4 * h * -ay;
       }
       // gravity
-      this.vy = Math.max(this.vy - GRAV * h, -MAXFALL);
+      const swinging = th.locked && !g;
+      this.vy = Math.max(this.vy - GRAV * (swinging ? 0.62 : 1) * h, -MAXFALL);
       if (g && !this.jumping) {
         // stick to slopes when idle
         if (!ax && this.vy < 0) this.vy = Math.max(this.vy, -2);
@@ -105,6 +106,12 @@ export class Player {
         }
       }
       // the thread
+      if (th.locked && this.grounded && !th.forced && ctx.budgetLeft() > 0) {
+        // on the ground a held thread still pays out as you walk; it only catches once you fall
+        const P = th.pivots[th.pivots.length - 1];
+        const dd = Math.hypot(this.bx - P.x, this.by - P.y);
+        if (dd > th.Lfree) th.Lfree = dd;
+      }
       if (th.locked) {
         th.wrap(this.bx, this.by);
         const c = th.constrain(this.bx, this.by);
@@ -127,7 +134,9 @@ export class Player {
       } else if (th.locked && !this.grounded) {
         // let go mid-swing with a little lift
         th.release(this.bx, this.by);
-        this.vy = Math.max(this.vy, 0) + 5.5; this.vx += this.facing * 1.2;
+        const sp = Math.hypot(this.vx, this.vy);
+        if (sp > 10) { this.vx *= 10 / sp; this.vy *= 10 / sp; }
+        this.vy = Math.max(this.vy, 0) + 5; this.vx += this.facing * 1.0;
         this.jumping = true; this.jumpBuf = 0; this.gripLock = true;
         this.squash = -0.25; this.events.push('letgo');
       }

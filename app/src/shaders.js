@@ -148,7 +148,7 @@ fn engrave(v: f32, phase1: f32, phase2: f32, aa: f32, cross: f32) -> f32 {
   let single = lineField(phase1, f, aa);
   let fc = sqrt(f);
   let crossed = lineField(phase1, fc, aa) * lineField(phase2, fc, aa);
-  let k = smoothstep(0.62, 0.3, f) * cross;
+  let k = smoothstep(0.66, 0.42, f) * smoothstep(0.1, 0.26, f) * cross;
   return mix(single, crossed, k);
 }
 
@@ -185,7 +185,7 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     // contour engraving: lines run parallel to the rock face, packing tighter toward its heart
     let depthIn = -d;
     let strata = fbm(vec2f(p.x * 0.25, p.y * 1.6)) ;
-    let tone = mix(0.62, 0.42, strata) * exp(-depthIn * 0.55);
+    let tone = mix(0.8, 0.55, strata) * exp(-depthIn * 0.5);
     value = tone * lum(light) * 1.6;
     let ph1 = (d * ppm) / (sp * 1.05) + wob + strata * 1.5;
     let ph2 = dirPhase(px, 1.05, sp * 1.1) + wob * 0.6;

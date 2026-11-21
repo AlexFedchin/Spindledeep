@@ -186,7 +186,7 @@ export class Thread {
         if (last < this.liveStart) break;
         const pi = last - 1;
         const d1 = Math.hypot(bx - this.x[pi], by - this.y[pi]);
-        if (d1 < SP * 1.05 && (pi >= this.liveStart - 1 || !this.anchored)) { this.n--; } else break;
+        if (d1 < 0.5 && (pi >= this.liveStart - 1 || !this.anchored)) { this.n--; } else break;
       }
       // pay out
       let budget = budgetLeft;
@@ -194,7 +194,7 @@ export class Thread {
         const last = this.n - 1;
         const lx = this.x[last], ly = this.y[last];
         const d = Math.hypot(bx - lx, by - ly);
-        if (d <= SP) break;
+        if (d <= (g === 0 ? 0.55 : 0.3)) break;
         if (budget <= 0) break;
         if (!this.anchored && this.liveStart >= this.n) { this._push(bx, by); break; }
         this._push(lx + (bx - lx) * SP / d, ly + (by - ly) * SP / d);

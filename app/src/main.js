@@ -66,7 +66,7 @@ async function boot() {
   show($('loading'), false);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, begin: () => startGame(false), go: (x, y) => { W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, begin: () => startGame(false), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
   requestAnimationFrame(tick);
 }
 
@@ -184,7 +184,7 @@ function card(name) {
   show(el, true);
   cardTimer = 4.2;
 }
-function toast(text, secs = 2.6) { const el = $('toast'); el.textContent = text; show(el, true); toastTimer = secs; }
+function toast(text, secs = 2.6) { if (state !== 'play') return; const el = $('toast'); el.textContent = text; show(el, true); toastTimer = secs; }
 function keysHTML(keys) { return (keys || []).map((k) => `<kbd>${I.label(k)}</kbd>`).join(' '); }
 let lastHint = '', lastPrompt = '';
 function updateUI(dt) {
@@ -211,7 +211,7 @@ function handleEvents() {
         break;
       }
       case 'jump': A.play('jump', { vol: 0.32, vary: 0.1, x: p.x, y: p.y, verb: 0.3 }); break;
-      case 'land': A.play('land', { vol: clamp(e.v / 14, 0.15, 0.7), vary: 0.1, x: p.x, y: p.y }); D.spawn(W.area().id === 'brink' ? 'snowpuff' : 'dust', p.x, p.y - 0.25, 0); break;
+      case 'land': A.play('land', { vol: clamp(e.v / 14, 0.15, 0.7), vary: 0.1, x: p.x, y: p.y }); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
       case 'grip': A.play('grip', { vol: 0.35, vary: 0.1, x: p.x, y: p.y }); break;
       case 'release': case 'letgo': A.play('release', { vol: 0.3, vary: 0.1, x: p.x, y: p.y }); break;
       case 'taut': A.play('tie', { vol: 0.25, rate: 0.8, x: p.x, y: p.y }); if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
@@ -227,7 +227,7 @@ function handleEvents() {
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
       case 'bell': A.bellNote(e.i, e.x, e.y); D.spawn('pale', e.x + 0.3, e.y + 1.1, 1, { speed: 0, life: 1.6 }); save(); break;
-      case 'gate': A.play('gate', { vol: 0.9, x: e.x, y: e.y }); cam.shake = 0.35; toast('the veil remembers its song and parts', 3); break;
+      case 'gate': A.play('gate', { vol: 0.9, x: e.x, y: e.y }); if (state === 'play') cam.shake = 0.35; toast('the veil remembers its song and parts', 3); break;
       case 'chew': A.play('chew', { vol: 0.28, vary: 0.25, x: e.x, y: e.y, verb: 0.2 }); break;
       case 'mothOn': A.play('chew', { vol: 0.4, vary: 0.2, x: e.x, y: e.y }); break;
       case 'scatter': A.play('moth', { vol: 0.35, rate: 1.4, x: e.x, y: e.y, verb: 0.2 }); break;

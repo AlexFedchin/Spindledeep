@@ -191,7 +191,7 @@ export class World {
         if (m.flee > 0 || p.dead) m.st = 'wander';
         else {
           m.x = p.x + Math.cos(m.seed) * 0.25; m.y = p.y + 0.15 + Math.sin(m.seed) * 0.2;
-          this.hurt += dt * 1.6;
+          this.hurt += dt * 0.9;
           if (this.budgetLeft() < -1.5 && !p.dead) this._die('moths');
           continue;
         }
@@ -205,7 +205,7 @@ export class World {
           if (d < bd && !repelled(th.x[i], th.y[i])) { bd = d; best = i; }
         }
         const dd = Math.hypot(p.x - m.x, p.y - m.y);
-        if (dd < 6 && dd < bd + 1.5 && !repelled(p.x, p.y) && !p.dead) {
+        if (dd < 4 && (best < 0 || bd > 3.5) && !repelled(p.x, p.y) && !p.dead) {
           tx = p.x; ty = p.y + 0.1; m.st = 'seek';
           if (dd < 0.5) { m.st = 'doll'; this.emit('mothOn', { x: m.x, y: m.y }); continue; }
         } else if (best >= 0) {
@@ -310,7 +310,7 @@ export class World {
       out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl, c: l.c, soft: 10 });
     }
     // the doll's own warmth
-    if (!p.dead) out.push({ x: p.x, y: p.y + 0.2, r: 3.2, i: 0.55 * p.scale, c: [1.0, 0.42, 0.32], soft: 12 });
+    if (!p.dead) out.push({ x: p.x, y: p.y + 0.3, r: 4.0, i: 0.85 * p.scale, c: [1.0, 0.5, 0.4], soft: 12 });
     // the thread: a light every ~0.9 m along the visible polyline
     const P = th.poly, n = th.polyN;
     let acc = 0, budget = 96, lx = P[0], ly = P[1];
@@ -322,11 +322,11 @@ export class World {
       if (acc < 0.95) continue;
       acc = 0;
       if (!vis(x, y)) continue;
-      const lit = st === 0 ? 0.2 : 0.34;
+      const lit = st === 0 ? 0.3 : 0.52;
       const d = this.T.d(x, y);
       let ox = x, oy = y;
       if (d < 0.18) { const [gx, gy] = this.T.grad(x, y); ox += gx * (0.18 - d); oy += gy * (0.18 - d); }
-      out.push({ x: ox, y: oy, r: 3.6, i: lit, c: RED, soft: 7 });
+      out.push({ x: ox, y: oy, r: 4.2, i: lit, c: RED, soft: 7 });
       budget--;
     }
     // pluck fronts

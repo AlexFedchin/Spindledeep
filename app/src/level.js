@@ -23,8 +23,8 @@ export const OPS = [
   ['fill', B(57.5, -18.6, 82, -16.6, 0.8)],    // L2
   ['fill', B(38, -27.6, 54, -25.6, 0.8)],      // L3
   ['fill', B(60, -35.6, 82, -33.6, 0.8)],      // L4
-  ['fill', B(38, -41.8, 53.5, -39.6, 0.8)],    // L5: the peg; rappel off its lip
-  ['carve', B(44.5, -51.8, 48.4, -46.6, 1.2)],   // undercut beneath L5 (the way out)
+  ['fill', B(38, -41.8, 53, -39.6, 0.8)],      // L5: the peg; rappel off its lip
+  ['carve', B(44, -52, 51.2, -46.2, 1.4)],     // undercut beneath L5 (the way out)
   ['carve', T([[47, -49.6, 1.7], [41, -50.4, 1.6], [36, -51.6, 1.7]])],
   ['carve', E(59, -6, 6, 3.5)],                // a little alcove air near the top so the walls breathe
 
@@ -40,12 +40,14 @@ export const OPS = [
   // ── the Bell Gallery ───────────────────────────────────────────────────────
   ['carve', E(60, -127, 55, 21.5)],
   ['carve', E(28, -110, 6, 5)],
-  ['fill', B(4, -121, 26.5, -117.8, 1.0)],     // B0, the west ledge
-  ['fill', P([[43, -150], [43.8, -124.4], [48.6, -124.4], [49.5, -150]])],   // pillar P1
-  ['fill', P([[64.5, -150], [65.4, -120.4], [70.6, -120.4], [71.5, -150]])], // pillar P2
-  ['fill', P([[86.5, -150], [87.6, -126.4], [91.4, -126.4], [92.5, -150]])], // pillar P3
-  ['fill', B(99.5, -124, 118, -121.6, 1.0)],   // B1, the east ledge
   ['carve', B(7, -146.5, 113, -128, 2.5)],     // flatten the gallery floor
+  ['fill', B(4, -121, 26.5, -117.8, 1.0)],     // B0, the west ledge
+  ['fill', P([[37.8, -150], [38.6, -122.4], [44.8, -122.4], [45.6, -150]])],   // pillar P1 (bell)
+  ['fill', P([[52, -150], [52.8, -121.4], [59.2, -121.4], [60, -150]])], // pillar P2 (peg, memory)
+  ['fill', P([[65.4, -150], [66.2, -123.4], [71.8, -123.4], [72.6, -150]])],         // pillar P3 (bell)
+  ['fill', P([[79.4, -150], [80.2, -122.8], [85.8, -122.8], [86.6, -150]])],         // pillar P4
+  ['fill', P([[90.4, -150], [91.2, -122.0], [94.8, -122.0], [95.6, -150]])],     // pillar P5
+  ['fill', B(98.5, -124, 118, -121.6, 1.0)],   // B1, the east ledge
   ['fill', B(0, -152, 120, -146.5, 0.5)],      // the floor (brambles grow on it)
 
   // ── shaft to the Mere ──────────────────────────────────────────────────────
@@ -56,11 +58,14 @@ export const OPS = [
   ['fill', B(0, -208, 120, -200.5, 0.6)],      // bed of the lake (ink fills to -196.6 between the shores)
   ['fill', B(98.5, -200, 120, -194.2, 1.2)],   // east shore
   ['fill', B(0, -200, 21, -194.2, 1.2)],       // west shore
-  ['fill', P([[74.5, -199], [76, -192.2], [80, -192.2], [81.5, -199]])],   // I1
-  ['fill', P([[48.5, -199], [50, -190.4], [55, -190.4], [56.5, -199]])],   // I2 (peg, memory)
-  ['fill', P([[29, -199], [30.4, -193], [33.6, -193], [35, -199]])],       // I3
+  ['fill', P([[84.6, -201], [86, -193.0], [90, -193.0], [91.4, -201]])],   // I1
+  ['fill', P([[72.6, -201], [74, -192.0], [78, -192.0], [79.4, -201]])],   // I2 (bell)
+  ['fill', P([[59.6, -201], [61, -190.4], [66, -190.4], [67.4, -201]])],   // I3 (peg, memory)
+  ['fill', P([[46.6, -201], [48, -192.0], [52, -192.0], [53.4, -201]])],   // I4
+  ['fill', P([[33.6, -201], [35, -193.0], [39, -193.0], [40.4, -201]])],   // I5 (bell)
+  ['fill', P([[23.4, -201], [24.6, -193.4], [27.6, -193.4], [28.8, -201]])], // I6 (skein)
   // stalactites
-  ['fill', P([[68, -160], [70.4, -171], [72, -160]])],
+  ['fill', P([[65.4, -160], [67.6, -171], [69.6, -160]])],
   ['fill', P([[44, -160], [46.2, -173], [48.6, -160]])],
   ['fill', P([[88, -161], [89.2, -168], [91, -161]])],
   ['fill', P([[22, -161], [23.6, -170], [25.6, -161]])],
@@ -76,14 +81,14 @@ export const AREAS = [
   { id: 'brink', name: 'The Brink', y1: 50, y0: -6, viewH: 17, amb: [0.16, 0.17, 0.2], moon: 1.0 },
   { id: 'throat', name: 'The Throat', y1: -6, y0: -46, viewH: 19, amb: [0.085, 0.085, 0.1], moon: 0.75, x0: 36, x1: 82 },
   { id: 'gardens', name: 'The Root Gardens', y1: -44, y0: -103, x1: 44, viewH: 16, amb: [0.075, 0.078, 0.08], moon: 0 },
-  { id: 'gallery', name: 'The Bell Gallery', y1: -103, y0: -150, viewH: 21, amb: [0.075, 0.072, 0.085], moon: 0 },
-  { id: 'mere', name: 'The Ink Mere', y1: -150, y0: -208, viewH: 21, amb: [0.065, 0.068, 0.085], moon: 0 },
+  { id: 'gallery', name: 'The Bell Gallery', y1: -103, y0: -150, viewH: 19, amb: [0.075, 0.072, 0.085], moon: 0 },
+  { id: 'mere', name: 'The Ink Mere', y1: -150, y0: -208, viewH: 19, amb: [0.065, 0.068, 0.085], moon: 0 },
   { id: 'loom', name: 'The Loom', y1: -208, y0: -262, viewH: 17, amb: [0.08, 0.07, 0.065], moon: 0 },
 ];
 
 // Backdrop paintings (scripts/art): world rect they span + parallax.
 export const BACKDROPS = [
-  { img: 'brink', cx: 45, cy: 13, w: 62, h: 36, par: 0.12 },
+  { img: 'brink', cx: 42, cy: -1, w: 58, h: 32, par: 0.12 },
   { img: 'throat', cx: 60, cy: -26, w: 44, h: 76, par: 0.5 },
   { img: 'gardens', cx: 24, cy: -74, w: 54, h: 48, par: 0.55 },
   { img: 'bells', cx: 60, cy: -127, w: 94, h: 50, par: 0.55 },
@@ -100,30 +105,32 @@ export const PEGS = [
   { x: 33.5, y: -60.6 },
   { x: 12.5, y: -82.4 },
   { x: 19.5, y: -117.8 },
-  { x: 68, y: -120.4 },
-  { x: 104.5, y: -121.6 },
+  { x: 55, y: -121.4 },
+  { x: 103.8, y: -121.6 },
   { x: 104, y: -194.2 },
-  { x: 52.5, y: -190.4 },
+  { x: 63.5, y: -190.4 },
   { x: 12, y: -194.2 },
   { x: 18, y: -244 },
+  { x: 38.6, y: 0.5 },      // the lip of the pit
+  { x: 40.6, y: -25.6 },    // L3, under her memory
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
 export const HOOKS = [
-  { x: 34.5, y: -112.6 }, { x: 57, y: -112.4 }, { x: 79.5, y: -112.6 }, { x: 96, y: -115.4 },
-  { x: 90, y: -183.5 }, { x: 64, y: -181.5 }, { x: 41.5, y: -183 }, { x: 22.5, y: -186.5 },
+  { x: 30.5, y: -114.2 }, { x: 48.6, y: -117.6 }, { x: 62.2, y: -116.8 }, { x: 75.8, y: -118.2 }, { x: 88.4, y: -117.8 }, { x: 97.2, y: -118.0 },
+  { x: 94.8, y: -190.6 }, { x: 82.4, y: -189.2 }, { x: 70.4, y: -188.2 }, { x: 57.4, y: -186.8 }, { x: 44.4, y: -188.2 }, { x: 31.4, y: -189.2 },
   { x: 59.5, y: -24.5 }, // over the Throat: a spare ring, for the curious
 ];
 
 // Bell flowers: a pluck travelling past rings them; rung bells light the dark and keep moths off.
 export const BELLS = [
   { x: 34, y: -77, gate: 'g2' },
-  { x: 46.2, y: -124.4, gate: 'east' },
-  { x: 89.5, y: -126.4, gate: 'east' },
-  { x: 108, y: -121.6, gate: 'east' },
+  { x: 42.6, y: -122.4, gate: 'east' },
+  { x: 69, y: -123.4, gate: 'east' },
+  { x: 101.5, y: -121.6, gate: 'east' },
   { x: 16, y: -53, gate: null },
-  { x: 77.5, y: -192.2, gate: null },
-  { x: 31.5, y: -193, gate: null },
+  { x: 76.5, y: -192.0, gate: null },
+  { x: 37.5, y: -193.0, gate: null },
 ];
 
 // Ink veils: strands that block a passage until all their bells ring.
@@ -133,25 +140,25 @@ export const GATES = [
 ];
 
 export const SKEINS = [
-  { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 46.5, y: -123.8 }, { x: 116, y: -121 }, { x: 31.8, y: -192.6 },
+  { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 116, y: -121 }, { x: 26, y: -193.4 },
 ];
 
 export const NESTS = [
   { x: 30, y: -73, n: 4, r: 7 },
-  { x: 58, y: -118, n: 4, r: 9 },
-  { x: 82, y: -120, n: 5, r: 9 },
-  { x: 64, y: -186, n: 5, r: 10 },
-  { x: 34, y: -186, n: 4, r: 9 },
+  { x: 62, y: -118, n: 4, r: 9 },
+  { x: 88, y: -119, n: 4, r: 9 },
+  { x: 76, y: -185, n: 4, r: 9 },
+  { x: 44, y: -186, n: 5, r: 9 },
 ];
 
 // Hazards: thorn brambles (capsule chains) and the ink.
 // [x0, x1, yRef]: a bramble runs along the ground below yRef between x0 and x1
 export const THORNS = [
-  [47, 73, -58], [8, 42.5, -140], [49.6, 64.4, -140], [71.6, 86.4, -140], [92.6, 112, -140],
+  [47, 73, -58], [8, 37.6, -140], [45.8, 51.8, -140], [60.2, 65.2, -140], [72.8, 79.2, -140], [86.8, 90.2, -140], [95.8, 112, -140],
 ];
 export const INK = [{ x0: 20, x1: 99, y: -196.6 }];
 // stalactites that drip ink
-export const DRIPS = [{ x: 70.4, y: -171 }, { x: 46.2, y: -173 }, { x: 89.2, y: -168 }];
+export const DRIPS = [{ x: 67.6, y: -171 }, { x: 46.2, y: -173 }, { x: 89.2, y: -168 }, { x: 23.6, y: -170 }];
 
 // The knitter's grey thread: from her door, down through the deep, to her chair. Knots hold her voice.
 export const GREY = [
@@ -159,10 +166,10 @@ export const GREY = [
   [66, -16.4], [62, -20], [56, -24], [53.6, -25.4], [44, -25.4], [41, -25.6], [50, -28], [57, -31], [60.5, -33.4],
   [70, -33.4], [64, -37], [54, -39.4], [47, -39.4], [50.2, -40], [53.4, -41], [52, -44], [48, -48.4], [40, -49], [36, -50.5],
   [30, -60.4], [20, -61], [14, -60], [12.8, -66], [16, -71], [22, -82], [30, -81.6], [37, -81], [40.2, -84], [37, -92],
-  [31, -99], [28.5, -106], [24, -117.6], [26.5, -118], [34.5, -112.6], [45, -124.2], [57, -112.4], [67, -120.2],
-  [79.5, -112.6], [89, -126.2], [96, -115.4], [101, -121.4], [109, -125], [110, -136], [108.6, -148], [109.6, -160],
-  [104, -193.9], [99, -194], [90, -183.5], [78, -192], [64, -181.5], [52, -190.2], [41.5, -183], [32, -192.8],
-  [22.5, -186.5], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -244.6],
+  [31, -99], [28.5, -106], [24, -117.6], [26.5, -118], [30.5, -114.2], [42, -122.2], [48.6, -117.6], [56.5, -120.2],
+  [62.2, -116.8], [69, -123.2], [75.8, -118.2], [83, -122.6], [88.4, -117.8], [93, -121.8], [97.2, -118.0], [101, -121.4], [109, -125], [110, -136], [108.6, -148], [109.6, -160],
+  [104, -193.9], [99, -194], [94.8, -190.6], [88, -192.8], [82.4, -189.2], [76, -191.8], [70.4, -188.2], [63.5, -190.2],
+  [57.4, -186.8], [50, -191.8], [44.4, -188.2], [37, -192.8], [31.4, -189.2], [26, -193.2], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -244.6],
 ];
 
 // Her memories, knotted into the grey thread. `line` keys the voice file (assets/voice/<id>.ogg).
@@ -171,8 +178,8 @@ export const MEMORIES = [
   { id: 'm1', x: 44.5, y: -25.4, text: 'Seventy winters I sat at that window and watched the dark breathe. Last night, it called me by my name.' },
   { id: 'm2', x: 26, y: -61, text: "I made you from the scraps of everything I loved. A sleeve of his coat. The ribbon from my wedding. You're stronger than you look." },
   { id: 'm3', x: 30, y: -81.6, text: "The moths came for my yarn first. They don't mean any harm. They're only hungry for warm things." },
-  { id: 'm4', x: 67, y: -120.2, text: 'The bells still remember songs. Pluck your thread, and they will answer. Everything down here is only waiting to be answered.' },
-  { id: 'm5', x: 52, y: -190.2, text: "Don't let the ink touch the thread. It makes things forget. It made me forget... the colour red." },
+  { id: 'm4', x: 56.5, y: -120.2, text: 'The bells still remember songs. Pluck your thread, and they will answer. Everything down here is only waiting to be answered.' },
+  { id: 'm5', x: 64.5, y: -190.2, text: "Don't let the ink touch the thread. It makes things forget. It made me forget... the colour red." },
   { id: 'm6', x: 17, y: -218, text: "I'm so tired, little one. My yarn's run grey. I don't think I can climb back up." },
 ];
 export const FINALE = {
