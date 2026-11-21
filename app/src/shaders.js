@@ -163,8 +163,10 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   let sp = u.hatch;                      // line spacing in px
   let aa = 1.1 / sp;
   let boil = u.boil;
-  // hand-drawn wobble: slow warp + an 8 fps boil
-  let wob = (vnoise(px * 0.012 + vec2f(boil * 3.1, boil * 1.7)) - 0.5) * 0.55 + (vnoise(px * 0.05 + boil * 7.0) - 0.5) * 0.12;
+  // hand-drawn wobble: slow warp + a gentle 5 fps boil
+  let wob = (vnoise(px * 0.012 + vec2f(boil * 3.1, boil * 1.7)) - 0.5) * 0.3 + (vnoise(px * 0.05 + boil * 7.0) - 0.5) * 0.05;
+  // the backdrops drift slowly and continuously instead of boiling: far things should rest the eye
+  let wobBg = (vnoise(px * 0.006 + vec2f(u.time * 0.05, u.time * 0.03)) - 0.5) * 0.35;
 
   let light = textureSampleLevel(lightTex, linSamp, uv, 0.0).rgb;
   // softened light for the backdrops (they are far behind the play plane)
@@ -178,6 +180,7 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   let d = dRaw + detail;
 
   var paperMask = 0.0;    // 1 = paper shows, 0 = ink
+  var bgDim = 0.0;
   var tint = vec3f(1.0);
   var value = 0.0;
 
@@ -196,8 +199,9 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   } else {
     // ── backdrops (engraved paintings behind the play plane) ──────────
     var bgTone = 0.0; var bgLight = 0.0;
-    var ph1 = dirPhase(px, 0.0, sp * 0.95) + wob;
-    var ph2 = dirPhase(px, 0.85, sp) + wob;
+    let spB = sp * 1.3;
+    var ph1 = dirPhase(px, 0.0, spB) + wobBg;
+    var ph2 = dirPhase(px, 0.85, spB * 1.05) + wobBg;
     let nb = i32(u.nBg);
     var cover = 0.0;
     for (var k = 0; k < 4; k++) {
@@ -221,8 +225,8 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
       bgTone = mix(bgTone, t, a);
       cover = max(cover, a);
       // lines follow the painting's brightness: relief
-      ph1 += s.r * 2.2 * a;
-      ph2 += sn.g * 1.4 * a;
+      ph1 += s.r * 1.1 * a;
+      ph2 += sn.g * 0.7 * a;
     }
     bgLight = lum(lightSoft) * 0.75 + lum(light) * 0.25;
     value = bgTone * bgLight * 1.25 + 0.012;
@@ -247,7 +251,11 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
         value += smoothstep(0.05, 0.0, depthBelow) * lum(light) * 0.35;
       }
     }
-    paperMask = engrave(expose(value), ph1, ph2, aa, cover);
+    // soft, wide anti-aliasing and no cross-hatching on the paintings; they sit back as a quiet grey
+    let bgAA = select(aa, 2.4 / spB, cover > 0.0);
+    paperMask = engrave(expose(value), ph1, ph2, bgAA, cover * 0.35);
+    paperMask = mix(paperMask, 0.5 * expose(value), cover * 0.45);
+    bgDim = cover;
   }
 
   // ── sprites (Canvas2D layer: grey = engraved tone, alpha = coverage) ─────
@@ -269,7 +277,7 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   // paper with fibres and mottling; ink is a deep blue-black
   let grain = vnoise(px * 0.9) * 0.06 + vnoise(px * 0.08) * 0.07 + vnoise(vec2f(px.x * 0.02, px.y * 0.6)) * 0.03;
   let tintC = mix(vec3f(1.0), clamp(tint, vec3f(0.0), vec3f(1.6)), 0.55);
-  var paperC = u.paper.rgb * (0.9 + grain) * tintC;
+  var paperC = u.paper.rgb * (0.9 + grain * (1.0 - bgDim * 0.7)) * tintC * (1.0 - bgDim * 0.42);
   let inkC = u.ink.rgb * (0.85 + vnoise(px * 0.3) * 0.3);
   var col = mix(inkC, paperC, paperMask);
   // a breath of coloured light in the ink (the glow of the thread on wet rock)
@@ -277,7 +285,8 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
 
   // emissive layer (half res): window light, knots, sparks
   let e = textureSampleLevel(emitTex, linSamp, uv, 0.0);
-  col += e.rgb * 1.2;
+  // the canvas arrives un-premultiplied: weight by coverage so faint halo tails fade out instead of ending hard
+  col += e.rgb * sqrt(e.a) * 1.3;
 
   col += vec3f(u.flash);
   col = mix(col, u.ink.rgb * 0.6, u.fade);

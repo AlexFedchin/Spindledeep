@@ -2,6 +2,7 @@
 // lights it and turns it into line work. Glows go on a second, additive, half-resolution canvas.
 import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
+import { SNAG_R } from './player.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -47,7 +48,7 @@ export class Drawer {
     this.ambientFx(dt);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
-    this.drawThorns(ctx);
+    this.drawThorns(ctx, ectx);
     this.drawGates(ctx, ectx);
     this.drawHooks(ctx, ectx);
     this.drawPegs(ctx, ectx);
@@ -73,15 +74,15 @@ export class Drawer {
     const f = p.facing;
     const swing = th.locked && !p.grounded;
     const moving = p.grounded && Math.abs(p.vx) > 0.4;
-    const bob = moving ? Math.abs(Math.sin(p.walk)) * 0.05 : Math.sin(this.time * 2.2) * 0.012;
     const sq = p.squash;
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
-    // tuft spring
+    // springs: the yarn tuft and the ribbon tails lag behind the motion
     this.tuft.v += (-p.vx * 0.08 - this.tuft.a * 30) * dt - this.tuft.v * 6 * dt;
     this.tuft.a += this.tuft.v * dt * 10;
+    const rib = clamp(-p.vx * 0.06 * f + p.vy * 0.03, -0.6, 0.6) + Math.sin(this.time * 2.6) * 0.06;
 
     ctx.save();
-    ctx.translate(X, Y + (0.3 - bob) * k * 0);
+    ctx.translate(X, Y);
     let tilt = 0;
     if (swing) { const P = th.pivots[th.pivots.length - 1]; tilt = Math.atan2(p.bx - P.x, -(p.by - P.y)) * 0.6; }
     else if (!p.grounded) tilt = clamp(p.vx * 0.03, -0.25, 0.25);
@@ -90,39 +91,86 @@ export class Drawer {
     ctx.scale(sxk * f, syk);
     const u = k; // 1 m in px
     const lw = Math.max(1.4, u * 0.022);
-    ctx.lineWidth = lw;
-    ctx.strokeStyle = g(0.04);
-    // legs
+    const fine = Math.max(0.7, u * 0.009);
+    const stroke = (v, w) => { ctx.strokeStyle = g(v); ctx.lineWidth = w; ctx.stroke(); };
+    const yarn = (x0, y0, cx, cy, x1, y1, w, v) => {
+      // a two-tone yarn limb: dark outline, light core, and a few ribbing bands
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, cy, x1, y1);
+      stroke(0.04, w * 1.55); stroke(v, w);
+      ctx.strokeStyle = g(0.3); ctx.lineWidth = fine;
+      for (let t = 0.2; t < 0.95; t += 0.22) {
+        const it = 1 - t, px = it * it * x0 + 2 * it * t * cx + t * t * x1, py = it * it * y0 + 2 * it * t * cy + t * t * y1;
+        const tx = 2 * it * (cx - x0) + 2 * t * (x1 - cx), ty = 2 * it * (cy - y0) + 2 * t * (y1 - cy), tl = Math.hypot(tx, ty) || 1;
+        const nx = -ty / tl * w * 0.55, ny = tx / tl * w * 0.55;
+        ctx.beginPath(); ctx.moveTo(px - nx, py - ny); ctx.lineTo(px + nx, py + ny); ctx.stroke();
+      }
+    };
+
+    // ── legs with felt feet ──
     const legPh = p.walk;
     const legA = moving ? Math.sin(legPh) * 0.12 : !p.grounded ? 0.07 : 0;
     for (const side of [-1, 1]) {
       const lx = side * 0.08 * u, ly = 0.04 * u;
-      const fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.27 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
-      ctx.lineWidth = 0.075 * u; ctx.strokeStyle = g(0.04);
-      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(fx, fy); ctx.stroke();
-      ctx.lineWidth = 0.05 * u; ctx.strokeStyle = g(0.72);
-      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(fx, fy); ctx.stroke();
+      const fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.25 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
+      yarn(lx, ly, (lx + fx) / 2, (ly + fy) / 2, fx, fy, 0.05 * u, side > 0 ? 0.7 : 0.6);
+      ctx.beginPath(); ctx.ellipse(fx + 0.025 * u, fy + 0.02 * u, 0.06 * u, 0.035 * u, 0, 0, TAU);
+      ctx.fillStyle = g(0.2); ctx.fill(); stroke(0.03, fine * 1.4);
     }
-    // body: a knitted sack
-    ctx.lineWidth = lw;
-    ctx.beginPath();
-    ctx.moveTo(-0.2 * u, 0.06 * u);
-    ctx.bezierCurveTo(-0.24 * u, -0.12 * u, -0.17 * u, -0.27 * u, 0, -0.28 * u);
-    ctx.bezierCurveTo(0.17 * u, -0.27 * u, 0.24 * u, -0.12 * u, 0.2 * u, 0.06 * u);
-    ctx.bezierCurveTo(0.17 * u, 0.15 * u, -0.17 * u, 0.15 * u, -0.2 * u, 0.06 * u);
-    ctx.closePath();
-    ctx.fillStyle = g(0.8); ctx.fill(); ctx.strokeStyle = g(0.03); ctx.stroke();
-    // knit stitches: rows of little V's
-    ctx.save(); ctx.clip();
-    ctx.lineWidth = Math.max(0.8, u * 0.01); ctx.strokeStyle = g(0.38);
-    for (let r = -0.26; r < 0.14; r += 0.055) {
-      for (let c = -0.22; c < 0.22; c += 0.05) {
-        const ox = (c + (Math.round(r / 0.055) % 2) * 0.025) * u, oy = r * u;
-        ctx.beginPath(); ctx.moveTo(ox - 0.018 * u, oy); ctx.lineTo(ox, oy + 0.03 * u); ctx.lineTo(ox + 0.018 * u, oy); ctx.stroke();
+
+    // ── body: a knitted sack ──
+    const body = () => {
+      ctx.beginPath();
+      ctx.moveTo(-0.2 * u, 0.06 * u);
+      ctx.bezierCurveTo(-0.24 * u, -0.12 * u, -0.17 * u, -0.27 * u, 0, -0.28 * u);
+      ctx.bezierCurveTo(0.17 * u, -0.27 * u, 0.24 * u, -0.12 * u, 0.2 * u, 0.06 * u);
+      ctx.bezierCurveTo(0.17 * u, 0.15 * u, -0.17 * u, 0.15 * u, -0.2 * u, 0.06 * u);
+      ctx.closePath();
+    };
+    body(); ctx.fillStyle = g(0.56); ctx.fill();
+    ctx.save(); body(); ctx.clip();
+    // knit stitches: rows of little V's, shaded darker toward the back edge
+    ctx.lineWidth = fine;
+    for (let r = -0.26; r < 0.14; r += 0.05) {
+      for (let c = -0.22; c < 0.22; c += 0.045) {
+        const ox = (c + (Math.round(r / 0.05) % 2) * 0.0225) * u, oy = r * u;
+        ctx.strokeStyle = g(0.3 - Math.max(0, -c) * 0.6);
+        ctx.beginPath(); ctx.moveTo(ox - 0.017 * u, oy); ctx.lineTo(ox, oy + 0.028 * u); ctx.lineTo(ox + 0.017 * u, oy); ctx.stroke();
       }
     }
+    // a soft shadow on the back half
+    ctx.fillStyle = g(0.15, 0.35); ctx.beginPath(); ctx.ellipse(-0.2 * u, -0.05 * u, 0.12 * u, 0.3 * u, 0, 0, TAU); ctx.fill();
+    // a patch from his coat sleeve: darker cloth, tacked on with running stitches
+    ctx.save(); ctx.translate(-0.07 * u, 0.0); ctx.rotate(-0.12);
+    ctx.fillStyle = g(0.18); ctx.fillRect(-0.075 * u, -0.06 * u, 0.15 * u, 0.12 * u);
+    ctx.strokeStyle = g(0.2); ctx.lineWidth = fine;
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-0.07 * u, (-0.04 + i * 0.03) * u); ctx.lineTo(0.07 * u, (-0.045 + i * 0.03) * u); ctx.stroke(); }  // herringbone weave
+    ctx.setLineDash([0.018 * u, 0.014 * u]); ctx.strokeStyle = g(0.97); ctx.lineWidth = fine * 1.6;
+    ctx.strokeRect(-0.064 * u, -0.05 * u, 0.128 * u, 0.1 * u); ctx.setLineDash([]);
     ctx.restore();
-    // arms
+    ctx.restore();
+    body(); stroke(0.03, lw);
+    // the wedding ribbon worn as a sash, knotted in a bow at the hip
+    ctx.beginPath(); ctx.moveTo(-0.19 * u, -0.17 * u); ctx.quadraticCurveTo(0, -0.07 * u, 0.2 * u, 0.0);
+    ctx.lineTo(0.2 * u, 0.045 * u); ctx.quadraticCurveTo(0, -0.02 * u, -0.2 * u, -0.12 * u); ctx.closePath();
+    ctx.fillStyle = g(0.98); ctx.fill(); stroke(0.03, fine * 1.4);
+    const bxo = 0.17 * u, byo = 0.02 * u;
+    for (const sd of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(bxo, byo); ctx.bezierCurveTo(bxo + sd * 0.07 * u, byo - 0.07 * u, bxo + sd * 0.1 * u, byo + 0.01 * u, bxo, byo);
+      ctx.fillStyle = g(0.93); ctx.fill(); stroke(0.05, fine * 1.2);
+    }
+    for (const sd of [0, 1]) {
+      const a = rib + sd * 0.35;
+      ctx.beginPath(); ctx.moveTo(bxo, byo);
+      ctx.quadraticCurveTo(bxo + (0.04 + Math.sin(a) * 0.08) * u, byo + 0.08 * u, bxo + (0.02 + Math.sin(a) * 0.16 + sd * 0.03) * u, byo + (0.15 - sd * 0.02) * u);
+      stroke(0.05, 0.03 * u); stroke(0.93, 0.018 * u);
+    }
+    ctx.beginPath(); ctx.arc(bxo, byo, 0.016 * u, 0, TAU); ctx.fillStyle = g(0.8); ctx.fill(); stroke(0.05, fine);
+    // a single shirt button, sewn on with a cross
+    ctx.beginPath(); ctx.arc(0.08 * u, -0.17 * u, 0.028 * u, 0, TAU); ctx.fillStyle = g(0.25); ctx.fill(); stroke(0.03, fine);
+    ctx.strokeStyle = g(0.85); ctx.lineWidth = fine;
+    ctx.beginPath(); ctx.moveTo(0.07 * u, -0.18 * u); ctx.lineTo(0.09 * u, -0.16 * u); ctx.moveTo(0.09 * u, -0.18 * u); ctx.lineTo(0.07 * u, -0.16 * u); ctx.stroke();
+
+    // ── arms with mitten hands ──
     const armUp = swing || (th.locked && p.grounded);
     for (const side of [-1, 1]) {
       const ax0 = side * 0.17 * u, ay0 = -0.14 * u;
@@ -132,16 +180,26 @@ export class Drawer {
       else if (moving) { ex = ax0 + side * 0.06 * u + Math.sin(legPh + (side > 0 ? Math.PI : 0)) * 0.08 * u; ey = -0.02 * u; }
       else if (!p.grounded) { ex = side * 0.3 * u; ey = (p.vy > 0 ? -0.26 : -0.1) * u; }
       else { ex = side * 0.24 * u; ey = (-0.03 + Math.sin(this.time * 2.2 + side) * 0.008) * u; }
-      ctx.lineWidth = 0.075 * u; ctx.strokeStyle = g(0.04);
-      ctx.beginPath(); ctx.moveTo(ax0, ay0); ctx.quadraticCurveTo((ax0 + ex) / 2 + side * 0.03 * u, (ay0 + ey) / 2, ex, ey); ctx.stroke();
-      ctx.lineWidth = 0.048 * u; ctx.strokeStyle = g(0.75);
-      ctx.beginPath(); ctx.moveTo(ax0, ay0); ctx.quadraticCurveTo((ax0 + ex) / 2 + side * 0.03 * u, (ay0 + ey) / 2, ex, ey); ctx.stroke();
+      yarn(ax0, ay0, (ax0 + ex) / 2 + side * 0.03 * u, (ay0 + ey) / 2, ex, ey, 0.046 * u, side > 0 ? 0.76 : 0.62);
+      ctx.beginPath(); ctx.arc(ex, ey, 0.04 * u, 0, TAU); ctx.fillStyle = g(0.55); ctx.fill(); stroke(0.03, fine * 1.4);
+      ctx.beginPath(); ctx.arc(ex + side * 0.02 * u, ey - 0.03 * u, 0.017 * u, 0, TAU); ctx.fillStyle = g(0.55); ctx.fill(); stroke(0.03, fine);   // thumb
     }
-    // head
+
+    // ── head ──
     const hy = -0.47 * u, hr = 0.22 * u;
-    ctx.lineWidth = lw;
-    ctx.beginPath(); ctx.ellipse(0.01 * u, hy, hr * 1.04, hr, 0, 0, TAU);
-    ctx.fillStyle = g(0.86); ctx.fill(); ctx.strokeStyle = g(0.03); ctx.stroke();
+    const head = () => { ctx.beginPath(); ctx.ellipse(0.01 * u, hy, hr * 1.04, hr, 0, 0, TAU); };
+    head(); ctx.fillStyle = g(0.86); ctx.fill();
+    ctx.save(); head(); ctx.clip();
+    // knitted rows that curve around the skull
+    ctx.strokeStyle = g(0.62); ctx.lineWidth = fine;
+    for (let r = -0.2; r < 0.22; r += 0.04) { ctx.beginPath(); ctx.ellipse(0.01 * u, hy + r * u * 0.3, hr * 1.05, Math.abs(r) * u * 0.9 + 0.01 * u, 0, 0.15, Math.PI - 0.15); ctx.stroke(); }
+    ctx.fillStyle = g(0.2, 0.3); ctx.beginPath(); ctx.ellipse(-0.17 * u, hy + 0.03 * u, 0.1 * u, 0.24 * u, 0, 0, TAU); ctx.fill();
+    // a darned patch behind the eye
+    ctx.fillStyle = g(0.66); ctx.beginPath(); ctx.ellipse(-0.12 * u, hy - 0.1 * u, 0.055 * u, 0.045 * u, 0.4, 0, TAU); ctx.fill();
+    ctx.strokeStyle = g(0.4);
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo((-0.12 + i * 0.018) * u, hy - 0.14 * u); ctx.lineTo((-0.12 + i * 0.018) * u, hy - 0.06 * u); ctx.stroke(); }
+    ctx.restore();
+    head(); stroke(0.03, lw);
     // seam with cross stitches
     ctx.lineWidth = Math.max(0.8, u * 0.011); ctx.strokeStyle = g(0.25);
     ctx.beginPath(); ctx.arc(-0.06 * u, hy - 0.02 * u, hr * 0.95, -1.2, 0.2); ctx.stroke();
@@ -149,23 +207,36 @@ export class Drawer {
       const cx = -0.06 * u + Math.cos(a) * hr * 0.95, cy = hy - 0.02 * u + Math.sin(a) * hr * 0.95;
       ctx.beginPath(); ctx.moveTo(cx - 0.015 * u, cy - 0.015 * u); ctx.lineTo(cx + 0.015 * u, cy + 0.015 * u); ctx.stroke();
     }
-    // button eye
+    // button eye with four holes and the thread through them
     const blink = (Math.sin(this.time * 0.9) > 0.985) ? 0.25 : 1;
     ctx.fillStyle = g(0.02);
-    ctx.beginPath(); ctx.ellipse(0.1 * u, hy + 0.01 * u, 0.055 * u, 0.055 * u * blink, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = g(0.7);
-    if (blink > 0.5) for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc((0.1 + a * 0.016) * u, hy + (0.01 + b * 0.016) * u, 0.008 * u, 0, TAU); ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(0.1 * u, hy + 0.01 * u, 0.058 * u, 0.058 * u * blink, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = g(0.5); ctx.lineWidth = fine;
+    ctx.beginPath(); ctx.ellipse(0.1 * u, hy + 0.01 * u, 0.044 * u, 0.044 * u * blink, 0, 0, TAU); ctx.stroke();
+    if (blink > 0.5) {
+      ctx.fillStyle = g(0.75);
+      for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc((0.1 + a * 0.016) * u, hy + (0.01 + b * 0.016) * u, 0.008 * u, 0, TAU); ctx.fill(); }
+      ctx.strokeStyle = g(0.75); ctx.lineWidth = fine * 1.2;
+      ctx.beginPath(); ctx.moveTo(0.084 * u, hy - 0.006 * u); ctx.lineTo(0.116 * u, hy + 0.026 * u); ctx.stroke();
+      // a glint of the thread's light in the button
+      ctx.fillStyle = g(0.97); ctx.beginPath(); ctx.arc(0.083 * u, hy - 0.02 * u, 0.011 * u, 0, TAU); ctx.fill();
+    }
     // stitched X eye
     ctx.strokeStyle = g(0.02); ctx.lineWidth = Math.max(1.2, 0.022 * u);
     const ex2 = -0.04 * u, ey2 = hy + 0.01 * u, e = 0.035 * u;
     ctx.beginPath(); ctx.moveTo(ex2 - e, ey2 - e); ctx.lineTo(ex2 + e, ey2 + e); ctx.moveTo(ex2 + e, ey2 - e); ctx.lineTo(ex2 - e, ey2 + e); ctx.stroke();
-    // a loose curl of yarn on top
-    ctx.strokeStyle = g(0.04); ctx.lineWidth = 0.05 * u;
+    // a small stitched mouth
+    ctx.strokeStyle = g(0.1); ctx.lineWidth = Math.max(0.9, 0.012 * u);
+    ctx.setLineDash([0.02 * u, 0.012 * u]);
+    ctx.beginPath(); ctx.moveTo(0.0, hy + 0.1 * u); ctx.quadraticCurveTo(0.05 * u, hy + (p.dead ? 0.08 : 0.125) * u, 0.11 * u, hy + 0.095 * u); ctx.stroke();
+    ctx.setLineDash([]);
+    // a tuft of yarn loops on top
     const ta = this.tuft.a + Math.sin(this.time * 1.7) * 0.05;
-    ctx.beginPath(); ctx.moveTo(0, hy - hr * 0.95);
-    ctx.bezierCurveTo((0.04 + ta * 0.4) * u, hy - hr - 0.12 * u, (-0.1 + ta) * u, hy - hr - 0.16 * u, (-0.06 + ta * 1.3) * u, hy - hr - 0.06 * u);
-    ctx.stroke();
-    ctx.strokeStyle = g(0.8); ctx.lineWidth = 0.028 * u; ctx.stroke();
+    for (const [ox, len, sp, v] of [[-0.05, 0.16, -1, 0.7], [0.0, 0.2, 1, 0.82], [0.05, 0.14, 1.4, 0.75]]) {
+      ctx.beginPath(); ctx.moveTo(ox * u, hy - hr * 0.95);
+      ctx.bezierCurveTo((ox + 0.04 * sp + ta * 0.4) * u, hy - hr - len * 0.7 * u, (ox - 0.1 * sp + ta) * u, hy - hr - len * u, (ox - 0.06 * sp + ta * 1.3) * u, hy - hr - len * 0.35 * u);
+      stroke(0.04, 0.045 * u); stroke(v, 0.024 * u);
+    }
     ctx.restore();
     // a red cross-stitch heart that glows a little (the only colour the doll owns)
     const hx = X + f * 0.06 * u * sxk, hyy = Y - 0.12 * u * syk;
@@ -214,50 +285,166 @@ export class Drawer {
 
   // ── the Brink ─────────────────────────────────────────────────────────
   drawCottage(ctx, ectx) {
-    if (!this.vis(14, 3, 10)) return;
-    const k = this.k;
-    const gx = 11, gy = L.surfaceY(14) - 0.2;
+    if (!this.vis(14, 3, 12)) return;
+    const k = this.k, T = this.w.T;
+    const C = L.COTTAGE, gx = C.x, gy = C.y, W = C.w, WH = 3.4;
     const X = (x) => this.sx(x), Y = (y) => this.sy(y);
-    ctx.lineWidth = Math.max(1.2, k * 0.03);
-    // walls
-    ctx.fillStyle = g(0.32); ctx.strokeStyle = g(0.03);
-    ctx.beginPath(); ctx.moveTo(X(gx), Y(gy)); ctx.lineTo(X(gx), Y(gy + 3.6)); ctx.lineTo(X(gx + 7.6), Y(gy + 3.6)); ctx.lineTo(X(gx + 7.6), Y(gy)); ctx.closePath(); ctx.fill(); ctx.stroke();
-    // planks
-    ctx.strokeStyle = g(0.14); ctx.lineWidth = Math.max(1, k * 0.018);
-    for (let y = 0.35; y < 3.6; y += 0.36) { ctx.beginPath(); ctx.moveTo(X(gx), Y(gy + y)); ctx.lineTo(X(gx + 7.6), Y(gy + y + 0.03 * Math.sin(y * 9))); ctx.stroke(); }
-    // roof with snow
-    ctx.fillStyle = g(0.2); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1.2, k * 0.03);
-    ctx.beginPath(); ctx.moveTo(X(gx - 0.9), Y(gy + 3.4)); ctx.lineTo(X(gx + 3.8), Y(gy + 6.6)); ctx.lineTo(X(gx + 8.5), Y(gy + 3.4)); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = g(0.96);
-    ctx.beginPath(); ctx.moveTo(X(gx - 1.0), Y(gy + 3.45)); ctx.lineTo(X(gx + 3.8), Y(gy + 6.75));
-    ctx.lineTo(X(gx + 8.6), Y(gy + 3.45)); ctx.lineTo(X(gx + 7.9), Y(gy + 3.75));
-    for (let x = 7.4; x > 0; x -= 0.6) ctx.lineTo(X(gx + x), Y(gy + 3.75 + (3.8 - Math.abs(x - 3.8)) * 0.62 - 0.35 - 0.12 * Math.sin(x * 5)));
-    ctx.lineTo(X(gx - 0.3), Y(gy + 3.75)); ctx.closePath(); ctx.fill();
-    // chimney
-    ctx.fillStyle = g(0.25);
-    ctx.fillRect(X(gx + 5.4), Y(gy + 6.4), 0.7 * k, 1.6 * k);
-    ctx.fillStyle = g(0.95); ctx.fillRect(X(gx + 5.3), Y(gy + 6.5), 0.9 * k, 0.18 * k);
-    if (Math.random() < 0.06) this.spawn('smoke', gx + 5.75, gy + 6.6, 1, { speed: 0.2, vy: 0.6, vx: 0.25, life: 4.5, r: 0.5 });
-    // window: warm light
-    const wx = gx + 1.4, wy = gy + 1.3;
-    ctx.fillStyle = g(0.97); ctx.fillRect(X(wx), Y(wy + 1.3), 1.4 * k, 1.3 * k);
-    ctx.strokeStyle = g(0.05); ctx.lineWidth = Math.max(1.4, k * 0.06);
-    ctx.strokeRect(X(wx), Y(wy + 1.3), 1.4 * k, 1.3 * k);
-    ctx.beginPath(); ctx.moveTo(X(wx + 0.7), Y(wy + 1.3)); ctx.lineTo(X(wx + 0.7), Y(wy)); ctx.moveTo(X(wx), Y(wy + 0.65)); ctx.lineTo(X(wx + 1.4), Y(wy + 0.65)); ctx.stroke();
+    const rng = mulberry(4242);
+    const lw = (m) => Math.max(1, k * m);
+    const poly = (pts, fill, stroke, w = 0.03) => {
+      ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
+      if (fill !== null) { ctx.fillStyle = g(fill); ctx.fill(); }
+      if (stroke !== null) { ctx.strokeStyle = g(stroke); ctx.lineWidth = lw(w); ctx.stroke(); }
+    };
+    const line = (x0, y0, x1, y1, v, w) => { ctx.strokeStyle = g(v); ctx.lineWidth = lw(w); ctx.beginPath(); ctx.moveTo(X(x0), Y(y0)); ctx.lineTo(X(x1), Y(y1)); ctx.stroke(); };
+    const base = gy + 0.55;                         // top of the stone footing
+    const eL = gx - 1.1, eR = gx + W + 1.1, apex = gx + W / 2, ridge = base + WH + 3.0, eave = base + WH - 0.15;
+
+    // ── lean-to woodshed on the left, its logs stacked under the eave ──
+    poly([[gx - 2.5, gy - 0.2], [gx - 2.5, gy + 1.7], [gx, base + 2.4], [gx, gy - 0.2]], 0.16, 0.03);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      const cx = gx - 2.2 + c * 0.55 + (r % 2) * 0.27, cy = gy + 0.12 + r * 0.33;
+      ctx.beginPath(); ctx.ellipse(X(cx), Y(cy), 0.16 * k, 0.15 * k, 0, 0, TAU); ctx.fillStyle = g(0.62); ctx.fill(); ctx.strokeStyle = g(0.05); ctx.lineWidth = lw(0.02); ctx.stroke();
+      ctx.beginPath(); ctx.arc(X(cx), Y(cy), 0.06 * k, 0, TAU); ctx.strokeStyle = g(0.35); ctx.stroke();
+    }
+    poly([[gx - 2.9, gy + 1.55], [gx + 0.1, base + 2.65], [gx + 0.1, base + 2.4], [gx - 2.9, gy + 1.3]], 0.22, 0.03);
+    poly([[gx - 3.0, gy + 1.58], [gx + 0.1, base + 2.7], [gx + 0.1, base + 2.86], [gx - 2.6, gy + 1.82]], 0.95, null);
+
+    // ── stone footing: three courses running down into the ground ──
+    for (let row = 0; row < 2; row++) {
+      let x = gx - 0.25 + (row % 2) * 0.3;
+      const y0 = base - row * 0.36;
+      while (x < gx + W + 0.25) {
+        const w = 0.5 + rng() * 0.5, h = 0.34;
+        const x1 = Math.min(x + w, gx + W + 0.25);
+        ctx.beginPath();
+        ctx.moveTo(X(x + 0.04), Y(y0 - 0.02)); ctx.lineTo(X(x1 - 0.05), Y(y0 - 0.01 - rng() * 0.04));
+        ctx.lineTo(X(x1 - 0.02), Y(y0 - h + 0.04)); ctx.lineTo(X(x + 0.02), Y(y0 - h + 0.02 + rng() * 0.04)); ctx.closePath();
+        ctx.fillStyle = g(0.38 + rng() * 0.18 - row * 0.08); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.022); ctx.stroke();
+        x = x1;
+      }
+    }
+
+    // ── walls: horizontal logs with round ends at the corners ──
+    poly([[gx, base], [gx, base + WH], [gx + W, base + WH], [gx + W, base]], 0.3, 0.03);
+    for (let y = 0.0; y < WH - 0.05; y += 0.34) {
+      const yy = base + y;
+      ctx.fillStyle = g(0.36 + 0.06 * Math.sin(y * 13));
+      ctx.beginPath(); ctx.moveTo(X(gx), Y(yy + 0.3)); ctx.lineTo(X(gx + W), Y(yy + 0.3 + 0.02 * Math.sin(y * 7))); ctx.lineTo(X(gx + W), Y(yy + 0.04)); ctx.lineTo(X(gx), Y(yy + 0.04)); ctx.closePath(); ctx.fill();
+      line(gx, yy + 0.02, gx + W, yy + 0.02 + 0.015 * Math.sin(y * 5), 0.07, 0.02);
+      line(gx + 0.1, yy + 0.24, gx + W - 0.1, yy + 0.24, 0.55, 0.008);
+      for (const cx of [gx - 0.08, gx + W + 0.08]) {
+        ctx.beginPath(); ctx.ellipse(X(cx), Y(yy + 0.17), 0.13 * k, 0.15 * k, 0, 0, TAU); ctx.fillStyle = g(0.55); ctx.fill(); ctx.strokeStyle = g(0.05); ctx.lineWidth = lw(0.018); ctx.stroke();
+        ctx.beginPath(); ctx.arc(X(cx), Y(yy + 0.17), 0.05 * k, 0, TAU); ctx.stroke();
+      }
+      if (rng() < 0.5) { const kx = gx + 0.4 + rng() * (W - 0.8); ctx.beginPath(); ctx.ellipse(X(kx), Y(yy + 0.17), 0.06 * k, 0.035 * k, 0, 0, TAU); ctx.strokeStyle = g(0.12); ctx.lineWidth = lw(0.012); ctx.stroke(); }
+    }
+
+    // ── window: shutters, mullions, a frosted flower box, her spinning wheel against the warm glass ──
+    const wx = gx + 1.3, wy = base + 1.2, ww = 1.5, wh = 1.35;
+    ctx.fillStyle = g(0.97); ctx.fillRect(X(wx), Y(wy + wh), ww * k, wh * k);
+    ctx.strokeStyle = g(0.2); ctx.lineWidth = lw(0.03);
+    ctx.beginPath(); ctx.arc(X(wx + 0.95), Y(wy + 0.55), 0.42 * k, 0, TAU); ctx.stroke();
+    for (let a = 0; a < 6; a++) line(wx + 0.95, wy + 0.55, wx + 0.95 + Math.cos(a + this.time * 0.05) * 0.42, wy + 0.55 + Math.sin(a + this.time * 0.05) * 0.42, 0.25, 0.012);
+    line(wx + 0.95, wy + 0.55, wx + 0.55, wy, 0.2, 0.03); line(wx + 0.25, wy + 0.1, wx + 0.25, wy + 0.5, 0.2, 0.04);
+    ctx.strokeStyle = g(0.05); ctx.lineWidth = lw(0.07); ctx.strokeRect(X(wx), Y(wy + wh), ww * k, wh * k);
+    line(wx + ww / 2, wy, wx + ww / 2, wy + wh, 0.05, 0.05); line(wx, wy + wh / 2, wx + ww, wy + wh / 2, 0.05, 0.05);
+    poly([[wx - 0.62, wy + wh + 0.02], [wx - 0.02, wy + wh + 0.02], [wx - 0.02, wy - 0.02], [wx - 0.62, wy - 0.02]], 0.24, 0.03);
+    for (let i = 1; i < 4; i++) line(wx - 0.6, wy + i * wh / 4, wx - 0.04, wy + i * wh / 4, 0.12, 0.015);
+    ctx.save(); ctx.translate(X(wx + ww + 0.02), Y(wy + wh)); ctx.rotate(0.13);    // the right shutter hangs from one hinge
+    ctx.fillStyle = g(0.24); ctx.fillRect(0, 0, 0.6 * k, (wh + 0.04) * k); ctx.strokeStyle = g(0.03); ctx.lineWidth = lw(0.03); ctx.strokeRect(0, 0, 0.6 * k, (wh + 0.04) * k);
+    ctx.strokeStyle = g(0.12);
+    for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(0, i * wh / 4 * k); ctx.lineTo(0.6 * k, i * wh / 4 * k); ctx.stroke(); }
+    ctx.restore();
+    poly([[wx - 0.15, wy - 0.02], [wx + ww + 0.15, wy - 0.02], [wx + ww + 0.05, wy - 0.3], [wx - 0.05, wy - 0.3]], 0.3, 0.03);
+    for (let i = 0; i < 7; i++) line(wx + 0.05 + i * 0.22, wy - 0.02, wx + 0.1 + i * 0.22 + Math.sin(i * 3) * 0.06, wy + 0.25 + (i % 3) * 0.06, 0.08, 0.016);
+    poly([[wx - 0.18, wy + 0.02], [wx + ww + 0.18, wy + 0.02], [wx + ww + 0.1, wy + 0.1], [wx - 0.1, wy + 0.1]], 0.96, null);
     const fl = 0.85 + Math.sin(this.time * 11) * 0.05 + Math.sin(this.time * 6.3) * 0.06;
-    const grd = ectx.createRadialGradient(X(wx + 0.7), Y(wy + 0.65), 0, X(wx + 0.7), Y(wy + 0.65), 2.2 * k);
-    grd.addColorStop(0, `rgba(255,170,80,${0.55 * fl})`); grd.addColorStop(0.3, `rgba(255,130,50,${0.18 * fl})`); grd.addColorStop(1, 'rgba(0,0,0,0)');
-    ectx.fillStyle = grd; ectx.fillRect(X(wx + 0.7) - 2.2 * k, Y(wy + 0.65) - 2.2 * k, 4.4 * k, 4.4 * k);
-    ectx.fillStyle = `rgba(255,190,110,${0.6 * fl})`; ectx.fillRect(X(wx) + 2, Y(wy + 1.3) + 2, 1.4 * k - 4, 1.3 * k - 4);
-    // door, with the thread tied to its knob
-    ctx.fillStyle = g(0.18); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1.2, k * 0.03);
-    ctx.fillRect(X(gx + 5.6), Y(gy + 2.5), 1.3 * k, 2.5 * k); ctx.strokeRect(X(gx + 5.6), Y(gy + 2.5), 1.3 * k, 2.5 * k);
-    ctx.fillStyle = g(0.8); ctx.beginPath(); ctx.arc(X(gx + 6.65), Y(gy + 1.2), 0.07 * k, 0, TAU); ctx.fill();
-    // snow drift along the base
-    ctx.fillStyle = g(0.95);
-    ctx.beginPath(); ctx.moveTo(X(gx - 1.2), Y(gy - 0.1));
-    for (let x = -1.2; x <= 9; x += 0.5) ctx.lineTo(X(gx + x), Y(gy + 0.3 + 0.18 * Math.sin(x * 2.1)));
-    ctx.lineTo(X(gx + 9), Y(gy - 0.3)); ctx.closePath(); ctx.fill();
+    const grd = ectx.createRadialGradient(X(wx + 0.7), Y(wy + 0.65), 0, X(wx + 0.7), Y(wy + 0.65), 2.4 * k);
+    grd.addColorStop(0, `rgba(255,170,80,${0.5 * fl})`); grd.addColorStop(0.3, `rgba(255,130,50,${0.16 * fl})`); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ectx.fillStyle = grd; ectx.fillRect(X(wx + 0.7) - 2.4 * k, Y(wy + 0.65) - 2.4 * k, 4.8 * k, 4.8 * k);
+    ectx.fillStyle = `rgba(255,190,110,${0.55 * fl})`; ectx.fillRect(X(wx) + 3, Y(wy + wh) + 3, ww * k - 6, wh * k - 6);
+    const slant = ectx.createLinearGradient(0, Y(wy), 0, Y(gy - 0.1));
+    slant.addColorStop(0, `rgba(255,170,90,${0.05 * fl})`); slant.addColorStop(1, 'rgba(255,170,90,0)');
+    ectx.fillStyle = slant;     // a long slant of window light across the snow
+    ectx.beginPath(); ectx.moveTo(X(wx), Y(wy)); ectx.lineTo(X(wx + ww), Y(wy)); ectx.lineTo(X(wx + ww + 2.2), Y(gy - 0.1)); ectx.lineTo(X(wx - 0.6), Y(gy - 0.1)); ectx.closePath(); ectx.fill();
+
+    // ── door: planks, strap hinges, the knob, a worn step and an unlit lantern ──
+    const dx = gx + 5.3, dw = 1.35, dh = 2.45;
+    poly([[dx - 0.12, base], [dx - 0.12, base + dh + 0.14], [dx + dw + 0.12, base + dh + 0.14], [dx + dw + 0.12, base]], 0.5, 0.03);
+    poly([[dx, base], [dx, base + dh], [dx + dw, base + dh], [dx + dw, base]], 0.17, 0.03);
+    for (let i = 1; i < 4; i++) line(dx + i * dw / 4, base + 0.04, dx + i * dw / 4, base + dh - 0.04, 0.08, 0.015);
+    for (const hy of [base + 0.45, base + dh - 0.45]) {
+      line(dx + 0.02, hy, dx + 0.85, hy, 0.03, 0.06);
+      ctx.fillStyle = g(0.6); for (const nx of [0.15, 0.45, 0.75]) { ctx.beginPath(); ctx.arc(X(dx + nx), Y(hy), 0.022 * k, 0, TAU); ctx.fill(); }
+    }
+    ctx.fillStyle = g(0.85); ctx.beginPath(); ctx.arc(X(dx + dw - 0.22), Y(base + 1.1), 0.07 * k, 0, TAU); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.015); ctx.stroke();
+    poly([[dx - 0.35, base], [dx + dw + 0.35, base], [dx + dw + 0.45, base - 0.22], [dx - 0.45, base - 0.22]], 0.5, 0.03);
+    line(dx + dw + 0.2, base + 2.5, dx + dw + 0.6, base + 2.5, 0.04, 0.04); line(dx + dw + 0.55, base + 2.5, dx + dw + 0.55, base + 2.35, 0.04, 0.02);
+    poly([[dx + dw + 0.44, base + 2.35], [dx + dw + 0.66, base + 2.35], [dx + dw + 0.62, base + 1.98], [dx + dw + 0.48, base + 1.98]], 0.5, 0.03, 0.02);
+
+    // ── roof: rows of scalloped shingles, rafter ends, crossed gable beams, a heavy snow cap, icicles ──
+    poly([[eL, eave], [apex, ridge], [eR, eave]], 0.16, 0.03);
+    for (let r = 1; r < 9; r++) {
+      const t = r / 9, yl = eave + (ridge - eave) * t, xl = eL + (apex - eL) * t, xr = eR - (eR - apex) * t;
+      ctx.strokeStyle = g(0.07); ctx.lineWidth = lw(0.016);
+      ctx.beginPath(); ctx.moveTo(X(xl), Y(yl));
+      for (let x = xl; x < xr; x += 0.36) { const x2 = Math.min(xr, x + 0.36); ctx.quadraticCurveTo(X((x + x2) / 2), Y(yl - 0.1), X(x2), Y(yl)); }
+      ctx.stroke();
+      for (let x = xl + (r % 2) * 0.18; x < xr; x += 0.36) line(x, yl, x, yl - (ridge - eave) / 9 + 0.05, 0.1, 0.008);
+    }
+    for (let x = eL + 0.25; x < eR; x += 0.62) { ctx.fillStyle = g(0.45); ctx.fillRect(X(x), Y(eave), 0.12 * k, 0.12 * k); }
+    line(apex - 0.5, ridge - 0.25, apex + 0.6, ridge + 0.55, 0.05, 0.08); line(apex + 0.5, ridge - 0.25, apex - 0.6, ridge + 0.55, 0.05, 0.08);
+    ctx.fillStyle = g(0.97); ctx.beginPath();
+    ctx.moveTo(X(eL - 0.12), Y(eave + 0.02)); ctx.lineTo(X(apex), Y(ridge + 0.2)); ctx.lineTo(X(eR + 0.12), Y(eave + 0.02));
+    for (let x = eR; x > eL; x -= 0.3) {
+      const t = 1 - Math.abs(x - apex) / (eR - apex);
+      ctx.lineTo(X(x), Y(eave + (ridge - eave) * t - 0.42 - 0.1 * Math.sin(x * 4.3) - 0.06 * Math.sin(x * 11)));
+    }
+    ctx.closePath(); ctx.fill(); ctx.strokeStyle = g(0.55); ctx.lineWidth = lw(0.012); ctx.stroke();
+    for (let x = eL + 0.2; x < eR - 0.1; x += 0.23) {
+      const L2 = 0.08 + Math.abs(Math.sin(x * 7.1)) * 0.38 * (Math.sin(x * 2.3) > -0.3 ? 1 : 0.2);
+      ctx.beginPath(); ctx.moveTo(X(x - 0.05), Y(eave - 0.02)); ctx.lineTo(X(x), Y(eave - 0.04 - L2)); ctx.lineTo(X(x + 0.05), Y(eave - 0.02)); ctx.closePath();
+      ctx.fillStyle = g(0.92); ctx.fill(); ctx.strokeStyle = g(0.3); ctx.lineWidth = lw(0.006); ctx.stroke();
+    }
+    // ── chimney: coursed stone, a snow cap, smoke ──
+    const cx0 = gx + 5.5, cw = 0.85, cb = eave + (ridge - eave) * (1 - (cx0 + cw - apex) / (eR - apex)) - 0.3, ct = ridge + 0.9;
+    poly([[cx0, cb], [cx0 + 0.06, ct], [cx0 + cw + 0.06, ct], [cx0 + cw, cb]], 0.4, 0.03);
+    for (let y = cb + 0.2; y < ct - 0.05; y += 0.24) {
+      const o = (Math.round((y - cb) / 0.24) % 2) * 0.2;
+      line(cx0 + 0.02, y, cx0 + cw + 0.04, y, 0.1, 0.012);
+      for (let x = cx0 + 0.15 + o; x < cx0 + cw; x += 0.38) line(x, y, x, Math.min(ct, y + 0.24), 0.1, 0.012);
+    }
+    poly([[cx0 - 0.1, ct], [cx0 + cw + 0.16, ct], [cx0 + cw + 0.12, ct + 0.18], [cx0 - 0.06, ct + 0.18]], 0.55, 0.03);
+    poly([[cx0 - 0.12, ct + 0.17], [cx0 + cw + 0.18, ct + 0.17], [cx0 + cw + 0.05, ct + 0.32], [cx0 + 0.02, ct + 0.34]], 0.97, null);
+    if (Math.random() < 0.07) this.spawn('smoke', cx0 + cw / 2, ct + 0.35, 1, { speed: 0.2, vy: 0.6, vx: 0.25, life: 4.5, r: 0.5 });
+
+    // ── yard: a rain barrel, a broken fence, snow banked against the walls ──
+    const bx = gx + W + 0.45;
+    poly([[bx, gy - 0.1], [bx - 0.05, gy + 1.0], [bx + 0.85, gy + 1.0], [bx + 0.8, gy - 0.1]], 0.33, 0.03);
+    for (const by of [gy + 0.2, gy + 0.78]) line(bx - 0.03, by, bx + 0.83, by, 0.06, 0.04);
+    poly([[bx - 0.08, gy + 1.0], [bx + 0.93, gy + 1.0], [bx + 0.85, gy + 1.12], [bx, gy + 1.12]], 0.96, null);
+    for (let i = 0; i < 5; i++) {
+      const fx = gx - 7.4 + i * 0.95, lean = Math.sin(i * 1.7) * 0.12;
+      const fy = (T.ground(fx, gy + 3, 6) ?? gy) - 0.15;
+      const top = fy + 1.0 + Math.sin(i * 2.3) * 0.18;
+      line(fx, fy, fx + lean, top, 0.05, 0.075);
+      line(fx, fy, fx + lean, top, 0.6, 0.02);
+      if (i < 4 && i !== 2) line(fx + lean * 0.6, fy + 0.6, fx + 0.95, fy + 0.55 + Math.sin(i) * 0.1, 0.06, 0.04);
+    }
+    // snow drifts that hug the real ground, so the house sits in its yard
+    const top = [], bot = [];
+    for (let x = gx - 3.2; x <= gx + W + 2.01; x += 0.3) {
+      const gr = T.ground(x, gy + 2.5, 6) ?? gy;
+      const edge = Math.min(1, (x - (gx - 3.2)) / 1.2, (gx + W + 2.0 - x) / 1.2);
+      const bank = ((x > gx - 0.3 && x < gx + W + 0.3 ? 0.42 : 0.16) + 0.1 * Math.sin(x * 2.1) + 0.05 * Math.sin(x * 5.3)) * edge;
+      top.push([x, gr + bank]); bot.push([x, gr - 0.12]);
+    }
+    ctx.fillStyle = g(0.95); ctx.beginPath();
+    top.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
+    for (let i = bot.length - 1; i >= 0; i--) ctx.lineTo(X(bot[i][0]), Y(bot[i][1]));
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = g(0.5); ctx.lineWidth = lw(0.01); ctx.stroke();
   }
 
   drawTrees(ctx) {
@@ -317,7 +504,7 @@ export class Drawer {
       ctx.lineWidth = Math.max(0.8, k * 0.02); ctx.strokeStyle = g(0.75);
       ctx.beginPath(); ctx.arc(X, Y, 0.22 * k, -2.4, -1.2); ctx.stroke();
       const pl = this.w.player;
-      const near = !pl.grounded && !pl.dead && Math.hypot(h.x - pl.bx, h.y - pl.by) < 5.5 && h.y > pl.by - 0.2;
+      const near = !pl.grounded && !pl.dead && Math.hypot(h.x - pl.bx, h.y - pl.by) < SNAG_R + 0.4 && h.y > pl.by - 0.2;
       if (near) { ectx.strokeStyle = `rgba(255,70,50,${0.35 + 0.25 * Math.sin(this.time * 12)})`; ectx.lineWidth = 2; ectx.beginPath(); ectx.arc(X, Y, 0.3 * k, 0, TAU); ectx.stroke(); }
       if (h.ring > 0) { ectx.strokeStyle = `rgba(255,80,60,${h.ring * 0.7})`; ectx.lineWidth = 2; ectx.beginPath(); ectx.arc(X, Y, 0.22 * k, 0, TAU); ectx.stroke(); }
     });
@@ -392,27 +579,46 @@ export class Drawer {
       }
     }
   }
-  drawThorns(ctx) {
-    const k = this.k;
+  drawThorns(ctx, ectx) {
+    // pale bone-white brambles: dark woody stems, long hooked spines, and a cold glint on every tip so
+    // they read even where the thread has not reached
+    const k = this.k, t = this.time;
     for (const chain of this.w.thorns) {
-      if (!chain.length || !this.vis(chain[0][0], chain[0][1], 40) && !this.vis(chain[chain.length - 1][0], chain[0][1], 40)) continue;
+      if (!chain.length) continue;
+      const x0 = chain[0][0], x1 = chain[chain.length - 1][0], yc = chain[0][1];
+      if (!(Math.max(x0, x1) > this.cam[0] - this.viewW / 2 - 2 && Math.min(x0, x1) < this.cam[0] + this.viewW / 2 + 2 && Math.abs(yc - this.cam[1]) < this.viewH / 2 + 3)) continue;
+      const stem = (v, x, y) => y + Math.sin(x * (1.3 + v * 0.7) + v * 2) * 0.22 + 0.12 + v * 0.06;
+      // stems
       for (let v = 0; v < 3; v++) {
-        ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1.2, 0.06 * k);
+        ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(2, (0.11 - v * 0.02) * k);
         ctx.beginPath();
-        chain.forEach(([x, y], i) => {
-          const yy = y + Math.sin(x * (1.3 + v * 0.7) + v * 2) * 0.28 + 0.1;
-          if (i === 0) ctx.moveTo(this.sx(x), this.sy(yy)); else ctx.lineTo(this.sx(x), this.sy(yy));
-        });
+        chain.forEach(([x, y], i) => { const yy = stem(v, x, y); if (i === 0) ctx.moveTo(this.sx(x), this.sy(yy)); else ctx.lineTo(this.sx(x), this.sy(yy)); });
+        ctx.stroke();
+        ctx.strokeStyle = g(0.55); ctx.lineWidth = Math.max(0.8, 0.025 * k);
         ctx.stroke();
       }
-      ctx.fillStyle = g(0.03);
+      // spines
       chain.forEach(([x, y], i) => {
-        if (!this.vis(x, y)) return;
+        if (!this.vis(x, y, 1)) return;
         for (let j = 0; j < 3; j++) {
-          const yy = y + Math.sin(x * (1.3 + j * 0.7) + j * 2) * 0.28 + 0.1;
-          const a = (i * 2.3 + j) % TAU, X = this.sx(x), Y = this.sy(yy);
-          ctx.beginPath(); ctx.moveTo(X - Math.sin(a) * 0.04 * k, Y - Math.cos(a) * 0.04 * k);
-          ctx.lineTo(X + Math.cos(a) * 0.2 * k, Y - Math.sin(a) * 0.2 * k); ctx.lineTo(X + Math.sin(a) * 0.04 * k, Y + Math.cos(a) * 0.04 * k); ctx.fill();
+          const yy = stem(j, x, y);
+          const h = (i * 7 + j * 3) % 5;
+          const a = -Math.PI / 2 + ((h - 2) * 0.38) + Math.sin(i * 1.7 + j) * 0.15;   // mostly upward
+          const len = (0.28 + (h % 3) * 0.1) * k;
+          const X = this.sx(x + j * 0.13), Y = this.sy(yy);
+          const tx = X + Math.cos(a) * len, ty = Y + Math.sin(a) * len;
+          const nx = -Math.sin(a) * 0.055 * k, ny = Math.cos(a) * 0.055 * k;
+          ctx.beginPath(); ctx.moveTo(X - nx, Y - ny); ctx.quadraticCurveTo(X + Math.cos(a) * len * 0.6 + nx * 0.4, Y + Math.sin(a) * len * 0.6 + ny * 0.4, tx, ty); ctx.lineTo(X + nx, Y + ny); ctx.closePath();
+          ctx.fillStyle = g(0.93); ctx.fill();
+          ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, 0.018 * k); ctx.stroke();
+          // a faint cold rim so the spine reads in the dark (sprites are otherwise lit only by the scene)
+          ectx.strokeStyle = `rgba(190,200,230,${0.16 + 0.06 * Math.sin(t * 1.3 + i)})`; ectx.lineWidth = Math.max(1.2, 0.03 * k);
+          ectx.beginPath(); ectx.moveTo(X, Y); ectx.quadraticCurveTo(X + Math.cos(a) * len * 0.6, Y + Math.sin(a) * len * 0.6, tx, ty); ectx.stroke();
+          if (j === 1 && ectx) {
+            const tw = 0.22 + 0.16 * Math.sin(t * 1.6 + i * 2.1);
+            ectx.fillStyle = `rgba(205,215,240,${tw})`;
+            ectx.beginPath(); ectx.arc(tx, ty, Math.max(1.4, 0.035 * k), 0, TAU); ectx.fill();
+          }
         }
       });
     }

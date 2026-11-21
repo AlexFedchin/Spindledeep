@@ -12,7 +12,12 @@ export class World {
     this.T = T;
     this.thread = new Thread(T);
     this.player = new Player(T);
-    const snap = (e, up = 2.2) => { const g = T.ground(e.x, e.y + up, 7); return g === null ? e : { ...e, y: g }; };
+    const snap = (e, up = 2.2) => {
+      // stand on the nearest floor; if the authored spot is inside rock, climb out to the surface above it
+      let y0 = e.y + up;
+      for (let k = 0; k < 200 && T.d(e.x, y0) < 0; k++) y0 += 0.05;
+      const g = T.ground(e.x, y0, 7); return g === null ? e : { ...e, y: g };
+    };
     this.pegs = L.PEGS.map((p, i) => ({ ...snap(p), i, tied: !!p.home, glow: p.home ? 1 : 0 }));
     this.hooks = L.HOOKS.map((h) => ({ ...h, ring: 0 }));
     this.bells = L.BELLS.map((b, i) => ({ ...snap(b), i, lit: 0, ring: 0, sway: rand(0, 6) }));
@@ -310,7 +315,7 @@ export class World {
       out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl, c: l.c, soft: 10 });
     }
     // the doll's own warmth
-    if (!p.dead) out.push({ x: p.x, y: p.y + 0.3, r: 4.0, i: 0.85 * p.scale, c: [1.0, 0.5, 0.4], soft: 12 });
+    if (!p.dead) out.push({ x: p.x, y: p.y + 0.3, r: 4.6, i: 0.9 * p.scale, c: [1.0, 0.5, 0.4], soft: 12 });
     // the thread: a light every ~0.9 m along the visible polyline
     const P = th.poly, n = th.polyN;
     let acc = 0, budget = 96, lx = P[0], ly = P[1];
@@ -322,7 +327,7 @@ export class World {
       if (acc < 0.95) continue;
       acc = 0;
       if (!vis(x, y)) continue;
-      const lit = st === 0 ? 0.3 : 0.52;
+      const lit = st === 0 ? 0.34 : 0.6;
       const d = this.T.d(x, y);
       let ox = x, oy = y;
       if (d < 0.18) { const [gx, gy] = this.T.grad(x, y); ox += gx * (0.18 - d); oy += gy * (0.18 - d); }
@@ -332,6 +337,11 @@ export class World {
     // pluck fronts
     for (const w of th.waves) if (w.fx !== undefined && vis(w.fx, w.fy)) out.push({ x: w.fx, y: w.fy, r: 6, i: 1.4 * clamp(w.life / 3, 0, 1), c: [1.0, 0.3, 0.22], soft: 8 });
     for (const b of this.bells) if (b.lit > 0 && vis(b.x, b.y)) out.push({ x: b.x, y: b.y + 1.1, r: 7.5, i: (0.75 + b.ring * 0.8) * b.lit, c: [0.85, 0.9, 0.95], soft: 9 });
+    // a cold breath of light along the brambles so the danger is always visible
+    for (const chain of this.thorns) for (let i = 0; i < chain.length; i += 6) {
+      const [x, y] = chain[i];
+      if (vis(x, y)) out.push({ x, y: y + 0.6, r: 3.2, i: 0.32, c: [0.75, 0.8, 0.95], soft: 0 });
+    }
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     if (vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });

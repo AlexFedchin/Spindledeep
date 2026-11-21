@@ -353,13 +353,19 @@ function buildPts(viewW, viewH, k) {
   }
   brk();
   // the red thread, doll → home
-  const th = W.thread, P = th.poly;
-  for (let j = 0; j < th.polyN; j++) {
+  // cull by segment, not by point: a long taut stretch (doll to a pivot far off screen) must still draw
+  const th = W.thread, P = th.poly, N = th.polyN;
+  const segV = (a, b) => {
+    if (a < 0 || b >= N || P[b * 5 + 2] === 4) return false;
+    const x0 = P[a * 5], y0 = P[a * 5 + 1], x1 = P[b * 5], y1 = P[b * 5 + 1];
+    return Math.max(x0, x1) > cam.x - mx && Math.min(x0, x1) < cam.x + mx && Math.max(y0, y1) > cam.y - my && Math.min(y0, y1) < cam.y + my;
+  };
+  for (let j = 0; j < N; j++) {
     const o = j * 5;
     let x = P[o], y = P[o + 1];
     const st = P[o + 2], arc = P[o + 3], wear = P[o + 4];
-    if (st === 4) { brk(); continue; }
-    if (!inV(x, y)) { brk(); continue; }
+    if (st === 4) brk();
+    if (!inV(x, y) && !segV(j - 1, j) && !segV(j, j + 1)) { brk(); continue; }
     const wv = th.waveAt(arc);
     if (wv && j > 0 && j < th.polyN - 1) {
       const dx = P[o + 5] - P[o - 5], dy = P[o + 6] - P[o - 4], dl = Math.hypot(dx, dy) || 1;

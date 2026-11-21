@@ -89,7 +89,7 @@ export class Thread {
   }
 
   // ── grip: freeze the thread at its last contact; the doll hangs from it ───────
-  grip(bx, by, forced = false) {
+  grip(bx, by, forced = false, slack = 0) {
     if (!this.anchored || this.locked) return false;
     let i0 = this.anchorIdx;
     for (let i = this.n - 1; i >= this.liveStart; i--) {
@@ -102,7 +102,7 @@ export class Thread {
     const p = this._clear(this.x[i0], this.y[i0]);
     this.pivots = [{ x: p[0], y: p[1], sign: 0, hook: null }];
     const straight = Math.hypot(bx - p[0], by - p[1]);
-    this.Lfree = Math.max(straight, Math.min(arc, straight + 2.5));
+    this.Lfree = Math.max(straight, Math.min(arc, straight + 2.5)) + slack;
     this.locked = true; this.forced = forced;
     return true;
   }

@@ -140,7 +140,7 @@ export function buildTerrain() {
       if (Math.abs(d) > 2.5) continue;
       // flatter tops (walkable) get less noise than walls and ceilings
       const n = (fbm(x * 0.32, y * 0.32, 4) - 0.5) * 1.25 + (fbm(x * 1.4 + 17, y * 1.4, 3) - 0.5) * 0.4;
-      const amp = y > 0.5 ? 0.5 : 1;
+      const amp = y > -2.5 && x > 8.5 && x < 20.5 ? 0.12 : y > 0.5 ? 0.5 : 1;   // the yard stays level
       solid[k] = d + n * amp < 0 ? 1 : 0;
     }
   }

@@ -3,7 +3,7 @@ import { clamp, damp } from './util.js';
 
 const R = 0.3;
 const RUN = 5.0, ACC_G = 42, ACC_A = 20, GRAV = 30, JUMP = 10.6, MAXFALL = 21;
-export const SNAG_R = 5.5;
+export const SNAG_R = 2.2;
 
 export class Player {
   constructor(T) { this.T = T; this.r = R; this.reset(0, 0); }
@@ -57,8 +57,18 @@ export class Player {
 
     // grip / release
     const budgetLeft = ctx.budgetLeft();
-    if (inp.held.grip && !this.gripLock && !th.locked && th.anchored) {
-      if (th.grip(this.bx, this.by)) this.events.push('grip');
+    // holding grip in the air while flying toward a ring: wait until the ring is in reach instead of
+    // catching on the ledge behind (so an early press is forgiving, but rings are only grabbed up close)
+    let waitRing = false;
+    if (!this.grounded && inp.held.grip && !th.locked) {
+      for (const hk of ctx.hooks) {
+        const dx = hk.x - this.bx, dy = hk.y - this.by, d = Math.hypot(dx, dy);
+        if (d < 5 && d > SNAG_R && dy > -1.6 && dx * this.vx > 0) { waitRing = true; break; }
+      }
+    }
+    if (inp.held.grip && !this.gripLock && !th.locked && th.anchored && !waitRing) {
+      // in the air a grip gives a little slack, so pressing it early in a jump still carries you to a ring
+      if (th.grip(this.bx, this.by, false, this.grounded ? 0 : 1.2)) this.events.push('grip');
     }
     if (!inp.held.grip && th.locked && !th.forced) { th.release(this.bx, this.by); this.events.push('release'); }
     if (!th.locked && th.anchored && budgetLeft <= 0.02 && this._wantsAway(th, ax)) {

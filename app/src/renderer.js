@@ -133,7 +133,7 @@ export class Renderer {
   frame(f) {
     const d = this.device, u = this.u, W = this.world;
     u[0] = this.w; u[1] = this.h; u[2] = f.cam[0]; u[3] = f.cam[1];
-    u[4] = f.viewH; u[5] = f.time; u[6] = Math.floor(f.time * 8) % 64; u[7] = f.fade || 0;
+    u[4] = f.viewH; u[5] = f.time; u[6] = Math.floor(f.time * 5) % 64; u[7] = f.fade || 0;
     u[8] = W.x0; u[9] = W.y0; u[10] = W.w; u[11] = W.h;
     u[12] = f.ambient[0]; u[13] = f.ambient[1]; u[14] = f.ambient[2]; u[15] = f.moon || 0;
     u[16] = 0.045; u[17] = 0.04; u[18] = 0.06; u[19] = 1;          // ink
