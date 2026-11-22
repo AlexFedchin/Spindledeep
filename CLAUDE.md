@@ -5,11 +5,11 @@ player's tool and nearly the only light. Source is `app/src/`, level data is `ap
 
 ## Change pages (standing rule from the user)
 
-After **every** change the user asked for, publish a changes page as an Artifact and give them the link.
+After **every** batch of changes (aka user's message) the user asked for, publish a changes page as an Artifact and give them the link. Also commit and push to main without asking.
 
 - One page per change (or per closely related group of changes made in one go), not one page for a whole session.
 - **Visual changes get before/after screenshots in a reveal slider**: the before image underneath,
-  the after image on top clipped to the right of a draggable red-thread divider. Take the *before*
+  the after image on top clipped to the right of a draggable red-thread divider. Take the _before_
   shots before editing anything visual (headless shot harness below).
 - Non-visual changes (physics, bugs) get a short explanation and, where it helps, a chart or table
   from the in-page solver instead of screenshots.
@@ -22,6 +22,14 @@ After **every** change the user asked for, publish a changes page as an Artifact
     rule), `h2` with the knot-and-rule ornament, a "You asked:" line quoting the user, `.reveal`
     sliders, `ul.what` diamond lists, `table.windows`, the `.files` grid for paths, italic footer
     linking the earlier pages
+- **Text must read as full-width paragraphs, never a narrow column.** Pages from 2026-11-21 shipped
+  with list text wrapped one word per line: `ul.what li` was a CSS grid, so `<li><b>Lead.</b> text</li>`
+  became two grid cells and the text fell into the 22 px bullet column. Rules:
+  - never put `display: grid`/`flex` on an element whose children mix inline tags and bare text
+    (`li`, `p`, captions); the template's `ul.what li` is block flow with an absolute diamond — keep it
+  - before publishing, screenshot the page at 1200 px wide (headless Edge:
+    `msedge --headless=new --window-size=1200,2600 --screenshot=out.png file:///…/index.html`) and look at
+    every list and paragraph; text lines should span the ~680 px column
 - Screenshots go in the page's `img/` folder as ~1200 px wide JPGs and are published with `files`.
 - Earlier pages: original write-up https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz,
   polish pass https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc. Add each new link to

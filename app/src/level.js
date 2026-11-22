@@ -56,7 +56,7 @@ export const OPS = [
   ['fill', B(0, -152, 120, -146.5, 0.5)],      // the floor (brambles grow on it)
 
   // ── shaft to the Mere ──────────────────────────────────────────────────────
-  ['carve', T([[109, -123, 2.4], [110, -135, 2.4], [108.5, -147, 2.4], [109.5, -160, 2.6]])],
+  ['carve', T([[109, -123, 2.4], [110, -135, 2.4], [108.5, -147, 2.4], [109.5, -160, 2.6], [107.6, -169, 2.6], [105.8, -176, 2.6]])],  // breaks through into the Mere's roof
 
   // ── the Ink Mere ───────────────────────────────────────────────────────────
   ['carve', E(60, -182, 55, 22)],
@@ -77,6 +77,7 @@ export const OPS = [
 
   // ── down to the Loom ───────────────────────────────────────────────────────
   ['carve', T([[11, -195, 2.2], [9.5, -203, 2.2], [12, -211, 2.4], [16, -217, 2.6]])],
+  ['carve', E(11.2, -193.6, 2.2, 1.5)],         // a clean mouth: the shore lip used to pinch the way in shut
   ['carve', E(36, -232, 30, 16.5)],
   ['fill', B(0, -262, 120, -246.5, 0.5)],
 ];
@@ -114,7 +115,7 @@ export const PEGS = [
   { x: 103.8, y: -121.6 },
   { x: 104, y: -194.2 },
   { x: 63.5, y: -190.4 },
-  { x: 12, y: -194.2 },
+  { x: 15.6, y: -194.2 },  // west shore, beside the way down
   { x: 18, y: -244 },
   { x: 38.6, y: 0.5 },      // the lip of the pit
   { x: 51.5, y: -25.6 },    // L3, under her memory
@@ -147,7 +148,7 @@ export const GATES = [
 ];
 
 export const SKEINS = [
-  { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 116, y: -121 }, { x: 26, y: -193.4 },
+  { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 100.6, y: -121.4 }, { x: 26, y: -193.4 },
 ];
 
 export const NESTS = [
@@ -161,7 +162,7 @@ export const NESTS = [
 // Hazards: thorn brambles (capsule chains) and the ink.
 // [x0, x1, yRef]: a bramble runs along the ground below yRef between x0 and x1
 export const THORNS = [
-  [47, 73, -58], [8, 34.4, -140], [45.9, 50, -140], [60.3, 64.4, -140], [72.9, 77, -140], [86.9, 90.2, -140], [95.8, 112, -140],
+  [47, 73, -58], [8, 34.4, -140], [45.9, 50, -140], [60.3, 64.4, -140], [72.9, 77, -140], [86.9, 90.2, -140], [95.8, 105.4, -140],
 ];
 export const INK = [{ x0: 20, x1: 99, y: -196.6 }];
 // stalactites that drip ink

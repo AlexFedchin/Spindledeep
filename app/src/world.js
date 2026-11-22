@@ -24,11 +24,19 @@ export class World {
     this.bells = L.BELLS.map((b, i) => ({ ...snap(b), i, lit: 0, ring: 0, sway: rand(0, 6) }));
     this.gates = L.GATES.map((g) => ({ ...g, open: 0 }));
     this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
-    this.thorns = L.THORNS.map(([x0, x1, yr]) => {
-      const pts = [];
-      for (let x = x0; x <= x1; x += 0.45) { const g = T.ground(x, yr, 14); if (g !== null) pts.push([x, g + 0.12]); }
-      return pts;
-    });
+    // brambles grow only on real floor: points on walls or slopes (where a ground search lands on the side of a
+    // shaft or pit) are dropped, and a run is split wherever it crosses a gap, so no invisible thorn is left behind
+    this.thorns = [];
+    for (const [x0, x1, yr] of L.THORNS) {
+      let run = [];
+      for (let x = x0; x <= x1; x += 0.45) {
+        const g = T.ground(x, yr, 14), last = run[run.length - 1];
+        const floor = g !== null && T.grad(x, g - 0.05)[1] > 0.75;
+        if (!floor || (last && (Math.abs(last[1] - g - 0.12) > 0.6 || x - last[0] > 0.7))) { if (run.length > 1) this.thorns.push(run); run = []; }
+        if (floor) run.push([x, g + 0.12]);
+      }
+      if (run.length > 1) this.thorns.push(run);
+    }
     this.ink = L.INK;
     this.drips = L.DRIPS.map((d, i) => ({ ...d, t: 1.5 + i * 1.3, drop: null, swell: 0 }));
     this.grey = buildGrey(T);
@@ -108,8 +116,11 @@ export class World {
     if (nearFinale) this.prompt = { a: 'act', t: 'Tie the two threads together' };
     else if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
     else if (nearMend) this.prompt = { a: 'act', t: 'Mend the thread' };
-    if (inp.pressed.act) {
-      if (nearFinale) { this.ending = { t: 0 }; this.emit('finale'); }
+    // reaching a peg ties the thread to it by itself, so a fall always sends you back to the last peg you passed
+    const autoTie = peg && !nearFinale && p.grounded && !th.locked;
+    if (autoTie) this.prompt = null;
+    if (inp.pressed.act || autoTie) {
+      if (nearFinale) { if (inp.pressed.act) { this.ending = { t: 0 }; this.emit('finale'); } }
       else if (peg) {
         th.tie(peg.x, peg.y + 0.35);
         peg.tied = true; this.checkpoint = peg; this.hurt = 0;
@@ -394,7 +405,6 @@ function makeHints() {
   return [
     { x0: 0, x1: 34, y0: -3, y1: 8, t: 'walk', keys: ['left', 'right', 'jump'], text: 'walk · jump', until: (w) => w.player.x > 30 },
     { x0: 34, x1: 46, y0: -3, y1: 8, t: 'wind', text: 'the thread follows you · walk back to wind it in', until: (w) => w.player.y < -3 },
-    { x0: 38, x1: 56, y0: -42, y1: -36, when: (w) => w.checkpoint !== w.pegs[1], keys: ['act'], text: 'tie the thread at a peg · it remembers the way home' },
     { x0: 38, x1: 58, y0: -60, y1: -36, when: (w) => w.checkpoint === w.pegs[1], keys: ['grip', 'up', 'down'], text: 'hold to grip the thread · climb · lower yourself over the lip', until: (w) => w.player.x < 44 && w.player.y < -46 },
     { x0: 14, x1: 40, y0: -84, y1: -68, keys: ['pluck'], text: 'pluck the thread · the moths fear its song', until: (w) => w.bells[0].lit > 0 },
     { x0: 4, x1: 30, y0: -122, y1: -104, keys: ['grip', 'jump'], text: 'grip in the air near an iron ring to swing · jump to let go', until: (w) => w.player.x > 40 },

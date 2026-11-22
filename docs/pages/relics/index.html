@@ -63,8 +63,9 @@ p { margin: 0 0 14px; }
 .solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
 
 ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
-ul.what li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 16px; }
-ul.what li::before { content: ''; width: 8px; height: 8px; margin-top: 10px; border: 1px solid var(--red); transform: rotate(45deg); }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
 ul.what.open li::before { border-color: var(--paper-dim); }
 
 table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
