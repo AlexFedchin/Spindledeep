@@ -80,6 +80,36 @@ export const OPS = [
   ['carve', E(11.2, -193.6, 2.2, 1.5)],         // a clean mouth: the shore lip used to pinch the way in shut
   ['carve', E(36, -232, 30, 16.5)],
   ['fill', B(0, -262, 120, -246.5, 0.5)],
+
+  // ── hidden rooms ───────────────────────────────────────────────────────────
+  // Each is a narrow crack off the beaten way into a small room with a keepsake. The cracks are real rock
+  // openings, visible in the thread's light but easy to walk past; erosion is kept calm around them (QUIET) so
+  // the noise pass cannot seal them.
+  // the Cellar: a slit in the moonlit ground at the far west edge, a steep ramp down to a room under her yard
+  ['carve', T([[1.4, 1.9, 0.6], [6.6, -3.6, 0.6], [8.6, -3.95, 0.6]])],
+  ['carve', E(9.6, -3.2, 2.6, 1.3)],
+  // the Diggers' Cache: a crawl at the far end of L2, where the ledge runs into the east wall
+  ['carve', T([[75.0, -15.95, 0.6], [78.5, -15.8, 0.58], [82.2, -15.55, 0.6], [85.6, -15.85, 0.62]])],
+  ['carve', E(85.8, -14.7, 3.2, 1.85)],
+  // the Seed Hollow: a crack low in G2's west wall behind the peg, sloping down
+  ['carve', T([[11.6, -80.5, 0.6], [8.8, -82.5, 0.6], [6.4, -84.6, 0.62]])],
+  ['carve', E(3.6, -84.6, 2.9, 1.7)],
+  // the Ringer's Cell: a crawl where B0 meets the gallery's west wall, behind the great bell
+  ['carve', T([[12.4, -117.15, 0.6], [9, -117.0, 0.58], [6.6, -116.7, 0.6]])],
+  ['carve', E(4.0, -116.0, 2.5, 1.6)],
+  // the Sill: a lip of rock on the shaft's east wall; swing out to it on the way down
+  ['fill', B(110.3, -157.0, 112.2, -156.1, 0.25)],
+  ['carve', T([[111.2, -155.45, 0.65], [113.6, -155.3, 0.6]])],
+  ['carve', E(116.4, -154.7, 2.7, 1.6)],
+  // the Last Basket: a crawl at the foot of the Loom's east slope
+  ['carve', T([[56.6, -243.65, 0.6], [58.6, -243.75, 0.62], [62.5, -243.6, 0.6], [66.4, -243.25, 0.62], [69.6, -243.55, 0.62]])],
+  ['carve', E(70, -242.4, 3.2, 1.8)],
+];
+
+// erosion stays calm in these rects [x0, y0, x1, y1] so the narrow cracks keep their shape
+export const QUIET = [
+  [0.5, -5.2, 12.8, 3.0], [74, -17.2, 89.6, -12.3], [0.4, -86.8, 12.6, -79.2], [1.2, -118.2, 13.2, -113.8],
+  [109.8, -157.6, 119.6, -152.6], [57.6, -244.8, 73.8, -240.0],
 ];
 
 // Areas: title card on first entry, ambience/music state, camera framing.
@@ -145,6 +175,23 @@ export const BELLS = [
 export const GATES = [
   { id: 'g2', x0: 38.9, x1: 39.9, y0: -82.6, y1: -77.2 },
   { id: 'east', x0: 105.8, x1: 112.8, y0: -123.4, y1: -122.4, floor: true },
+];
+
+// Hidden rooms (`r` is the room's ellipse, entered once for its title) and the keepsake each one hides.
+// `hide` is drawn as solid rock until the room is first entered, so only the crack's mouth shows (physics never sees it).
+export const SECRETS = [
+  { name: 'The Cellar', hide: [0.3, -5.2, 13.0, -0.6], r: [9.6, -3.2, 2.6, 1.3], x: 10.8, y: -4.4, kind: 'spool', what: 'a wooden spool',
+    text: 'Her first spool, worn smooth where her thumb sat.' },
+  { name: "The Diggers' Cache", hide: [76.5, -17.2, 89.6, -12.4], r: [85.8, -14.7, 3.2, 1.85], x: 86.6, y: -16.4, kind: 'button', what: 'a brass coat button',
+    text: 'From his coat. She kept the other five in a tin.' },
+  { name: 'The Seed Hollow', hide: [0.3, -86.8, 10.4, -81.4], r: [3.6, -84.6, 2.9, 1.7], x: 3.5, y: -86.2, kind: 'seeds', what: 'a packet of seeds',
+    text: "Sweet peas, never planted. 'For the spring,' it says." },
+  { name: "The Ringer's Cell", hide: [0.3, -118.0, 10.6, -113.6], r: [4.0, -116.0, 2.5, 1.6], x: 3.4, y: -117.4, kind: 'thimble', what: 'a silver thimble',
+    text: 'Dented on one side, from seventy winters of needles.' },
+  { name: 'The Sill', hide: [112.6, -157.0, 119.8, -152.8], r: [116.4, -154.7, 2.7, 1.6], x: 116.0, y: -156.1, kind: 'eye', what: 'a spare button eye',
+    text: 'She always sewed a spare. In case you lost one down here.' },
+  { name: 'The Last Basket', hide: [62.4, -244.6, 74.0, -240.0], r: [70, -242.4, 3.2, 1.8], x: 69.4, y: -244.0, kind: 'mitten', what: 'a half-knitted mitten',
+    text: 'Small, too small for her. One thumb, and the needles still in it.' },
 ];
 
 export const SKEINS = [

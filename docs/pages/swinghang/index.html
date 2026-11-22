@@ -1,0 +1,200 @@
+<title>Spindledeep · A Swing Has to Be Earned</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; physics fix</div>
+    <h1>A Swing Has to Be Earned</h1>
+    <p class="tag">From a dead hang she only rocks<span></span>every pass through the bottom builds on the last</p>
+  </header>
+
+  <div class="col summary">
+    <p>Hanging still against a wall, holding a direction carried the doll most of the way to horizontal in one go. Leaning pushed her sideways with a fixed force, as if someone was shoving her, so it didn't matter that she had no room or speed to build a swing.</p>
+    <p>Now a lean behaves like a child pumping a swing. It pushes along the arc, its strength grows with how fast she is already swinging, and it fades out near horizontal. From a dead hang the first swing is tiny, and the swing grows only by leaning in time, pass after pass.</p>
+  </div>
+
+  <h2>Hanging off a cliff</h2>
+  <p class="ask">When I hang off the edge of a cliff with a wall on one side and nothing on the other I can “swing” to almost like 90 degrees even though I have no space to start the swing. It should be impossible, the first swing should be only super short and only when I come to the other side it gets larger, like the real swing.</p>
+  <div class="col">
+    <p>This is a physics change, so the page uses numbers instead of screenshots. Everything below comes from the game's own physics. In the test, the doll walks off the east edge of the first Bell Gallery pillar, grips while falling, waits until she hangs still against the pillar's face, then leans away from the wall.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Hanging still against the pillar</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Hold away from the wall</td><td class="n">61.6°</td><td class="n">4.5°</td></tr>
+          <tr><td>Lean in time with the swing</td><td class="n">62.9°</td><td class="n">8.5°</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">With the wall beside her, every swing back runs into the rock and loses its speed, so she can't build up. That's what a real wall does to a real swing.</p>
+
+    <h3>In open air, from a dead hang</h3>
+    <div class="chart">
+      <div class="legend"><span><i style="background:var(--paper-dim)"></i>Before</span><span><i style="background:var(--red)"></i>After</span></div>
+      <svg viewBox="0 0 640 200" role="img" aria-label="Highest angle of each half-swing when leaning in time from a dead hang under a ring. Before: 46 degrees on the first swing, then over the top. After: 6, 16, 31, 52, 54, 81 degrees.">
+<line x1="52" x2="604" y1="170.0" y2="170.0" style="stroke:var(--rule);stroke-width:1;fill:none"/>
+<text x="44" y="174.0" text-anchor="end" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">0°</text>
+<line x1="52" x2="604" y1="132.5" y2="132.5" style="stroke:var(--rule);stroke-width:1;fill:none"/>
+<text x="44" y="136.5" text-anchor="end" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">45°</text>
+<line x1="52" x2="604" y1="95.0" y2="95.0" style="stroke:var(--rule);stroke-width:1;fill:none"/>
+<text x="44" y="99.0" text-anchor="end" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">90°</text>
+<line x1="52" x2="604" y1="20.0" y2="20.0" style="stroke:var(--rule);stroke-width:1;fill:none"/>
+<text x="44" y="24.0" text-anchor="end" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">over</text>
+<text x="52.0" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 1</text>
+<text x="162.4" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 2</text>
+<text x="272.8" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 3</text>
+<text x="383.2" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 4</text>
+<text x="493.6" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 5</text>
+<text x="604.0" y="192" text-anchor="middle" style="fill:var(--paper-dim);font-family:var(--mono);font-size:11px">swing 6</text>
+<path d="M52.0,131.8 L162.4,85.8 L272.8,33.6 L383.2,26.8 L493.6,22.4 L604.0,29.4" style="fill:none;stroke:var(--paper-dim);stroke-width:1.6;stroke-dasharray:5 4"/>
+<circle cx="52.0" cy="131.8" r="3" style="fill:var(--paper-dim)"/>
+<circle cx="162.4" cy="85.8" r="3" style="fill:var(--paper-dim)"/>
+<circle cx="272.8" cy="33.6" r="3" style="fill:var(--paper-dim)"/>
+<circle cx="383.2" cy="26.8" r="3" style="fill:var(--paper-dim)"/>
+<circle cx="493.6" cy="22.4" r="3" style="fill:var(--paper-dim)"/>
+<circle cx="604.0" cy="29.4" r="3" style="fill:var(--paper-dim)"/>
+<path d="M52.0,165.3 L162.4,156.8 L272.8,144.4 L383.2,126.8 L493.6,125.2 L604.0,102.4" style="fill:none;stroke:var(--red);stroke-width:2.2"/>
+<circle cx="52.0" cy="165.3" r="3" style="fill:var(--red)"/>
+<circle cx="162.4" cy="156.8" r="3" style="fill:var(--red)"/>
+<circle cx="272.8" cy="144.4" r="3" style="fill:var(--red)"/>
+<circle cx="383.2" cy="126.8" r="3" style="fill:var(--red)"/>
+<circle cx="493.6" cy="125.2" r="3" style="fill:var(--red)"/>
+<circle cx="604.0" cy="102.4" r="3" style="fill:var(--red)"/>
+</svg>
+    </div>
+    <p>Hanging still under a ring with clear air on both sides and leaning in time with the swing: before, the first swing went to 46° and the second went over the top of the ring. Now the swings grow 6°, 16°, 31°, 52°, 54°, then 81°. Holding one direction the whole time, without timing it, now does almost nothing, where before it reached 47°.</p>
+    <ul class="what">
+      <li><b>How the lean works now.</b> The push points along the arc instead of straight sideways, so a lean can never pull her against the thread. Its strength rises with her swing speed and reaches full power at 8 m/s; from a standstill she gets 6% of it. It also fades with the angle, so near horizontal leaning can't add height. Leaning against the swing still brakes it.</li>
+      <li><b>Walking off a ledge with grip held</b> used to leave her balanced on the rounded corner with the thread pulled flat. Now the thread keeps paying out while she rolls over the lip, so she drops into a hang under the edge. That's the situation you described, and it works from either a walk-off or a grip in mid-fall.</li>
+    </ul>
+  </div>
+
+  <h2>Every ring gap still works</h2>
+  <div class="col">
+    <p>All 12 gaps were simulated again: run-up, jump, catch, let-go at every time from 0.1 to 6 s, with grip pressed early or at the ring, and with holding forward or leaning in time. Every gap still has let-go windows in all four styles. A catch keeps a quarter of her jump speed, which is enough for the new lean to work with, so crossing a gap feels much as before. The let-go window is a little later, because the first swing builds more slowly.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Gap</th><th>First let-go</th><th>now</th><th>Lands for</th><th>now</th></tr></thead>
+        <tbody>
+          <tr><td>Gallery: west ledge → pillar 1</td><td class="n">0.7 s</td><td class="n">0.9 s</td><td class="n">3.1 s</td><td class="n">3.0 s</td></tr>
+          <tr><td>Gallery: pillar 1 → 2</td><td class="n">0.9 s</td><td class="n">1.0 s</td><td class="n">2.5 s</td><td class="n">1.8 s</td></tr>
+          <tr><td>Gallery: pillar 2 → 3</td><td class="n">0.9 s</td><td class="n">1.1 s</td><td class="n">2.5 s</td><td class="n">2.3 s</td></tr>
+          <tr><td>Gallery: pillar 3 → 4</td><td class="n">1.1 s</td><td class="n">1.2 s</td><td class="n">5.0 s</td><td class="n">0.6 s</td></tr>
+          <tr><td>Gallery: pillar 4 → 5</td><td class="n">1.0 s</td><td class="n">1.1 s</td><td class="n">2.3 s</td><td class="n">2.1 s</td></tr>
+          <tr><td>Gallery: pillar 5 → east ledge</td><td class="n">0.7 s</td><td class="n">0.9 s</td><td class="n">3.1 s</td><td class="n">2.5 s</td></tr>
+          <tr><td>Mere: east shore → isle 1</td><td class="n">0.8 s</td><td class="n">0.9 s</td><td class="n">5.3 s</td><td class="n">5.2 s</td></tr>
+          <tr><td>Mere: isle 1 → 2</td><td class="n">1.0 s</td><td class="n">1.1 s</td><td class="n">3.0 s</td><td class="n">2.1 s</td></tr>
+          <tr><td>Mere: isle 2 → 3</td><td class="n">1.1 s</td><td class="n">1.2 s</td><td class="n">5.0 s</td><td class="n">4.9 s</td></tr>
+          <tr><td>Mere: isle 3 → 4</td><td class="n">0.8 s</td><td class="n">1.0 s</td><td class="n">2.7 s</td><td class="n">2.5 s</td></tr>
+          <tr><td>Mere: isle 4 → 5</td><td class="n">0.8 s</td><td class="n">1.0 s</td><td class="n">2.8 s</td><td class="n">2.5 s</td></tr>
+          <tr><td>Mere: isle 5 → 6</td><td class="n">0.9 s</td><td class="n">0.9 s</td><td class="n">2.7 s</td><td class="n">2.5 s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">“First let-go” is the earliest let-go after the catch that lands on the next platform. “Lands for” adds up every let-go moment, in 0.1 s steps, that lands on the next platform when holding forward with an early grip. Pillar 3 → 4 is now the tightest gap if you only hold forward, at about 0.6 s of good let-go time. Leaning in time gives it 1.7 s.</p>
+    <p style="margin-top:16px">Not checked:</p>
+    <ul class="what open">
+      <li>How it feels in your hands. If the first swings feel too slow, there is a single number for that: <code>pumpStart</code>, the strength of the push from a standstill.</li>
+    </ul>
+    <div class="files">
+      <div><b><code>app/src/player.js</code></b><span>The lean pushes along the arc, scaled by swing speed (<code>pumpRef</code>, <code>pumpStart</code>) and faded near horizontal. The thread pays out while she rolls over a lip.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/JzmLpGyUBh3znCBjUsrkhB">swing</a> &middot; <a href="https://claude.ai/artifact/NWsF2b8neqxPDeXkb87drj">woodpile</a> &middot; <a href="https://claude.ai/artifact/2SAfoyAEphasPyCVz1D1Ac">relics</a> &middot; <a href="https://claude.ai/artifact/Nh1VeLbx1fMGjRYnnwYxuB">storm</a> &middot; <a href="https://claude.ai/artifact/B9a7TyCcgErULkacr4ToKs">films</a> &middot; <a href="https://claude.ai/artifact/G8XsmEWzRJh2bCP3XYXowF">dead ends</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

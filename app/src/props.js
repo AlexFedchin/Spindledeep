@@ -33,6 +33,13 @@ export const LORE = [
   ['signpost', 17.6, -193, -1],
   // the Loom
   ['baskets', 50.5, -245, 1],
+  // the hidden rooms (level.js SECRETS): each was somebody's private place
+  ['baskets', 8.2, -4, 1],             // the Cellar
+  ['lantern', 83.8, -15, 1], ['bucket', 88.4, -15, -1],         // the Diggers' Cache
+  ['markers', 1.3, -85, 1], ['pots', 5.4, -85, -1],              // the Seed Hollow
+  ['candles', 2.2, -116, 1], ['stool', 5.5, -116, -1],          // the Ringer's Cell
+  ['letters', 117.6, -155, 1], ['boots', 114.6, -155, 1],       // the Sill
+  ['baskets', 71.2, -243, 1],                                   // the Last Basket
 ];
 
 // each prop keeps a faint cold after-glow so its outline reads from a distance; a few carry their own light
@@ -100,10 +107,67 @@ class Pen {
   }
 }
 
+// the keepsakes in the hidden rooms: small things of hers, drawn at the doll's scale, bobbing a little
+export function drawKeepsakes(D, ctx, ectx) {
+  for (const k of D.w.secrets || []) {
+    if (k.taken || !k.seen || !D.vis(k.x, k.y, 2)) continue;
+    const P = new Pen(D, ctx, ectx, { x: k.x, y: k.y + 0.08 + Math.sin(D.time * 1.4 + k.bob) * 0.03, flip: 1 });
+    P.glow(0, 0.14, 0.42, `rgba(255,228,180,${0.16 + 0.06 * Math.sin(D.time * 1.7 + k.bob)})`);
+    (KEEP[k.kind] || (() => {}))(P, D.time);
+  }
+}
+const KEEP = {
+  // a wooden spool, a few turns of red still on it
+  spool(P) {
+    P.poly([[-0.1, 0.03], [0.1, 0.03], [0.1, 0.27], [-0.1, 0.27]], 0.5);
+    for (let y = 0.06; y < 0.25; y += 0.035) P.line([[-0.1, y], [0.1, y + 0.012]], 0.22, 0.012);
+    P.ell(0, 0.03, 0.15, 0.035, 0, 0.42); P.ell(0, 0.27, 0.15, 0.035, 0, 0.62);
+    P.ell(0, 0.27, 0.03, 0.01, 0, 0.1, null);
+    P.line([[0.1, 0.12], [0.2, 0.06], [0.28, 0.02]], 0.2, 0.012);
+  },
+  // a brass coat button: four holes, a scratch, a twist of old thread through two of them
+  button(P) {
+    P.ell(0, 0.13, 0.13, 0.13, 0, 0.66); P.ell(0, 0.13, 0.095, 0.095, 0, null, 0.38, 0.012);
+    for (const [x, y] of [[-0.035, 0.165], [0.035, 0.165], [-0.035, 0.095], [0.035, 0.095]]) P.ell(x, y, 0.016, 0.016, 0, 0.05, null);
+    P.line([[-0.035, 0.165], [0.035, 0.095]], 0.15, 0.01);
+    P.line([[0.05, 0.22], [0.09, 0.19]], 0.92, 0.006);
+  },
+  // a paper seed packet, folded over, a little flower drawn on it
+  seeds(P) {
+    P.poly([[-0.12, 0.0], [0.12, 0.0], [0.13, 0.3], [-0.11, 0.31]], 0.82);
+    P.poly([[-0.11, 0.31], [0.13, 0.3], [0.12, 0.24], [-0.11, 0.25]], 0.68, 0.04, 0.012);
+    P.line([[0.0, 0.05], [0.0, 0.16]], 0.3, 0.01);
+    for (let i = 0; i < 5; i++) { const a = i * 1.256; P.ell(Math.cos(a) * 0.035, 0.17 + Math.sin(a) * 0.035, 0.022, 0.016, a, 0.45, null); }
+    P.ell(0, 0.17, 0.015, 0.015, 0, 0.15, null);
+  },
+  // a silver thimble, dimpled, dented on one side
+  thimble(P) {
+    P.poly([[-0.1, 0.0], [0.1, 0.0], [0.085, 0.18], [0.05, 0.23], [-0.05, 0.23], [-0.085, 0.18]], 0.8);
+    P.ell(0, 0.0, 0.1, 0.025, 0, 0.6);
+    for (let y = 0.05; y < 0.21; y += 0.04) for (let x = -0.06; x <= 0.06; x += 0.04) P.ell(x + (y * 25 % 2) * 0.02, y, 0.008, 0.008, 0, 0.45, null);
+    P.line([[0.07, 0.1], [0.05, 0.15]], 0.35, 0.012);
+  },
+  // a black button eye with a bright shine, a loop of red thread still through it
+  eye(P) {
+    P.ell(0, 0.12, 0.11, 0.11, 0, 0.06, 0.4, 0.015);
+    P.ell(-0.03, 0.15, 0.025, 0.02, 0.4, 0.92, null);
+    P.ell(0.035, 0.12, 0.012, 0.012, 0, 0.3, null); P.ell(-0.01, 0.08, 0.012, 0.012, 0, 0.3, null);
+    P.line([[0.035, 0.12], [0.14, 0.2], [0.2, 0.12], [0.12, 0.04], [-0.01, 0.08]], 0.24, 0.012);
+  },
+  // a half-knitted mitten, one thumb, still on its needles
+  mitten(P) {
+    P.poly([[-0.12, 0.0], [0.1, 0.0], [0.13, 0.18], [0.1, 0.27], [0.0, 0.31], [-0.1, 0.27], [-0.13, 0.16]], 0.6);
+    P.poly([[0.11, 0.1], [0.2, 0.15], [0.21, 0.21], [0.15, 0.22], [0.12, 0.17]], 0.56);
+    for (let x = -0.09; x < 0.1; x += 0.035) P.line([[x, 0.01], [x, 0.07]], 0.36, 0.01);
+    for (let y = 0.11; y < 0.27; y += 0.04) P.line([[-0.1, y], [0.1, y]], 0.42, 0.006);
+    P.beam(-0.2, 0.3, 0.18, 0.4, 0.016, 0.8); P.beam(-0.16, 0.38, 0.22, 0.28, 0.016, 0.8);
+  },
+};
+
 export function drawLore(D, ctx, ectx) {
   if (!D.lore || D.w.noLore) return;
   for (const p of D.lore) {
-    if (!D.vis(p.x, p.y + 1, 5)) continue;
+    if (!D.vis(p.x, p.y + 1, 5) || D.w.hiddenAt(p.x, p.y + 0.2)) continue;
     const P = new Pen(D, ctx, ectx, p), r = mulberry(p.seed);
     (KINDS[p.kind] || (() => {}))(P, r, D.time, p);
   }

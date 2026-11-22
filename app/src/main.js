@@ -42,6 +42,7 @@ async function boot() {
     await step('carving the deep…', 0.2);
     T = buildTerrain();
     R.setWorld(T, L.WORLD);
+    R.setSDF(T.visualHalf(L.SECRETS.map((s) => s.hide)));
     await step('engraving the dark…', 0.45);
     const layers = await Promise.all(L.BACKDROPS.map(async (b) => {
       const blob = await (await fetch('assets/art/' + b.img + '.png')).blob();
@@ -120,6 +121,7 @@ function startGame(cont) {
   W = new World(T);
   D = new Drawer(W);
   if (cont) applySave(loadSave()); else localStorage.removeItem(SAVE_KEY);
+  R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
   finAPlayed = false;
   state = 'play';
   A.setMusic(null, 4);
@@ -147,7 +149,7 @@ function save() {
   const th = W.thread;
   const n = th.fixedN;
   const data = {
-    cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
+    cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
     dead: Array.from(th.dead.subarray(0, n)),
@@ -160,6 +162,7 @@ function applySave(s) {
   const th = W.thread;
   W.skeins.forEach((k, i) => (k.taken = !!s.skeins[i]));
   W.skeinCount = W.skeins.filter((k) => k.taken).length;
+  W.secrets.forEach((k, i) => { const v = (s.keeps || [])[i] || 0; k.taken = !!(v & 2); k.seen = !!(v & 1); });
   W.memories.forEach((m, i) => (m.heard = !!s.mem[i]));
   W.bells.forEach((b, i) => { if (s.bells[i]) b.lit = 1; });
   W.pegs.forEach((p, i) => (p.tied = !!s.pegs[i]));
@@ -250,6 +253,13 @@ function handleEvents() {
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
         toast(`a skein of her red yarn · ${e.n} of ${W.skeins.length}`, 3);
         break;
+      case 'secret': R.patchSDF(T.revealPatch(e.hide, W.secrets.filter((k) => !k.seen).map((k) => k.hide))); card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
+      case 'keepsake':
+        A.play('skein', { vol: 0.6, rate: 1.25, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 1.6, x: e.x, y: e.y });
+        D.spawn('pale', e.x, e.y + 0.2, 1, { speed: 0, life: 1.6 }); D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
+        toast(`${e.what} · ${e.text} · keepsake ${e.n} of ${e.of}`, 6);
+        save();
+        break;
       case 'memory': playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 }); save(); break;
       case 'area': if (state === 'play') card(e.name); else W.areaSeen.delete(e.id); A.setArea(e.id); break;
       case 'areaQuiet': A.setArea(e.id); break;
@@ -308,6 +318,8 @@ function endingUpdate(dt) {
 
 function rollCredits() {
   state = 'credits';
+  const ks = W.secrets.filter((k) => k.taken);
+  $('ckeeps').textContent = ks.length ? `${ks.length} of ${W.secrets.length} · ${ks.map((k) => k.what).join(' · ')}` : `none of ${W.secrets.length} · they are still down there`;
   show($('credits'), true);
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
   setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }, 76000);

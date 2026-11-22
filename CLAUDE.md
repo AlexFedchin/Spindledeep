@@ -45,6 +45,12 @@ After **every** batch of changes (aka user's message) the user asked for, publis
   positions must be re-verified for all 12 ring gaps.
 - Python here defaults to cp1251: run edit scripts with `PYTHONUTF8=1` or pass `encoding='utf-8'`.
 
+## Hidden rooms
+
+`level.js` `SECRETS`: each has a `hide` rect drawn as rock (visual SDF only) until the room is entered; keep that rect off
+main-cave air or the real cave gets painted over. Narrow cracks need a `QUIET` rect or erosion can seal them. Rooms must be
+walkable both ways (no side-view switchbacks: a hairpin always leaves a ledge taller than the 1.87 m jump).
+
 ## Cinematics (scripts/cine)
 
 Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) and `outro.mp4`

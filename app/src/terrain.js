@@ -1,7 +1,7 @@
 // World builder: rasterise level primitives → erode with noise → exact signed distance field (metres).
 // sdf > 0 in air, < 0 in rock. Shared by physics (collision, rope, raycasts) and the GPU (engraving, shadows).
 import { fbm, clamp } from './util.js';
-import { WORLD, OPS, surfaceY } from './level.js';
+import { WORLD, OPS, QUIET, surfaceY } from './level.js';
 
 function shapeDist(s, x, y) {
   switch (s.s) {
@@ -140,12 +140,15 @@ export function buildTerrain() {
       if (Math.abs(d) > 2.5) continue;
       // flatter tops (walkable) get less noise than walls and ceilings
       const n = (fbm(x * 0.32, y * 0.32, 4) - 0.5) * 1.25 + (fbm(x * 1.4 + 17, y * 1.4, 3) - 0.5) * 0.4;
-      const amp = y > -2.5 && x > 8.5 && x < 20.5 ? 0.12 : y > 0.5 ? 0.5 : 1;   // the yard stays level
+      let amp = y > -2.5 && x > 8.5 && x < 20.5 ? 0.12 : y > 0.5 ? 0.5 : 1;   // the yard stays level
+      for (const q of QUIET) if (x > q[0] && x < q[2] && y > q[1] && y < q[3]) { amp = Math.min(amp, 0.22); break; }
       solid[k] = d + n * amp < 0 ? 1 : 0;
     }
   }
   const sdf = sdfFromMask(W, H, solid);
-  return new Terrain(W, H, sdf);
+  const T = new Terrain(W, H, sdf);
+  T.solid = solid;
+  return T;
 }
 
 export class Terrain {
@@ -191,12 +194,44 @@ export class Terrain {
     return null;
   }
   // Float16 copy for the GPU (r16float)
-  halfData() {
-    const n = this.sdf.length;
-    if (typeof Float16Array !== 'undefined') { const a = new Float16Array(n); a.set(this.sdf); return a; }
+  halfData() { return toHalf(this.sdf); }
+  // pixel window [i0, j0, i1, j1) of a world rect [x0, y0, x1, y1] grown by m metres, clamped to the grid
+  _win(r, m) {
+    const ppm = this.ppm;
+    return [Math.max(0, Math.floor((r[0] - m - this.x0) * ppm)), Math.max(0, Math.floor((this.top - r[3] - m) * ppm)),
+      Math.min(this.W, Math.ceil((r[2] + m - this.x0) * ppm)), Math.min(this.H, Math.ceil((this.top - r[1] + m) * ppm))];
+  }
+  // the field the renderer draws: like the real one, but with the hidden rooms still filled with rock
+  _mask(i0, j0, i1, j1, hidden) {
+    const w = i1 - i0, h = j1 - j0, m = new Uint8Array(w * h);
+    for (let j = 0; j < h; j++) m.set(this.solid.subarray((j + j0) * this.W + i0, (j + j0) * this.W + i1), j * w);
+    for (const r of hidden) {
+      const [a0, b0, a1, b1] = this._win(r, 0);
+      for (let j = Math.max(b0, j0); j < Math.min(b1, j1); j++) for (let i = Math.max(a0, i0); i < Math.min(a1, i1); i++) m[(j - j0) * w + i - i0] = 1;
+    }
+    return m;
+  }
+  visualHalf(hidden) {
+    if (!hidden.length) return this.halfData();
+    return toHalf(sdfFromMask(this.W, this.H, this._mask(0, 0, this.W, this.H, hidden)));
+  }
+  // a hidden room was found: recompute the drawn field in a window around it (cheap) and hand back the patch
+  revealPatch(rect, stillHidden) {
+    const [i0, j0, i1, j1] = this._win(rect, 8);
+    const w = i1 - i0, h = j1 - j0, f = sdfFromMask(w, h, this._mask(i0, j0, i1, j1, stillHidden));
+    const [p0, q0, p1, q1] = this._win(rect, 2.5), pw = p1 - p0, ph = q1 - q0, out = new Float32Array(pw * ph);
+    for (let j = 0; j < ph; j++) out.set(f.subarray((j + q0 - j0) * w + p0 - i0, (j + q0 - j0) * w + p1 - i0), j * pw);
+    return { x: p0, y: q0, w: pw, h: ph, data: toHalf(out) };
+  }
+}
+
+function toHalf(src) {
+  {
+    const n = src.length;
+    if (typeof Float16Array !== 'undefined') { const a = new Float16Array(n); a.set(src); return a; }
     const out = new Uint16Array(n), f = new Float32Array(1), u = new Uint32Array(f.buffer);
     for (let i = 0; i < n; i++) {
-      f[0] = this.sdf[i]; const x = u[0];
+      f[0] = src[i]; const x = u[0];
       const s = (x >>> 16) & 0x8000; let e = ((x >>> 23) & 0xff) - 127 + 15; const m = x & 0x7fffff;
       out[i] = e <= 0 ? s : e >= 31 ? s | 0x7c00 : s | (e << 10) | (m >>> 13);
     }

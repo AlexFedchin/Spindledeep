@@ -3,7 +3,7 @@
 import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
 import { SNAG_R } from './player.js';
-import { drawLore } from './props.js';
+import { drawLore, drawKeepsakes } from './props.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -60,6 +60,7 @@ export class Drawer {
     this.drawPegs(ctx, ectx);
     this.drawBells(ctx, ectx);
     this.drawSkeins(ctx, ectx);
+    drawKeepsakes(this, ctx, ectx);
     this.drawMemories(ctx, ectx);
     this.drawFinale(ctx, ectx);
     this.drawDrips(ctx);

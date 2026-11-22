@@ -4,8 +4,9 @@ import { clamp, damp } from './util.js';
 const R = 0.3;
 const RUN = 5.0, ACC_G = 42, ACC_A = 20, GRAV = 30, JUMP = 10.6, MAXFALL = 21;
 // swinging: the doll is small and weak. A catch soaks up most of her speed, the arc is slow (low
-// swing gravity, a little slack on the catch), and she only builds height by leaning into each swing.
-export const SWING = { grav: 0.34, catchKeep: 0.25, catchSlack: 0.25, pumpWith: 7.5, pumpAgainst: 2.0, drag: 0.32, letgoCap: 9 };
+// swing gravity, a little slack on the catch), and she only builds height by leaning into each swing:
+// the push scales with her swing speed (pumpRef), so from a dead hang she only rocks (pumpStart).
+export const SWING = { grav: 0.34, catchKeep: 0.25, catchSlack: 0.25, pumpWith: 6.0, pumpAgainst: 2.0, pumpRef: 8.0, pumpStart: 0.06, drag: 0.32, letgoCap: 9 };
 export const SNAG_R = 2.2;
 
 export class Player {
@@ -88,8 +89,24 @@ export class Player {
       const g = this.grounded;
       // horizontal control
       if (th.locked && !g) {
-        // pump: leaning with the swing adds height, leaning against it barely does anything
-        this.vx += ax * (ax * this.vx > 0 ? SWING.pumpWith : SWING.pumpAgainst) * h;
+        // pump: a lean works like a child on a swing. It pushes along the arc (never straight sideways),
+        // its strength scales with how fast she already swings (from a dead hang it only rocks her a
+        // little; each pass through the bottom builds on the last), and it fades toward the horizontal,
+        // where shifting weight can't add height. Leaning against the swing brakes it.
+        if (ax) {
+          const P = th.pivots[th.pivots.length - 1];
+          const rx = this.bx - P.x, ry = this.by - P.y, rl = Math.hypot(rx, ry) || 1;
+          const tx = -ry / rl, ty = rx / rl;                    // tangent (horizontal part points +x below the pivot)
+          const vt = this.vx * tx + this.vy * ty;
+          const dir = Math.sign(ax * tx) || 0;                  // which way along the arc she leans
+          const low = clamp(-ry / rl, 0, 1);                    // cos of the angle from hanging straight down
+          const sp = Math.abs(vt);
+          const a = dir * vt > 0 ? SWING.pumpWith * Math.min(1, sp / SWING.pumpRef + SWING.pumpStart) * low   // with the swing
+            : sp > 0.25 ? SWING.pumpAgainst * Math.min(1, sp / SWING.pumpRef)                                 // against: brake
+              : SWING.pumpWith * SWING.pumpStart * low;                                                       // from a dead hang: a nudge
+          const s = dir * Math.abs(ax) * a * h;
+          this.vx += tx * s; this.vy += ty * s;
+        }
         this.vx *= Math.exp(-SWING.drag * h); this.vy *= Math.exp(-SWING.drag * 0.5 * h);
       } else {
         const target = ax * RUN, acc = g ? ACC_G : ACC_A;
@@ -120,11 +137,15 @@ export class Player {
         }
       }
       // the thread
-      if (th.locked && this.grounded && !th.forced && ctx.budgetLeft() > 0) {
-        // on the ground a held thread still pays out as you walk; it only catches once you fall
+      if (th.locked && !th.forced && ctx.budgetLeft() > 0) {
+        // on the ground a held thread still pays out as you walk; it only catches once you fall.
+        // Rolling over a lip with the thread still flat behind her counts as walking too, or she'd
+        // sit balanced on the corner instead of dropping into a hang under it.
         const P = th.pivots[th.pivots.length - 1];
         const dd = Math.hypot(this.bx - P.x, this.by - P.y);
-        if (dd > th.Lfree) th.Lfree = dd;
+        const onLip = !this.grounded && this.coyote > -0.8 && T.d(this.x, this.y) < R + 0.04 && P.y - this.by < 0.9 * dd;
+        if ((this.grounded || onLip) && dd > th.Lfree) th.Lfree = dd;
+        else if (onLip && dd > th.Lfree - 0.02) th.Lfree = dd + 0.02;
       }
       if (th.locked) {
         th.wrap(this.bx, this.by);

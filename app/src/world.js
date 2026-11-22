@@ -24,6 +24,8 @@ export class World {
     this.bells = L.BELLS.map((b, i) => ({ ...snap(b), i, lit: 0, ring: 0, sway: rand(0, 6) }));
     this.gates = L.GATES.map((g) => ({ ...g, open: 0 }));
     this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
+    // hidden rooms and their keepsakes
+    this.secrets = L.SECRETS.map((s, i) => ({ ...snap(s, 1.2), i, seen: false, taken: false, bob: rand(0, 6) }));
     // brambles grow only on real floor: points on walls or slopes (where a ground search lands on the side of a
     // shaft or pit) are dropped, and a run is split wherever it crosses a gap, so no invisible thorn is left behind
     this.thorns = [];
@@ -302,6 +304,14 @@ export class World {
     for (const s of this.skeins) if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.25 - p.y) < 0.95) {
       s.taken = true; this.skeinCount++; this.emit('skein', { x: s.x, y: s.y, n: this.skeinCount });
     }
+    for (const s of this.secrets) {
+      const [cx, cy, rx, ry] = s.r;
+      if (!s.seen && ((p.x - cx) / rx) ** 2 + ((p.y - cy) / ry) ** 2 < 1.0) { s.seen = true; this.emit('secret', { name: s.name, hide: s.hide, x: p.x, y: p.y }); }
+      if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9) {
+        s.taken = true;
+        this.emit('keepsake', { x: s.x, y: s.y, what: s.what, text: s.text, n: this.secrets.filter((q) => q.taken).length, of: this.secrets.length });
+      }
+    }
   }
   _memories() {
     const p = this.player;
@@ -316,6 +326,9 @@ export class World {
       if (p.x > h.x0 && p.x < h.x1 && p.y > h.y0 && p.y < h.y1) { this.hint = h; if (h.until && h.until(this)) h.done = true; break; }
     }
   }
+
+  // inside a hidden room nobody has found yet (drawn as rock, so nothing in it is drawn either)
+  hiddenAt(x, y) { return this.secrets.some((s) => !s.seen && x > s.hide[0] && x < s.hide[2] && y > s.hide[1] - 0.5 && y < s.hide[3]); }
 
   // ── lights for the renderer ────────────────────────────────────────────
   lights(cam, viewW, viewH) {
@@ -359,7 +372,9 @@ export class World {
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     if (vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
-    if (!this.noLore) out.push(...loreLights(this.lore, t, vis));
+    // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
+    for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
+    if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     if (this.extraLights) out.push(...this.extraLights);
     return out;
   }
