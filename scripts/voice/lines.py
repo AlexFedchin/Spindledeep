@@ -8,6 +8,19 @@ PERSONA = ("Female, about eighty, a frail old grandmother who knits: a soft, sli
 
 WRONG = {'m6': 0.55, 'fin_a': 0.3}
 
+# Re-recording (2026-11-22) for a voice that sounds old: candidate voice descriptions for casting (cast.py tries each
+# with several seeds and keeps the one that measures oldest, see age.py), and the sentence the candidates read.
+PERSONAS = [
+    "Female, eighty-eight years old, a very old and frail grandmother: a thin, papery, quavering voice that trembles and "
+    "wobbles on every held vowel, hoarse and cracked, low and dull with age, airy and breathy, speaking slowly with small "
+    "catches of breath between phrases; clear English diction.",
+    "An elderly woman in her late eighties with a weak, shaky, raspy old voice: tremulous and croaky, worn thin by age, "
+    "lower than a young woman's, soft and slow, the words a little loose on old lips; English.",
+    "A very old lady, about ninety: a dry, crackly, wavering voice with a strong tremolo, low-pitched for a woman, breathy "
+    "and frail, hesitant, the voice of a great-grandmother by the fire; slow, clear English.",
+]
+REF_TEXT = "I've kept this cottage seventy winters, and I'll keep it a while yet. Sit by the fire, little one, and mind the yarn."
+
 LINES = {
     'm0': ("I've gone down after the light, little one. Don't follow me. ...But if you do, keep hold of the thread. Never let go of the thread.",
            'A note left behind for someone she loves: gentle and reassuring, a pause before "But if you do", then the last sentence slower and a little too insistent.'),

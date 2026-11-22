@@ -1,0 +1,206 @@
+<title>Spindledeep · Seventy Winters in Her Voice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    table.windows td, table.windows th { white-space: normal; vertical-align: top; }
+    .pair { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 18px; padding: 12px 14px; border: 1px solid var(--rule); background: var(--ink-2); }
+    .pair .who { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); }
+    .pair label { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; color: var(--paper); }
+    .pair audio { flex: 1; height: 32px; min-width: 0; }
+    details.seal { margin: 26px 0 10px; border: 1px solid var(--rule); background: var(--ink-2); }
+    details.seal > summary { cursor: pointer; list-style: none; padding: 20px 24px; text-align: center; font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--red); }
+    details.seal > summary::-webkit-details-marker { display: none; }
+    details.seal > summary span { display: block; margin-top: 8px; font-family: 'IM Fell English', serif; font-style: italic; text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--paper-dim); }
+    details.seal .inner { padding: 0 20px 18px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; voice</div>
+    <h1>Seventy Winters in Her Voice</h1>
+    <p class="tag">Her lines re-recorded to sound old<span></span>and the first recording kept, one word away</p>
+  </header>
+
+  <div class="col summary">
+    <p>Her lines now sound like an old woman's: lower, with an unsteady, breathy quality and a slow tremor. They're also one consistent woman from the first line to the last. The first recording isn't gone: it's kept beside the new one, and the game switches between them with one word.</p>
+  </div>
+
+  <h2>Listen</h2>
+  <p class="ask">Try re-recording first, but do not completely remove the old variant. Leave it there in case I wanna switch it back. Do your best in making the voice sound old.</p>
+  <div class="col">
+    <p>The first line, the note she leaves at the lip of the pit, new and old side by side:</p>
+      <div class="pair"><span class="who">Line 1 · the note</span>
+        <label>Old <audio controls preload="none" src="audio/m0_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m0_young.ogg"></audio></label></div>
+
+    <details class="seal">
+      <summary>The other eight lines &middot; spoilers<span>Their words give the story away. Open after you've played.</span></summary>
+      <div class="inner">
+      <div class="pair"><span class="who">Line 2</span>
+        <label>Old <audio controls preload="none" src="audio/m1_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m1_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 3</span>
+        <label>Old <audio controls preload="none" src="audio/m2_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m2_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 4</span>
+        <label>Old <audio controls preload="none" src="audio/m3_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m3_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 5</span>
+        <label>Old <audio controls preload="none" src="audio/m4_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m4_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 6</span>
+        <label>Old <audio controls preload="none" src="audio/m5_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m5_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 7</span>
+        <label>Old <audio controls preload="none" src="audio/m6_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/m6_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 8</span>
+        <label>Old <audio controls preload="none" src="audio/fin_a_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/fin_a_young.ogg"></audio></label></div>
+      <div class="pair"><span class="who">Line 9</span>
+        <label>Old <audio controls preload="none" src="audio/fin_b_old.ogg"></audio></label>
+        <label>Young <audio controls preload="none" src="audio/fin_b_young.ogg"></audio></label></div>
+      </div>
+    </details>
+  </div>
+
+  <h2>How it was done</h2>
+  <div class="col">
+    <p>I can't listen, so I built an ear out of measurements. An old woman's voice differs from a young one's in ways you can measure: it sits lower (women in their eighties are typically around 150–175 Hz, young women around 200–230 Hz), the pitch wobbles from cycle to cycle, there's more breath and roughness, and a slow tremor rides on held vowels.</p>
+    <ul class="what">
+      <li><b>Casting one voice.</b> The voice model designed 24 candidate voices from three descriptions of a very old woman, all reading the same sentence. The winner, from “a very old lady, about ninety: a dry, crackly, wavering voice with a strong tremolo”, had the lowest steady pitch, the most wobble and breath, and every word right.</li>
+      <li><b>Two kinds of take per line,</b> 12 in all. Six were designed fresh from that description plus the line's delivery note, which keeps the acting. Six cloned the cast voice exactly, which keeps her one woman. That's 108 takes.</li>
+      <li><b>Choosing.</b> Each take was scored on four things: the words are right (a single wrong word rules it out), how like the cast voice it is, how old it measures, and how unhurried it is. Five lines kept their acted takes, and four went to clones, slowed by up to 15% where they hurried.</li>
+      <li><b>A light ageing touch</b> on top: a hair lower (half a semitone), a slow 5 Hz tremor of about ±¼ semitone, and a matching small swell in level.</li>
+      <li><b>Every finished file was transcribed again.</b> On one take the ageing blurred “Pluck your thread”, which is the line that teaches you to pluck, so the next-best take was used instead.</li>
+    </ul>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Shipped files</th><th class="n">Pitch, young</th><th class="n">Pitch, old</th><th class="n">Age score, young</th><th class="n">old</th></tr></thead>
+        <tbody>
+          <tr><td>Line 1</td><td class="n">163 Hz</td><td class="n">150 Hz</td><td class="n">2.2</td><td class="n">2.7</td></tr>
+          <tr><td>Line 2</td><td class="n">168 Hz</td><td class="n">152 Hz</td><td class="n">2.5</td><td class="n">2.8</td></tr>
+          <tr><td>Line 3</td><td class="n">181 Hz</td><td class="n">136 Hz</td><td class="n">1.7</td><td class="n">2.4</td></tr>
+          <tr><td>Line 4</td><td class="n">119 Hz</td><td class="n">149 Hz</td><td class="n">1.1</td><td class="n">2.9</td></tr>
+          <tr><td>Line 5</td><td class="n">204 Hz</td><td class="n">156 Hz</td><td class="n">0.7</td><td class="n">2.9</td></tr>
+          <tr><td>Line 6</td><td class="n">218 Hz</td><td class="n">166 Hz</td><td class="n">0.4</td><td class="n">2.9</td></tr>
+          <tr><td>Line 7</td><td class="n">174 Hz</td><td class="n">146 Hz</td><td class="n">2.1</td><td class="n">2.7</td></tr>
+          <tr><td>Line 8</td><td class="n">162 Hz</td><td class="n">164 Hz</td><td class="n">2.6</td><td class="n">2.9</td></tr>
+          <tr><td>Line 9</td><td class="n">122 Hz</td><td class="n">144 Hz</td><td class="n">1.2</td><td class="n">2.9</td></tr>
+          <tr><td><b>Average</b></td><td class="n">168 Hz</td><td class="n">152 Hz</td><td class="n">1.6</td><td class="n">2.8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">The age score runs from about 0 (a young woman) to 3 (a very old one). The young set ranged from 0.4 to 2.7 and from 119 to 218 Hz: effectively a different woman on every line. The new set sits at 2.4–2.9 and 136–166 Hz.</p>
+    <p style="margin-top:16px">Not checked:</p>
+    <ul class="what open">
+      <li>Whether she sounds old to you. The numbers above are the best stand-in for an ear I have, but they're not one. If any line still sounds wrong, tell me which and I'll redo just that line.</li>
+      <li>One of the two lines with a second, lower voice mixed under hers can blur one word a little. That's the effect doing its job, but it's worth a listen.</li>
+    </ul>
+  </div>
+
+  <h2>Switching back</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/audio.js</code></b><span>Near the top of the file: <code>VOICE_SET = 'voice'</code> plays the old woman; change it to <code>'voice_young'</code> for the first recording.</span></div>
+      <div><b><code>app/assets/voice_young/</code></b><span>The first recording, untouched. Its raw takes are kept too, in <code>scripts/voice/.cache/raw_young</code>.</span></div>
+      <div><b><code>scripts/voice/</code></b><span><code>age.py</code> (the measurements), <code>cast.py</code> (choosing the voice), <code>record.py</code> and <code>pick.py</code> (recording, choosing, ageing, checking).</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/WGTgv9q1fD1XJBdv9Kqnc8">a darker thread</a> &middot; <a href="https://claude.ai/artifact/MswAJ32Cd7SY1zfuP2jvV1">her own two hands</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

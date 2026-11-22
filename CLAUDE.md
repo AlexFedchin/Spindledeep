@@ -72,6 +72,15 @@ the deeper you go. The user asked **not to be spoiled**: never put plot content 
 of a changes page; describe structure only and put the plot behind a sealed `<details>` block. Any new line, keepsake
 or prop must fit the escalation map in `docs/STORY.md` (nothing at a shallower depth may be grimmer than what's below).
 
+## Voice (scripts/voice)
+
+The knitter's lines: `lines.py` (script, delivery notes, `PERSONAS`, `WRONG` lines with a lower second voice). The user
+wants her to sound old. Pipeline (Qwen venv, see memory): `cast.py` (VoiceDesign candidates scored by `age.py`: pitch,
+jitter, breathiness, tremor; I can't listen, these stand in) → `.cache/cast/ref.wav`; `record.py` (design + clone
+takes) → `pick.py` (words, likeness to ref, age, pace; light ageing fx) → `app/assets/voice/`. The first, younger
+recording is kept in `app/assets/voice_young/` (+ `.cache/raw_young`); switch with `VOICE_SET` at the top of
+`app/src/audio.js`. Keep both sets when re-recording.
+
 ## Hidden rooms
 
 `level.js` `SECRETS`: each has a `hide` rect drawn as rock (visual SDF only) until the room is entered; keep that rect off

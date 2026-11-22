@@ -1,4 +1,8 @@
 // WebAudio mix: ambience beds per area, sparse music, spatial one-shots, a harp you play with the thread.
+
+// Which recording of the knitter's voice the game plays: 'voice' = the old woman (re-recorded 2026-11-22),
+// 'voice_young' = the first recording, which came out sounding younger. Swap this one word to switch back.
+export const VOICE_SET = 'voice';
 const BASE = 'assets/audio/';
 const FILES = [
   'amb_wind', 'amb_cave', 'amb_drips', 'amb_ink', 'amb_hum',
@@ -149,7 +153,7 @@ export class Audio {
   }
   // voice lines play through their own element-free buffer path
   voice(id, onEnd) {
-    const url = 'assets/voice/' + id + '.ogg';
+    const url = 'assets/' + VOICE_SET + '/' + id + '.ogg';
     const go = (b) => {
       const c = this.ctx, src = c.createBufferSource(); src.buffer = b;
       const gn = c.createGain(); gn.gain.value = 1.0;
