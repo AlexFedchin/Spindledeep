@@ -99,6 +99,15 @@ film shows; keep its content out of pages and summaries.
   surfaces where one line family has ~zero gradient (now forced to the other family); threads built as straight
   catenaries through furniture (route them over real surfaces, see `_sill_thread`); props placed inside the log
   walls (front logs bulge to y = -0.17). Re-render only the touched shots, but re-grade all after a post.py change.
+- The knitter (`lib.knitter`, rebuilt 2026-11-22): lofted body + cardigan, face, glasses, bun, shawl, skirt; arms are
+  `arm*` (keyable offset, rest 0) → `sh*` → `fore*` → `hand*` with jointed fingers. Pose hands with `lib.hand_pose`
+  ('relax'/'hold'/'grip'/'pinch') and place them with `lib.arm_to(P, side, world_target, pole=, offset=, palm=)` (two-bone
+  IK; per frame from a FRAME_FN when the figure itself is static, see I3/I5). `lib.pinch_offset` gives the thumb-index
+  point. Seated hips are at 0.5, so seats are 0.48 high. Never key `arm*` with large values on the new rig.
+- Clipping check: `blender -b -P scripts/cine/clipcheck.py -- <shot> [frames]` builds the shot and BVH-tests her arms,
+  head and body against each other, the doll and the furniture. Run it on every shot she appears in after changes;
+  fingertip contact on the soft doll is fine, palms/cuffs/forearms/heads through things are not.
+- Review stills K1/K2/K3 in shots.py (not in either film) show the model: `render.py -- K2 --preview --still=1`.
 - EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
   negatives (offsets go through math nodes).
 

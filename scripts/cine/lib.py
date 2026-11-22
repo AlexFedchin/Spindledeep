@@ -704,41 +704,351 @@ def doll(name, loc=(0, 0, 0), scale=1.0, mats=None, pose='stand'):
     return root, P
 
 
-def knitter(name, loc=(0, 0, 0), mats=None, seated=False):
-    """the old knitter, built to be seen as a silhouette: long skirt, a shawl over her head and shoulders,
-    a bent back. Returns (root, parts)."""
-    m = mats
-    root = empty(name, loc)
-    P = {}
+def _folded_frustum(name, r0, r1, z0, z1, folds=11, depth=0.06, sx=1.0, sy=1.0, n=48, rings=10, material=None, seed=0, gap=None):
+    """a skirt-like tube from radius r0 at z0 to r1 at z1, with soft vertical folds that deepen toward the hem"""
+    rnd = random.Random(seed)
+    ph = [rnd.uniform(0, TAU) for _ in range(3)]
+    verts, faces = [], []
+    for j in range(rings + 1):
+        t = j / rings
+        r = r0 + (r1 - r0) * t
+        z = z0 + (z1 - z0) * t
+        for i in range(n):
+            th = i / n * TAU
+            k = 1 + depth * t * (math.sin(folds * th + ph[0]) * 0.7 + math.sin((folds * 2 + 3) * th + ph[1]) * 0.3)
+            verts.append((math.cos(th) * r * k * sx, math.sin(th) * r * k * sy, z))
+    for j in range(rings):
+        for i in range(n):
+            if gap:                                          # (centre angle, half width): an opening, e.g. a shawl's front
+                th = (i + 0.5) / n * TAU
+                if abs((th - gap[0] + math.pi) % TAU - math.pi) < gap[1]:
+                    continue
+            a = j * n + i; b2 = j * n + (i + 1) % n
+            faces.append((a, b2, b2 + n, a + n))
+    return mesh_obj(name, verts, faces, material, smooth=True)
 
-    def part(o, key=None):
-        parent(o, root, keep=False)
-        if key:
-            P[key] = o
+
+def _limb(name, length, r0, r1, material, vertices=16):
+    """a tapered cylinder hanging along -Z from its origin (the joint): radius r0 at the joint, r1 at the far end"""
+    return prim('cone', name, loc=(0, 0, -length / 2), material=material, vertices=vertices, radius1=r1, radius2=r0, depth=length)
+
+
+def _hand(name, s, m, P):
+    """a bony old hand on an empty at the wrist: fingers along -Z, palm toward the body's midline (-s X), thumb in
+    front (-Y). Each finger is two jointed segments; P gets the joint empties so hand_pose can curl them."""
+    h = empty(name + f'_hand{s}')
+    skin = m['skin']
+    parent(prim('sphere', name + f'_palm{s}', loc=(0, -0.002, -0.045), scale=(0.016, 0.034, 0.046), material=skin, segments=20, ring_count=12), h, keep=False)
+    for k, y in enumerate((-0.022, -0.0075, 0.0075, 0.022)):
+        parent(prim('sphere', name + f'_knuckle{s}{k}', loc=(s * 0.006, y * 1.05, -0.086), scale=(0.0085, 0.0085, 0.008), material=skin, segments=10, ring_count=6), h, keep=False)
+        parent(prim('cyl', name + f'_vein{s}{k}', loc=(s * 0.0135, y * 0.6, -0.052), rot=(y * 2.0, 0, 0), scale=(0.0016, 0.0016, 0.026), material=skin, vertices=6), h, keep=False)
+    fingers = []
+    for k, (y, l1, l2) in enumerate(((-0.022, 0.03, 0.026), (-0.0075, 0.034, 0.028), (0.0075, 0.032, 0.026), (0.022, 0.025, 0.021))):
+        j1 = empty(name + f'_f{s}{k}a', (0, y, -0.088)); parent(j1, h, keep=False)
+        parent(_limb(name + f'_f{s}{k}seg1', l1, 0.0075, 0.0068, skin, 10), j1, keep=False)
+        j2 = empty(name + f'_f{s}{k}b', (0, 0, -l1)); parent(j2, j1, keep=False)
+        parent(prim('sphere', name + f'_f{s}{k}joint', scale=(0.0074, 0.0074, 0.0074), material=skin, segments=10, ring_count=6), j2, keep=False)
+        parent(_limb(name + f'_f{s}{k}seg2', l2, 0.0066, 0.0055, skin, 10), j2, keep=False)
+        parent(prim('sphere', name + f'_f{s}{k}tip', loc=(0, 0, -l2), scale=(0.0057, 0.0057, 0.0057), material=skin, segments=10, ring_count=6), j2, keep=False)
+        end = empty(name + f'_f{s}{k}end', (0, 0, -l2)); parent(end, j2, keep=False)
+        fingers.append((j1, j2, end))
+    t1 = empty(name + f'_thumb{s}a', (-s * 0.006, -0.026, -0.03)); parent(t1, h, keep=False)
+    parent(_limb(name + f'_thumb{s}seg1', 0.032, 0.0085, 0.0078, skin, 10), t1, keep=False)
+    t2 = empty(name + f'_thumb{s}b', (0, 0, -0.032)); parent(t2, t1, keep=False)
+    parent(_limb(name + f'_thumb{s}seg2', 0.026, 0.0074, 0.0062, skin, 10), t2, keep=False)
+    parent(prim('sphere', name + f'_thumb{s}tip', loc=(0, 0, -0.026), scale=(0.0064, 0.0064, 0.0064), material=skin, segments=10, ring_count=6), t2, keep=False)
+    tend = empty(name + f'_thumb{s}end', (0, 0, -0.026)); parent(tend, t2, keep=False)
+    P[f'fingers{s}'] = fingers; P[f'thumb{s}'] = (t1, t2, tend)
+    hand_pose(P, s, 'relax')
+    return h
+
+
+def hand_pose(P, s, pose='relax'):
+    """curl the fingers: 'relax' (soft curl), 'hold' (round an object), 'pinch' (thumb and index tip together, the
+    rest tucked), 'grip' (closed round a handle)"""
+    curls = {'relax': [(0.35, 0.3)] * 4, 'hold': [(0.75, 0.6)] * 4, 'grip': [(1.25, 1.1)] * 4,
+             'pinch': [(0.85, 0.55), (1.2, 1.0), (1.35, 1.1), (1.4, 1.1)]}[pose]
+    for (j1, j2, _), (c1, c2) in zip(P[f'fingers{s}'], curls):
+        j1.rotation_euler = (0, s * c1, 0); j2.rotation_euler = (0, s * c2, 0)
+    t1, t2, _ = P[f'thumb{s}']
+    th = {'relax': ((0.5, s * 0.5, 0), (0.0, s * 0.25, 0)), 'hold': ((0.75, s * 0.7, 0), (0, s * 0.35, 0)),
+          'grip': ((0.9, s * 1.0, 0), (0, s * 0.6, 0)), 'pinch': ((0.95, s * 0.55, 0), (0.0, s * 0.3, 0))}[pose]
+    t1.rotation_euler = th[0]; t2.rotation_euler = th[1]
+
+
+def _basis(z_down, side):
+    """rotation whose -Z points along z_down and whose X leans toward `side`"""
+    from mathutils import Matrix
+    zc = -z_down.normalized()
+    x = side - zc * side.dot(zc)
+    if x.length < 1e-6:
+        x = V((0, 1, 0)) - zc * zc.y
+    x.normalize()
+    y = zc.cross(x)
+    return Matrix((x, y, zc)).transposed()
+
+
+def arm_to(P, s, target, pole=None, offset=None, wrist=None, palm=None):
+    """two-bone IK for the knitter's arm: put the wrist (or, with `offset`, a point given in hand space such as the
+    pinch between thumb and index) at world `target`. The elbow bends toward `pole` (world direction; default out to
+    the side and back/down). Needs the shoulder's parents to be current (static, or after a view-layer update).
+    `wrist` = Euler (x, y, z) of the hand relative to the forearm; or `palm` = world direction the palm should face
+    (fingers then run along the forearm as far as that allows), e.g. (0, 0, -1) to lay a hand flat on something."""
+    from mathutils import Euler
+    sh, fore, hand = P[f'sh{s}'], P[f'fore{s}'], P[f'hand{s}']
+    L1, L2 = P['L1'], P['L2']
+    pm = sh.parent.matrix_world.copy()
+    S = pm.translation.copy()
+    Rp = pm.to_3x3().normalized()
+    side = Rp @ V((s, 0, 0))
+    if pole is None:
+        pole = (side * 0.6 + Rp @ V((0, 0.5, -0.6))).normalized()
+    pole = V(pole)
+    hand.rotation_euler = wrist or (0, 0, 0)
+    Rw = Euler(hand.rotation_euler).to_matrix()
+
+    def palm_rot(Rf):
+        n = V(palm).normalized()
+        fdir = Rf @ V((0, 0, -1))
+        fdir = fdir - n * fdir.dot(n)
+        if fdir.length < 1e-4:
+            fdir = Rf @ V((0, -1, 0))
+        fdir.normalize()
+        from mathutils import Matrix
+        zc = -fdir; x = n * -s; y = zc.cross(x)
+        return Rf.inverted() @ Matrix((x, y, zc)).transposed()
+    T = V(target)
+    W = T.copy()
+    Rs = Rf = None
+    for _ in range(4):
+        D = W - S
+        d = min(max(D.length, 0.05), (L1 + L2) * 0.999)
+        u = D.normalized()
+        ca = max(-1.0, min(1.0, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)))
+        a = math.acos(ca)
+        v = pole - u * pole.dot(u)
+        if v.length < 1e-6:
+            v = side - u * side.dot(u)
+        v.normalize()
+        E = S + (u * math.cos(a) + v * math.sin(a)) * L1
+        Wr = S + u * d
+        du = (E - S).normalized(); df = (Wr - E).normalized()
+        Rs = _basis(du, side)
+        Rf = _basis(df, Rs @ V((1, 0, 0)))
+        if palm is not None:
+            Rw = palm_rot(Rf)
+        if offset is None:
+            break
+        W = T - (Rf @ Rw) @ V(offset)
+    sh.rotation_euler = (Rp.inverted() @ Rs).to_euler()
+    fore.rotation_euler = (Rs.inverted() @ Rf).to_euler()
+    if palm is not None:
+        hand.rotation_euler = Rw.to_euler()
+
+
+def _loft(name, sections, n=40, material=None, gap=None, cap_top=True):
+    """a smooth body lofted through elliptical sections [(z, rx, ry, yoff)] (y forward is -Y); gap = (center angle,
+    half width) leaves an opening (an open cardigan front)"""
+    verts, faces = [], []
+    for (z, rx, ry, yo) in sections:
+        for i in range(n):
+            th = i / n * TAU
+            verts.append((math.cos(th) * rx, yo + math.sin(th) * ry, z))
+    def open_at(i):
+        if not gap:
+            return False
+        th = (i + 0.5) / n * TAU
+        d = (th - gap[0] + math.pi) % TAU - math.pi
+        return abs(d) < gap[1]
+    for j in range(len(sections) - 1):
+        for i in range(n):
+            if open_at(i):
+                continue
+            a = j * n + i; b2 = j * n + (i + 1) % n
+            faces.append((a, b2, b2 + n, a + n))
+    o = mesh_obj(name, verts, faces, material, smooth=True)
+    md = o.modifiers.new('sub', 'SUBSURF'); md.levels = 1; md.render_levels = 2
+    if gap:
+        so = o.modifiers.new('solid', 'SOLIDIFY'); so.thickness = 0.006; so.offset = 1.0
+    return o
+
+
+def knitter(name, loc=(0, 0, 0), mats=None, seated=False, pose=None):
+    """the old knitter: small and hunched, grey hair in a bun, wire spectacles, a cardigan over a dark dress with a
+    lace collar and an apron, a fringed shawl, a folded skirt, stockings and shoes; jointed arms (shoulder, elbow,
+    wrist) and hands with jointed fingers. Parts: 'torso' (the spine from the hips), 'head', 'arm-1'/'arm1' (shoulder
+    joints, rest 0, so a key is an offset on top of the pose), 'sh*'/'fore*'/'hand*' (set by arm_to), 'fingers*'/
+    'thumb*' (hand_pose). Facing -Y. pose: 'knit' (seated default), 'lap', 'side' (standing default)."""
+    m = mats
+    if 'linen' not in bpy.data.materials:
+        mat('linen', (0.62, 0.59, 0.52), rough=0.9, sheen=0.3, bump='noise', bump_scale=90, bump_str=0.1)
+        mat('cardigan', (0.16, 0.14, 0.14), rough=1.0, sheen=0.7, bump='knit', bump_scale=170, bump_str=0.3)
+        mat('hair', (0.62, 0.61, 0.6), rough=0.55, sheen=0.9, bump='wood', bump_scale=40, bump_str=0.4)
+        mat('eye', (0.05, 0.045, 0.05), rough=0.15)
+        mat('lace', (0.82, 0.8, 0.74), rough=0.8, bump='knit', bump_scale=120, bump_str=0.6)
+    linen, card, hair, eye, lace = (bpy.data.materials[k] for k in ('linen', 'cardigan', 'hair', 'eye', 'lace'))
+    dress, skin, shawl_m = m['cloth_dark'], m['skin'], m['wool_shawl']
+    root = empty(name, loc)
+    P = {'L1': 0.27, 'L2': 0.24}
+
+    def put(o, par):
+        parent(o, par, keep=False)
         return o
+    hipz = 0.5 if seated else 0.82          # seated: the body's underside rests on a seat 0.48 high
+    # ── legs and skirt, on the root ──
     if seated:
-        part(prim('cyl', name + '_lap', loc=(0, -0.22, 0.52), rot=(math.pi / 2 - 0.1, 0, 0), scale=(0.22, 0.18, 0.24), material=m['cloth_dark'], vertices=24))
-        part(prim('cone', name + '_skirt', loc=(0, -0.38, 0.25), scale=(0.3, 0.26, 0.28), material=m['cloth_dark'], vertices=24, radius1=1, radius2=0.7, depth=1))
-        tz = 0.82
+        for s in (-1, 1):
+            put(prim('cyl', name + f'_thigh{s}', loc=(s * 0.085, -0.19, hipz + 0.06), rot=(math.pi / 2 - 0.06, 0, 0), scale=(0.078, 0.07, 0.2), material=dress, vertices=20), root)
+            put(prim('sphere', name + f'_knee{s}', loc=(s * 0.09, -0.39, hipz + 0.05), scale=(0.07, 0.07, 0.068), material=dress, segments=20, ring_count=12), root)
+            put(prim('cone', name + f'_shin{s}', loc=(s * 0.095, -0.41, (hipz - 0.06) / 2 + 0.06), material=m['wool_dark'], vertices=14, radius1=0.032, radius2=0.042, depth=hipz - 0.06), root)
+            put(prim('sphere', name + f'_shoe{s}', loc=(s * 0.095, -0.46, 0.035), scale=(0.045, 0.1, 0.038), material=m['black'], segments=18, ring_count=10), root)
+            put(prim('cube', name + f'_heel{s}', loc=(s * 0.095, -0.39, 0.015), scale=(0.03, 0.025, 0.015), material=m['black']), root)
+        lap = put(prim('cube', name + '_lap', loc=(0, -0.2, hipz + 0.075), scale=(0.21, 0.24, 0.085), material=dress), root)
+        md = lap.modifiers.new('sub', 'SUBSURF'); md.levels = 2; md.render_levels = 2
+        drop = _folded_frustum(name + '_skirtdrop', 0.2, 0.25, hipz + 0.07, 0.12, folds=9, depth=0.09, sx=1.0, sy=0.42, material=dress, seed=3)
+        drop.location = (0, -0.4, 0); put(drop, root)
+        ap = put(prim('cube', name + '_apronlap', loc=(0, -0.24, hipz + 0.162), scale=(0.15, 0.2, 0.006), material=linen), root)
+        md = ap.modifiers.new('sub', 'SUBSURF'); md.levels = 2; md.render_levels = 2
+        ad = put(prim('cube', name + '_aprondrop', loc=(0, -0.452, hipz - 0.12), rot=(0.06, 0, 0), scale=(0.15, 0.006, 0.24), material=linen), root)
+        md = ad.modifiers.new('sub', 'SUBSURF'); md.levels = 2; md.render_levels = 2
     else:
-        part(prim('cone', name + '_skirt', loc=(0, 0, 0.45), scale=(0.34, 0.3, 0.46), material=m['cloth_dark'], vertices=28, radius1=1, radius2=0.42, depth=2))
-        tz = 1.12
-    torso = part(prim('sphere', name + '_torso', loc=(0, 0.04, tz), scale=(0.2, 0.16, 0.26), material=m['cloth_dark'], segments=24, ring_count=14), 'torso')
+        put(_folded_frustum(name + '_skirt', 0.17, 0.31, hipz + 0.04, 0.07, folds=13, depth=0.13, sx=1.0, sy=0.92, material=dress, seed=5), root)
+        put(prim('cyl', name + '_hem', loc=(0, 0, 0.07), scale=(0.31, 0.285, 0.012), material=dress, vertices=32), root)
+        for s in (-1, 1):
+            put(prim('cone', name + f'_ankle{s}', loc=(s * 0.08, -0.04, 0.06), material=m['wool_dark'], vertices=12, radius1=0.035, radius2=0.03, depth=0.08), root)
+            put(prim('sphere', name + f'_shoe{s}', loc=(s * 0.08, -0.1, 0.035), scale=(0.045, 0.1, 0.038), material=m['black'], segments=18, ring_count=10), root)
+        # the apron wraps the front of the skirt, a hair outside it
+        ap = []
+        for j in range(9):
+            t = j / 8
+            z = hipz + 0.03 + (0.2 - hipz - 0.03) * t
+            r = 0.17 + (0.31 - 0.17) * ((hipz + 0.04 - z) / (hipz + 0.04 - 0.07)) + 0.012 + 0.03 * t
+            ap.append((z, r, r * 0.92, 0.0))
+        put(_loft(name + '_apron', ap, material=linen, gap=(math.pi / 2, 1.75)), root)
+    # ── spine: hips to shoulders, hunched forward ──
+    torso = put(empty(name + '_spine', (0, 0.03, hipz)), root)
     torso.rotation_euler = (0.3, 0, 0)
-    head = part(prim('sphere', name + '_head', loc=(0, -0.08, tz + 0.3), scale=(0.09, 0.1, 0.11), material=m['skin'], segments=24, ring_count=14), 'head')
-    shawl = part(prim('sphere', name + '_shawl', loc=(0, -0.04, tz + 0.27), scale=(0.15, 0.15, 0.17), material=m['wool_shawl'], segments=24, ring_count=14), 'shawl')
-    # the shawl falls over the shoulders and back
-    part(prim('cone', name + '_shawl2', loc=(0, 0.04, tz + 0.02), rot=(0.25, 0, 0), scale=(0.3, 0.24, 0.3), material=m['wool_shawl'], vertices=28, radius1=1, radius2=0.35, depth=1))
+    P['torso'] = torso
+    # body: one lofted shape (hips, soft belly, narrow chest, the rounded upper back of a stoop), and the cardigan
+    # over it, a little larger and open down the front
+    body = [(-0.02, 0.15, 0.12, 0.01), (0.03, 0.19, 0.15, 0.01), (0.09, 0.185, 0.155, -0.02), (0.18, 0.165, 0.145, -0.03),
+            (0.27, 0.16, 0.125, -0.012), (0.35, 0.165, 0.115, 0.01), (0.42, 0.16, 0.105, 0.03), (0.47, 0.12, 0.085, 0.03),
+            (0.51, 0.055, 0.05, 0.0)]
+    put(_loft(name + '_body', body, material=dress), torso)
+    cg = [(z, rx + 0.012, ry + 0.012, yo) for (z, rx, ry, yo) in body[1:8]]
+    cg.append((0.505, 0.075, 0.065, 0.005))
+    put(_loft(name + '_cardigan', cg, material=card, gap=(-math.pi / 2, 0.42)), torso)
     for s in (-1, 1):
-        arm = part(empty(name + f'_arm{s}', (s * 0.2, 0.0, tz + 0.14)), f'arm{s}')
-        a = prim('cyl', name + f'_up{s}', loc=(0, -0.04, -0.14), rot=(0.4, 0, 0), scale=(0.05, 0.05, 0.15), material=m['cloth_dark'], vertices=12)
-        parent(a, arm, keep=False)
-        f = prim('cyl', name + f'_fore{s}', loc=(0, -0.2, -0.24), rot=(1.3, 0, 0), scale=(0.042, 0.042, 0.13), material=m['cloth_dark'], vertices=12)
-        parent(f, arm, keep=False)
-        h = prim('sphere', name + f'_hand{s}', loc=(0, -0.33, -0.27), scale=(0.035, 0.05, 0.03), material=m['skin'], segments=12, ring_count=8)
-        parent(h, arm, keep=False)
-        P[f'hand{s}'] = h
+        put(prim('cube', name + f'_pocket{s}', loc=(s * 0.115, -0.165, 0.13), rot=(-0.12, 0, -s * 0.45), scale=(0.042, 0.006, 0.036), material=card), torso)
+    for k in range(5):
+        z = 0.1 + k * 0.075
+        y = -[0.18, 0.183, 0.172, 0.142, 0.125][k] + 0.0
+        put(prim('cyl', name + f'_btn{k}', loc=(0.072, y - 0.006, z), rot=(math.pi / 2 - 0.15, 0, 0), scale=(0.008, 0.008, 0.003), material=m['button'], vertices=12), torso)
+    put(prim('cube', name + '_apronbib', loc=(0, -0.183, 0.1), rot=(-0.05, 0, 0), scale=(0.09, 0.004, 0.09), material=linen), torso)
+    st = put(prim('torus', name + '_apronstring', loc=(0, -0.01, 0.05), major_radius=0.17, minor_radius=0.005, material=linen), torso)
+    st.scale = (1.12, 0.95, 1.0)
+    # the shawl over her shoulders and back, fringed
+    # the shawl: draped from the neck over the shoulders and upper arms, in soft folds deepening toward the hem
+    # cape-like: snug at the neck, spreading over the shoulders, then falling in folds
+    top = _folded_frustum(name + '_shawltop', 0.075, 0.245, 0.545, 0.43, folds=7, depth=0.04, sx=1.0, sy=0.8, n=56, rings=6, material=shawl_m, seed=10, gap=(-math.pi / 2, 0.42))
+    shw = _folded_frustum(name + '_shawl', 0.245, 0.29, 0.432, 0.19, folds=9, depth=0.12, sx=1.0, sy=0.8, n=56, rings=12, material=shawl_m, seed=11, gap=(-math.pi / 2, 0.62))
+    for o in (top, shw):
+        o.location = (0, 0.03, 0); put(o, torso)
+        so = o.modifiers.new('solid', 'SOLIDIFY'); so.thickness = 0.008; so.offset = 1.0
+    P['shawl'] = shw
+    for k in range(26):
+        a = math.pi * 0.08 + k / 25 * math.pi * 0.84
+        if abs(a - math.pi / 2) < 0.62:
+            continue                                         # no fringe across the open front
+        x, y = math.cos(a) * 0.29, -math.sin(a) * 0.232
+        put(prim('cyl', name + f'_fringe{k}', loc=(x, y + 0.03, 0.175), rot=(0.12 + (k % 3) * 0.05, 0, 0), scale=(0.0028, 0.0028, 0.035), material=shawl_m, vertices=5), torso)
+    col = put(prim('torus', name + '_collar', loc=(0, -0.005, 0.5), rot=(0.15, 0, 0), major_radius=0.062, minor_radius=0.014, material=lace), torso)
+    col.scale = (1.0, 0.85, 1.0)
+    # ── neck and head ──
+    neck = put(empty(name + '_neck', (0, -0.02, 0.5)), torso)
+    neck.rotation_euler = (0.25, 0, 0)
+    put(prim('cone', name + '_neckm', loc=(0, 0, 0.035), material=skin, vertices=16, radius1=0.045, radius2=0.04, depth=0.08), neck)
+    head = put(empty(name + '_head', (0, 0.0, 0.07)), neck)
+    P['head'] = head
+    cran = put(prim('sphere', name + '_cranium', loc=(0, 0.01, 0.1), scale=(0.08, 0.092, 0.095), material=skin, segments=32, ring_count=20), head)
+    put(prim('sphere', name + '_jaw', loc=(0, -0.035, 0.045), scale=(0.062, 0.06, 0.05), material=skin, segments=24, ring_count=14), head)
+    put(prim('sphere', name + '_chin', loc=(0, -0.076, 0.03), scale=(0.025, 0.02, 0.02), material=skin, segments=16, ring_count=10), head)
+    for s in (-1, 1):
+        put(prim('sphere', name + f'_cheek{s}', loc=(s * 0.04, -0.068, 0.07), scale=(0.028, 0.022, 0.026), material=skin, segments=16, ring_count=10), head)
+        put(prim('sphere', name + f'_socket{s}', loc=(s * 0.03, -0.077, 0.104), scale=(0.016, 0.01, 0.011), material=eye, segments=14, ring_count=8), head)
+        put(prim('sphere', name + f'_lid{s}', loc=(s * 0.03, -0.081, 0.108), rot=(0.25, 0, 0), scale=(0.017, 0.009, 0.007), material=skin, segments=14, ring_count=8), head)
+        put(prim('sphere', name + f'_bag{s}', loc=(s * 0.031, -0.079, 0.093), scale=(0.015, 0.007, 0.005), material=skin, segments=12, ring_count=6), head)
+        put(prim('sphere', name + f'_ear{s}', loc=(s * 0.08, 0.008, 0.095), rot=(0, s * 0.3, 0), scale=(0.01, 0.018, 0.028), material=skin, segments=14, ring_count=8), head)
+        put(prim('sphere', name + f'_lobe{s}', loc=(s * 0.081, 0.004, 0.071), scale=(0.007, 0.008, 0.009), material=skin, segments=10, ring_count=6), head)
+        put(prim('torus', name + f'_rim{s}', loc=(s * 0.031, -0.094, 0.104), rot=(math.pi / 2, 0, 0), major_radius=0.016, minor_radius=0.0013, material=m['iron']), head)
+        put(prim('cyl', name + f'_temple{s}', loc=(s * 0.064, -0.045, 0.106), rot=(math.pi / 2, 0, 0), scale=(0.0012, 0.0012, 0.05), material=m['iron'], vertices=6), head)
+        put(prim('cyl', name + f'_fold{s}', loc=(s * 0.026, -0.08, 0.062), rot=(0.25, s * 0.35, 0), scale=(0.0018, 0.0018, 0.018), material=skin, vertices=6), head)
+    put(prim('cyl', name + '_bridge', loc=(0, -0.096, 0.106), rot=(0, math.pi / 2, 0), scale=(0.0012, 0.0012, 0.008), material=m['iron'], vertices=6), head)
+    brow = put(prim('cube', name + '_brow', loc=(0, -0.082, 0.122), rot=(0.2, 0, 0), scale=(0.05, 0.01, 0.008), material=skin), head)
+    md = brow.modifiers.new('sub', 'SUBSURF'); md.levels = 2; md.render_levels = 2
+    put(prim('cone', name + '_nose', loc=(0, -0.093, 0.083), rot=(-math.pi / 2 + 0.35, 0, 0), material=skin, vertices=14, radius1=0.013, radius2=0.004, depth=0.036), head)
+    put(prim('sphere', name + '_nosetip', loc=(0, -0.105, 0.072), scale=(0.011, 0.01, 0.01), material=skin, segments=12, ring_count=8), head)
+    mo = put(prim('torus', name + '_mouth', loc=(0, -0.076, 0.052), rot=(math.pi / 2 - 0.2, 0, 0), major_radius=0.016, minor_radius=0.0028, material=m['wool_dark']), head)
+    mo.scale = (1.0, 0.35, 1.0)
+    displace(cran, 0.0015, 0.02)
+    hr = put(prim('sphere', name + '_hair', loc=(0, 0.022, 0.118), rot=(-0.25, 0, 0), scale=(0.083, 0.092, 0.088), material=hair, segments=32, ring_count=20), head)
+    displace(hr, 0.003, 0.012)
+    put(prim('sphere', name + '_bun', loc=(0, 0.1, 0.15), scale=(0.042, 0.036, 0.04), material=hair, segments=24, ring_count=14), head)
+    put(prim('torus', name + '_bunwrap', loc=(0, 0.1, 0.15), rot=(math.pi / 2 + 0.3, 0, 0), major_radius=0.03, minor_radius=0.011, material=hair), head)
+    put(prim('cyl', name + '_pin', loc=(0.01, 0.105, 0.17), rot=(0, 1.2, 0.3), scale=(0.0016, 0.0016, 0.045), material=m['iron'], vertices=6), head)
+    # ── arms: shoulder joint (keyable offset) → IK shoulder → elbow → wrist/hand ──
+    for s in (-1, 1):
+        arm = put(empty(name + f'_arm{s}', (s * 0.175, 0.02, 0.44)), torso)
+        P[f'arm{s}'] = arm
+        sh = put(empty(name + f'_sh{s}'), arm)
+        put(prim('sphere', name + f'_shoulder{s}', loc=(0, 0, -0.01), scale=(0.041, 0.041, 0.041), material=card, segments=18, ring_count=10), sh)
+        put(_limb(name + f'_upper{s}', P['L1'], 0.044, 0.04, card, 18), sh)
+        fore = put(empty(name + f'_fore{s}', (0, 0, -P['L1'])), sh)
+        put(prim('sphere', name + f'_elbow{s}', scale=(0.043, 0.043, 0.043), material=card, segments=16, ring_count=10), fore)
+        put(_limb(name + f'_lower{s}', P['L2'] - 0.03, 0.04, 0.032, card, 18), fore)
+        put(prim('torus', name + f'_cuff{s}', loc=(0, 0, -P['L2'] + 0.045), major_radius=0.028, minor_radius=0.007, material=card), fore)
+        put(prim('cone', name + f'_wrist{s}', loc=(0, 0, -P['L2'] + 0.015), material=skin, vertices=12, radius1=0.02, radius2=0.023, depth=0.04), fore)
+        hand = _hand(name, s, m, P)
+        hand.location = (0, 0, -P['L2'])
+        put(hand, fore)
+        P[f'sh{s}'], P[f'fore{s}'], P[f'hand{s}'] = sh, fore, hand
+    set_pose(root, P, pose or ('knit' if seated else 'side'))
     return root, P
+
+
+def knitting_needles(P, name, mats):
+    """a pair of needles, one in each hand, tips crossing in front of her, a little knitted piece hanging off them"""
+    for s in (-1, 1):
+        h = P[f'hand{s}']
+        nd = prim('cyl', name + f'_kneedle{s}', loc=(-s * 0.025, -0.035, -0.105), rot=(0.7, -s * 0.8, 0), scale=(0.0022, 0.0022, 0.1), material=mats['iron'], vertices=8)
+        parent(nd, h, keep=False)
+    sw = prim('cube', name + '_swatch', loc=(-0.07, -0.05, -0.15), rot=(0.3, 0, 0), scale=(0.05, 0.004, 0.035), material=mats['wool_grey'])
+    parent(sw, P['hand1'], keep=False)
+
+
+def pinch_offset(P, s):
+    """where thumb and index tips meet, in the hand's own frame (for arm_to's offset)"""
+    bpy.context.view_layer.update()
+    h = P[f'hand{s}'].matrix_world
+    a = P[f'fingers{s}'][0][2].matrix_world.translation; b = P[f'thumb{s}'][2].matrix_world.translation
+    return h.inverted() @ ((a + b) / 2)
+
+
+def set_pose(root, P, pose):
+    """a resting pose by IK in the figure's own frame (so it holds while the figure moves): 'knit' hands together in
+    front of the belly, 'lap' hands resting on the lap, 'side' arms down at the sides"""
+    bpy.context.view_layer.update()
+    mw = root.matrix_world
+    for s in (-1, 1):
+        if pose == 'knit':
+            tgt, wr, hp = (s * 0.08, -0.33, 0.87), (0.6, s * 0.2, -s * 0.5), 'hold'      # above a table edge at 0.79
+        elif pose == 'lap':
+            tgt, wr, hp = (s * 0.11, -0.3, 0.6), (0.9, 0, -s * 0.2), 'relax'
+        else:
+            tgt, wr, hp = (s * 0.24, -0.06, 0.37), (0.1, 0, 0), 'relax'
+        hand_pose(P, s, hp)
+        arm_to(P, s, mw @ V(tgt), wrist=wr)
+    bpy.context.view_layer.update()
 
 
 def candle(name, loc, mats, height=0.12, lit=True, energy=6.0, seed=0):

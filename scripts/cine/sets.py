@@ -336,12 +336,12 @@ def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitt
     R['spool'] = spool
     # the doll
     if doll_pose == 'lying':
-        droot, dp = lib.doll('doll', (-0.05, 0.62, 0.84), 1.0, mats)
+        droot, dp = lib.doll('doll', (-0.05, 0.62, 0.862), 1.0, mats)     # lying on the table top (0.79), not in it
         droot.rotation_euler = (-math.pi / 2 + 0.12, 0, 0.25)
     elif doll_pose == 'sill':
         droot, dp = lib.doll('doll', (0.0, 0.12, 0.99), 1.0, mats)
     else:
-        droot, dp = lib.doll('doll', (0, 0.6, 0.8), 1.0, mats)
+        droot, dp = lib.doll('doll', (0, 0.6, 0.805), 1.0, mats)          # feet on the table top, not in it
     R['doll'], R['dparts'] = droot, dp
     # the spinning wheel and its stool
     R['wheel_root'], R['wheel'] = spinning_wheel('wheel', (1.75, 1.5, 0.0), mats, red=red_shawl)
@@ -363,7 +363,8 @@ def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitt
     if knitter_on:
         kr, kp = lib.knitter('knitter', (0.0, 1.45, 0.0), mats, seated=True)
         R['knitter'], R['kparts'] = kr, kp
-        stool = prim('cube', 'kstool', loc=(0, 1.55, 0.22), scale=(0.22, 0.2, 0.22), material=mats['darkwood'])
+        stool = prim('cube', 'kstool', loc=(0, 1.55, 0.24), scale=(0.22, 0.2, 0.24), material=mats['darkwood'])
+        R['stool'] = stool
     # a cold fill so the dark keeps shape
     light('AREA', 'fill', (0.5, 3.5, 2.2), 3.0 if night else 10.0, color=(0.6, 0.65, 0.8), size=3.0, rot=(math.radians(60), 0, math.radians(180)), shadow=False)
     return R

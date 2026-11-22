@@ -1,0 +1,218 @@
+<title>Spindledeep · Her Own Two Hands</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>table.windows td, table.windows th { white-space: normal; vertical-align: top; }</style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; cinematics</div>
+    <h1>Her Own Two Hands</h1>
+    <p class="tag">The knitter, rebuilt in detail<span></span>and in the prologue it is her hands that sew and lift</p>
+  </header>
+
+  <div class="col summary">
+    <p>The old knitter was a handful of plain shapes: an egg for a head, a cone for a skirt, tubes with a ball on the end for arms. She's been rebuilt from scratch. She has a face, spectacles, grey hair in a bun, a cardigan over her dress, an apron, a fringed shawl, and arms that bend at the shoulder, elbow and wrist, ending in hands with jointed fingers.</p>
+    <p>In the prologue's sewing shot she now holds the needle herself. Her right hand pinches it and draws each stitch while her left hand steadies the doll. In the next shot it's her hands, not thin air, that take the doll by its sides and lift it.</p>
+  </div>
+
+  <h2>The new model</h2>
+  <p class="ask">Please make the model for the owner of the doll much more detailed. And the sewing scene in the intro is just the needle moving by itself, the owner should hold it and move arms and hands.</p>
+  <div class="col">
+    <figure class="solo"><img src="img/k2.jpg" alt="The knitter's face and shoulders, engraved: round spectacles, a long nose, heavy-lidded eyes, a lace collar and a buttoned cardigan"><figcaption>Face and shoulders (a review still, not in the film)</figcaption></figure>
+    <figure class="solo"><img src="img/k1.jpg" alt="The knitter seated at her table in the engraved style"><figcaption>Seated at the table</figcaption></figure>
+    <figure class="solo"><img src="img/k3.jpg" alt="The knitter standing, from three-quarters, with her shawl, apron and long skirt"><figcaption>Standing</figcaption></figure>
+    <ul class="what">
+      <li><b>Body:</b> one smooth shape with the stoop of an old woman: hips, a soft belly, a narrow chest and a rounded upper back. Seated, her thighs, knees, shins and shoes are all there. Standing, she wears a long folded skirt over stockings.</li>
+      <li><b>Face:</b> nose, brow, cheeks and chin, heavy-lidded eyes with bags under them, ears, the lines beside the mouth, and round wire spectacles with arms back to her ears. Grey hair is pulled back into a bun held by a pin.</li>
+      <li><b>Clothes:</b> a knitted cardigan, open down the front over a dark dress, with buttons and pockets; a lace collar; a linen apron; and a shawl over her shoulders with a fringe along its hem.</li>
+      <li><b>Arms and hands:</b> they bend at shoulder, elbow and wrist. Each hand has a palm, knuckles and veins, four two-jointed fingers and a thumb. The fingers take poses: relaxed, holding, gripping, or pinching between thumb and index.</li>
+    </ul>
+  </div>
+
+  <h2>Her hands do the work</h2>
+  <div class="col">
+    <p>Her arms are aimed with a small two-joint solver: give it where the hand must be, and it works out the shoulder and elbow, with the elbow bending out to the side like a real arm. In the sewing shot it runs every frame, so her hand follows the needle through the whole stitch.</p>
+
+  <h3>The last stitch, needle in</h3>
+    <div class="reveal">
+      <img src="img/sew1_before.jpg" alt="Before: the last stitch, needle in, the needle sat in the doll's eye with nobody holding it">
+      <img class="after" src="img/sew1_after.jpg" alt="After: the last stitch, needle in, her hands doing it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-sew1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>Before, the needle sat in the doll's eye with nobody holding it.</p>
+
+  <h3>The last stitch, the pull</h3>
+    <div class="reveal">
+      <img src="img/sew2_before.jpg" alt="Before: the last stitch, the pull, the needle rose out of the eye on its own">
+      <img class="after" src="img/sew2_after.jpg" alt="After: the last stitch, the pull, her hands doing it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-sew2" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>Before, the needle rose out of the eye on its own.</p>
+
+  <h3>Lifting the doll</h3>
+    <div class="reveal">
+      <img src="img/lift_before.jpg" alt="Before: lifting the doll, the doll floated up off the table by itself">
+      <img class="after" src="img/lift_after.jpg" alt="After: lifting the doll, her hands doing it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lift" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>Before, the doll floated up off the table by itself.</p>
+
+  <h3>At the window, from outside</h3>
+    <div class="reveal">
+      <img src="img/window_before.jpg" alt="Before: at the window, from outside, a plain silhouette with no hands to speak of">
+      <img class="after" src="img/window_after.jpg" alt="After: at the window, from outside, her hands doing it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-window" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>Before, a plain silhouette with no hands to speak of.</p>
+
+  <h3>Over her shoulder</h3>
+    <div class="reveal">
+      <img src="img/shoulder_before.jpg" alt="Before: over her shoulder, an egg-shaped head under a shawl">
+      <img class="after" src="img/shoulder_after.jpg" alt="After: over her shoulder, her hands doing it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shoulder" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>Before, an egg-shaped head under a shawl.</p>
+
+    <ul class="what" style="margin-top:16px">
+      <li><b>Sewing:</b> she leans in over the table. Her right hand pinches the needle near its back end, sets the tip at the button eye and draws the red thread out to the side. Her left hand cups the doll's head.</li>
+      <li><b>Lifting:</b> her hands rest on the table while the loop is tied, then reach in. The doll lifts its little arms, and she takes it by the sides and raises it as she looks up.</li>
+      <li><b>Elsewhere in the prologue:</b> at the window she knits with a pair of needles. Leaving, she grips the lantern by its handle, and the grey thread runs from her other hand.</li>
+      <li><b>In the epilogue</b> her hands are on the doll too. I'm not showing that shot here.</li>
+    </ul>
+  </div>
+
+  <h2>Nothing passes through anything</h2>
+  <div class="col">
+    <p>A new check builds each shot in Blender, steps through it, and tests whether any part of her goes inside her own head, the other arm, the doll, the table, the stool or the chair. It found and helped fix a lot that the eye would miss:</p>
+    <ul class="what">
+      <li><b>On the needle:</b> her fingers in the doll's button eye (she now holds the needle by its back), and her hand passing into her own head on the pull (it now draws out to the side).</li>
+      <li><b>Her arms:</b> a forearm through the doll's head, and hands inside the table when they rested at the knitting pose.</li>
+      <li><b>Her body:</b> hips sunk into the stool and the chair, so seats now sit exactly under her.</li>
+      <li><b>The doll:</b> it sat 1.5 cm into the table, and its feet went into it too. Both were already wrong in the old version.</li>
+      <li><b>Lifting:</b> her elbows went through the table edge, and the doll rose into her face.</li>
+      <li><b>Leaving:</b> as she went down into the pit, her skirt passed through its wall. She now goes down inside the mouth.</li>
+    </ul>
+    <p style="margin-top:14px">What remains is fingertips and a thumb pressing into the doll's knitted body as she grips it, which is what a hand on soft yarn does.</p>
+    <p style="margin-top:16px">Not checked:</p>
+    <ul class="what open">
+      <li>How the motion feels at full speed. I checked sampled frames, and stills can't show timing. Each move is a few numbers in <code>shots.py</code> if anything looks off.</li>
+    </ul>
+    <div class="files">
+      <div><b><code>scripts/cine/lib.py</code></b><span>The new knitter, hands and finger poses, the arm solver, knitting needles.</span></div>
+      <div><b><code>scripts/cine/shots.py</code></b><span>Sewing, lifting, knitting, lantern and thread done by her hands; review stills K1–K3.</span></div>
+      <div><b><code>scripts/cine/clipcheck.py</code></b><span>The check for things passing through each other.</span></div>
+      <div><b><code>scripts/cine/sets.py</code></b><span>Seats at her height; the doll on the table, not in it.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/RqUUscR5hSEKuRaCpLP4Rm">clean films, kept runs</a> &middot; <a href="https://claude.ai/artifact/WB3XZc4gqW8iqyPkNFtitx">the ghost on the title screen</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

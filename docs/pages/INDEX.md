@@ -17,6 +17,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 9. A darker thread: story rewrite (`story/`, plot sealed) | https://claude.ai/artifact/WGTgv9q1fD1XJBdv9Kqnc8 |
 | 10. Clean films, kept runs (`filmfix/`) | https://claude.ai/artifact/RqUUscR5hSEKuRaCpLP4Rm |
 | 11. The ghost on the title screen (`restart/`) | https://claude.ai/artifact/WB3XZc4gqW8iqyPkNFtitx |
+| 12. Her own two hands (`knitter/`) | https://claude.ai/artifact/MswAJ32Cd7SY1zfuP2jvV1 |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -43,3 +44,7 @@ Smoke harness now uses a transparent, inactive, shown window: a never-shown wind
 Re-rendered I1 I2 I7 I8 I9 E2 E3 E5 E7; all 15 re-graded (post.py: clamped-position areas as sky, degenerate line family
 overridden; exposure still from the true sky so looks didn't shift). Saves: userData/save.json via IPC (atomic), verified
 across three real launches in the smoke profile (Continue resumes at the pole; Begin anew replaces).
+
+## Knitter rebuild (2026-11-22)
+New `lib.knitter` with IK arms and jointed hands; I2–I7, E2, E3 re-rendered, both films re-cut. `clipcheck.py` clean on
+I2 I3 I4 I6 I7 E2; I5 keeps only fingertip/thumb contact with the doll while lifting it.

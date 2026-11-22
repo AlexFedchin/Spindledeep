@@ -8,7 +8,7 @@ EPILOGUE: see the shot docstrings (kept out of the player-facing pages on purpos
 import math
 
 import bpy
-from mathutils import Vector as V
+from mathutils import Vector as V, Matrix
 
 import lib
 import sets
@@ -104,7 +104,8 @@ def I2(out, preview):
     sets.exterior(sc, cam, tgt, storm=True, snow_box=((-8, -9, -0.3), (5, -0.25, 4.5)), snow_n=7000, window_alpha=0.14, snow_width=0.006)
     mats = M()
     kr, kp = lib.knitter('knitter_in', (-1.45, 1.05, 0.25), mats, seated=True)
-    stool = prim('cube', 'stool_in', loc=(-1.45, 1.2, 0.47), scale=(0.2, 0.2, 0.22), material=mats['darkwood'])
+    lib.knitting_needles(kp, 'knitter_in', mats)
+    stool = prim('cube', 'stool_in', loc=(-1.45, 1.2, 0.49), scale=(0.2, 0.2, 0.24), material=mats['darkwood'])
     w, wheel = sets.spinning_wheel('wheel_in', (-0.4, 1.8, 0.25), mats, spin_frames=(1, 120, 1.2))
     # her hands working: the forearms dip in a slow rhythm
     for s, ph in ((-1, 0), (1, 12)):
@@ -115,6 +116,18 @@ def I2(out, preview):
 
 
 NEEDLE = [V((0, 0, 0)), V((0, 0, 0))]
+
+
+def _carry(kr, kp):
+    """standing knitter: right hand round the lantern's handle (lantern at root-local (0.24, -0.25, 0.62)), left hand
+    pinching her grey thread a little forward of her hip. Returns the left pinch point in root space (for the thread)."""
+    bpy.context.view_layer.update()
+    lib.hand_pose(kp, 1, 'grip'); lib.hand_pose(kp, -1, 'pinch')
+    mw = kr.matrix_world.copy()
+    lib.arm_to(kp, 1, mw @ V((0.24, -0.25, 0.62 + 0.235)), offset=(-0.02, -0.004, -0.07))
+    lib.arm_to(kp, -1, mw @ V((-0.2, -0.18, 0.8)), wrist=(0.3, 0, 0.3))
+    bpy.context.view_layer.update()
+    return mw.inverted() @ (kp['hand-1'].matrix_world @ lib.pinch_offset(kp, -1))
 
 
 def _needle_path(f):
@@ -133,37 +146,50 @@ def I3(out, preview):
     """the table by candlelight, very close: the finished doll lying among the scraps it was made from — a coat
     sleeve, a ribbon — while a needle draws the last red stitch at its button eye; her shadow works on the wall"""
     sc = lib.new_scene(192, out, preview=preview, pos_lo=(-4, -3, -1), pos_size=10.0)
-    cam, tgt = lib.camera(lens=65, fstop=2.8)
+    cam, tgt = lib.camera(lens=40, fstop=2.8)
     R = sets.interior(sc, cam, tgt, night=True, doll_pose='lying')
     mats = M()
+    kr, kp = R['knitter'], R['kparts']
+    # she leans in over the work, the doll drawn to her edge of the table so her hands reach it (her chest stays
+    # clear of the table edge at y 1.12)
+    kr.location = (0.05, 1.36, 0.0); R['stool'].location.y = 1.46
+    kp['torso'].rotation_euler = (0.26, 0, 0)
+    kp['head'].rotation_euler = (0.38, 0, 0.1)
+    R['doll'].location = (-0.08, 0.72, 0.862)    # on the table (0.84 sank it 1.5 cm in); lying head toward her
     bpy.context.view_layer.update()
     eye = R['dparts']['eye'].matrix_world.translation.copy() + V((0, 0, 0.004))
     head = R['dparts']['head'].matrix_world.translation.copy()
     body = R['dparts']['body'].matrix_world.translation.copy()
     mid = (head + body) / 2
     c0 = mid + V((0.02, 0.0, 0.0))
-    p0 = lib.frame_pos(c0, (0.75, -0.45, 0.62), 0.2, 65, 0.9); p1 = lib.frame_pos(head, (0.7, -0.2, 0.62), 0.13, 65, 0.9)
-    cam_keys(cam, tgt, [(1, p0, c0, 65, (p0 - c0).length), (192, p1, head, 65, (p1 - head).length)])
+    # wide enough to hold the doll, the needle's whole pull and the hands working it
+    c0 = mid + V((0.06, 0.05, 0.06)); c1 = head + V((0.05, 0.04, 0.06))
+    p0 = lib.frame_pos(c0, (0.9, -0.35, 0.5), 0.27, 40, 0.9); p1 = lib.frame_pos(c1, (0.9, -0.25, 0.55), 0.21, 40, 0.9)
+    cam_keys(cam, tgt, [(1, p0, c0, 40, (p0 - c0).length), (192, p1, c1, 40, (p1 - c1).length)])
     lib.handheld(cam, 0.002, 0.5)
     # the hearth behind her throws her shadow big across the window wall
     hearth = light('POINT', 'hearth', (0.4, 3.2, 0.7), 140, color=(1.0, 0.5, 0.22), size=0.05)
     lib.flicker(hearth, 140, 0.18, 0.7, 9)
-    NEEDLE[0] = eye + V((0.0, 0.0, 0.002)); NEEDLE[1] = eye + V((0.13, 0.08, 0.2))
+    NEEDLE[0] = eye + V((0.0, 0.0, 0.002)); NEEDLE[1] = eye + V((0.2, -0.02, 0.1))      # drawn out to her right, clear of her face
     needle = prim('cyl', 'needle', scale=(0.0012, 0.0012, 0.03), material=mats['iron'], vertices=8)
     stitch = lib.tube('stitch', [V((0, 0, 0))] * 16, 0.0011, mats['red'])
+    # her hands: the right pinches the needle (the needle is where her fingers are), the left steadies the doll
+    lib.hand_pose(kp, 1, 'pinch'); lib.hand_pose(kp, -1, 'hold')
+    poff = lib.pinch_offset(kp, 1)
+    lib.arm_to(kp, -1, head + V((-0.112, 0.01, 0.035)), pole=(-1.0, 0.3, -0.3), palm=(1.0, 0.0, -0.35))   # cupping the doll's head
+    u = (NEEDLE[1] - NEEDLE[0]).normalized()                 # the needle lies along the pull; she holds its back end
 
     def upd(f):
-        p = _needle_path(f)
-        needle.location = p
-        d = (p - eye)
-        needle.rotation_euler = d.to_track_quat('Z', 'Y').to_euler() if d.length > 1e-4 else (0, 0, 0)
-        pts = lib.catenary(eye, p, sag=0.004 + 0.02 * max(0.0, 0.12 - d.length), n=16)
+        p = _needle_path(f)                                  # the needle's tip
+        needle.location = p + u * 0.03
+        needle.rotation_euler = u.to_track_quat('Z', 'Y').to_euler()
+        back = p + u * 0.058
+        d = back - eye
+        pts = lib.catenary(eye, back, sag=0.004 + 0.02 * max(0.0, 0.12 - d.length), n=16)
         lib.tube_update(stitch, pts)
+        lib.arm_to(kp, 1, p + u * 0.044, offset=poff, pole=(1.0, 0.35, -0.5), palm=(-0.5, 0.2, -0.85))
     lib.FRAME_FNS.append(upd)
     lib.register_frames()
-    # her right arm moves with the needle (seen as the shadow on the wall)
-    arm = R['kparts']['arm1']
-    keys(arm, 'rotation_euler', [(1, (0.0, 0, 0)), (30, (0.0, 0, 0)), (62, (-0.5, 0, 0.2)), (110, (0.0, 0, 0)), (140, (0.0, 0, 0)), (170, (-0.5, 0, 0.2)), (192, (-0.45, 0, 0.2))])
     return sc
 
 
@@ -189,7 +215,6 @@ def I4(out, preview):
     node_keys(b.inputs['Emission Strength'], [(1, 0.05), (140, 0.35)])
     kp = R['kparts']
     keys(kp['head'], 'rotation_euler', [(1, (0.25, 0, 0)), (60, (0.25, 0, 0)), (110, (-0.25, 0, 0.12)), (144, (-0.28, 0, 0.12))])
-    keys(kp['arm1'], 'rotation_euler', [(1, (-0.3, 0, 0.1)), (70, (-0.3, 0, 0.1)), (105, (0.1, 0, 0)), (144, (0.1, 0, 0))])
     return sc
 
 
@@ -199,15 +224,20 @@ def I5(out, preview):
     line running back to the spool; then her hands lift it out of the frame"""
     sc = lib.new_scene(144, out, preview=preview, pos_lo=(-4, -3, -1), pos_size=10.0)
     cam, tgt = lib.camera(lens=50, fstop=3.2)
-    cam_keys(cam, tgt, [(1, (0.5, 1.28, 1.02), (-0.05, 0.62, 0.92), 50, 0.88), (144, (0.46, 1.24, 1.06), (-0.08, 0.55, 1.0), 50, 0.86)])
+    # from the window side, so her hands come in toward us and she stays soft behind the doll
+    cam_keys(cam, tgt, [(1, (0.42, 0.33, 1.02), (-0.04, 0.86, 0.93), 50, 0.72), (144, (0.38, 0.3, 1.1), (-0.02, 0.92, 1.02), 50, 0.76)])
     lib.handheld(cam, 0.002, 0.5)
     R = sets.interior(sc, cam, tgt, night=True, doll_pose='sit')
     mats = M()
     hearth = light('POINT', 'hearth', (0.4, 3.2, 0.7), 120, color=(1.0, 0.5, 0.22), size=0.05)
     lib.flicker(hearth, 120, 0.18, 0.7, 9)
+    kr, kp = R['knitter'], R['kparts']
+    kr.location = (0.05, 1.38, 0.0); R['stool'].location.y = 1.48
+    kp['torso'].rotation_euler = (0.4, 0, 0)
+    kp['head'].rotation_euler = (0.38, 0, 0.0)
     d = R['doll']
-    d.location = (-0.05, 0.62, 0.79)
-    d.rotation_euler = (0, 0, 2.41)
+    d.location = (-0.05, 0.85, 0.805)
+    d.rotation_euler = (0, 0, 0.45)       # facing the camera, its sides square to her hands
     loop = prim('torus', 'redloop', loc=(0, 0, 0.11), major_radius=1.0, minor_radius=0.0035 / 0.08, material=mats['red'])
     parent(loop, d, keep=False)
     loop.location = (0, 0, 0.11)
@@ -224,8 +254,29 @@ def I5(out, preview):
         b = V(spool.location) + V((0, 0, 0.04))
         lib.tube_update(line, lib.catenary(b, a, sag=max(0.0, 0.05 - (a.z - 0.8) * 0.05), n=24, lift=lambda p: 0.795))
     lib.FRAME_FNS.append(upd)
-    keys(d, 'location', [(1, (-0.05, 0.62, 0.79)), (92, (-0.05, 0.62, 0.79)), (104, (-0.05, 0.6, 0.83)), (144, (-0.3, 0.2, 1.35))])
-    keys(d, 'rotation_euler', [(92, (0, 0, 2.41)), (144, (0.3, 0.2, 2.9))])
+    keys(d, 'location', [(1, (-0.05, 0.85, 0.805)), (92, (-0.05, 0.85, 0.805)), (104, (-0.05, 0.85, 0.84)), (144, (-0.05, 0.82, 0.89))])
+    keys(kp['head'], 'rotation_euler', [(1, (0.38, 0, 0)), (100, (0.38, 0, 0)), (144, (0.22, 0, 0))])      # she lifts her eyes to it
+    dp = R['dparts']
+    for s in (-1, 1):                                       # the doll lifts its little arms as her hands come in
+        keys(dp[f'arm{s}'], 'rotation_euler', [(68, (0, s * 0.35, 0)), (86, (-1.6, s * 0.12, 0))])
+    keys(d, 'rotation_euler', [(92, (0, 0, 0.45)), (144, (0.04, 0, 0.5))])
+    for s in (-1, 1):
+        lib.hand_pose(kp, s, 'relax')
+    bpy.context.view_layer.update()
+    rest = {-1: V((-0.3, 1.0, 0.85)), 1: V((0.34, 1.06, 0.85))}     # resting on the table, clear of the doll and scissors
+
+    def hands(f):
+        dl = lib.eval_fc(d, 'location', f, d.location)
+        dr = lib.eval_fc(d, 'rotation_euler', f, d.rotation_euler)
+        k = min(1.0, max(0.0, (f - 56) / 32.0)); k = k * k * (3 - 2 * k)
+        side = Matrix.Rotation(dr.z, 3, 'Z') @ V((1, 0, 0))     # the doll's own sides (its arms are raised out of the way)
+        if side.x < 0:
+            side = -side                                        # so each hand takes the side nearer to it
+        for s in (-1, 1):
+            g = dl + side * (s * 0.11) + V((0, 0, 0.1))
+            palm = V((0, 0, -1)).lerp(-side * s, k)              # palms down on the table → turned in to the doll
+            lib.arm_to(kp, s, rest[s].lerp(g, k), pole=(s * 1.0, 0.3, 0.0), palm=palm)     # elbows out to the sides
+    lib.FRAME_FNS.append(hands)
     lib.register_frames()
     return sc
 
@@ -243,6 +294,7 @@ def I6(out, preview):
     kr, kp = lib.knitter('knitter', (-0.9, 2.4, 0.0), mats, seated=False)
     lan, lan_l = lib.lantern('lantern', (0.24, -0.25, 0.62), mats, energy=45)
     parent(lan, kr, keep=False); lan.location = (0.24, -0.25, 0.62)
+    lh = _carry(kr, kp)
     hearth = light('POINT', 'hearth', (0.8, 3.3, 0.8), 160, color=(1.0, 0.5, 0.22), size=0.05)
     lib.flicker(hearth, 160, 0.18, 0.7, 9)
     # walk to the door, open it, go out
@@ -259,7 +311,8 @@ def I6(out, preview):
         hinge = V(door.location)
         latch = hinge + V((-math.sin(rz) * 0.86, math.cos(rz) * 0.86, 1.05))
         k = lib.eval_fc(kr, 'location', f, kr.location)
-        hand = k + V((0.1, -0.2, 0.75))
+        rz = lib.eval_fc(kr, 'rotation_euler', f, kr.rotation_euler).z
+        hand = k + Matrix.Rotation(rz, 3, 'Z') @ lh
         lib.tube_update(grey, lib.catenary(latch, hand, sag=0.25, n=20, lift=lambda p: 0.01))
     lib.FRAME_FNS.append(upd)
     # snow bursts in once the door is open; the candle dies; cold light from outside
@@ -289,15 +342,17 @@ def I7(out, preview):
     kr, kp = lib.knitter('knitter', (13, 0.5, 0.0), mats, seated=False)
     lan, lan_l = lib.lantern('lantern', (0.24, -0.25, 0.62), mats, energy=40)
     parent(lan, kr, keep=False); lan.location = (0.24, -0.25, 0.62)
+    lh = _carry(kr, kp)
     kr.rotation_euler = (0, 0, math.radians(114))
-    keys(kr, 'location', [(1, (12.6, 0.4, 0.0)), (128, (19.4, 3.4, 0.0)), (140, (19.6, 3.5, 0.0)), (168, (20.6, 4.0, -2.4))], interp='LINEAR')
+    # she steps over the lip and goes down well inside the mouth (the pit wall is ~7 m out from its centre at (26, 7))
+    keys(kr, 'location', [(1, (12.6, 0.4, 0.0)), (128, (19.4, 3.4, 0.0)), (140, (19.6, 3.5, 0.0)), (152, (20.5, 3.95, -0.35)), (168, (21.7, 4.6, -2.6))], interp='LINEAR')
     keys(kp['torso'], 'rotation_euler', [(1, (0.3, 0, 0)), (128, (0.3, 0, 0)), (140, (0.55, 0, 0)), (168, (0.5, 0, 0))])
     grey = lib.tube('greythread', [V((0, 0, 0))] * 40, 0.006, mats['grey_thread'])
     door = V((2.25, -0.08, 1.0))
 
     def upd(f):
         k = lib.eval_fc(kr, 'location', f, kr.location)
-        hand = k + V((0.15, 0.1, 0.72))
+        hand = k + Matrix.Rotation(math.radians(114), 3, 'Z') @ lh
         pts = []
         for i in range(40):
             t = i / 39
@@ -422,15 +477,17 @@ def E2(out, preview):
     mats = M()
     L = sets.loom_cave(sc, cam, tgt, mats)
     kp = L['kparts']
-    droot, dp = lib.doll('doll', (0.0, 0.32, 0.705), 0.9, mats)      # on top of her lap (z 0.70), not sunk into it
+    droot, dp = lib.doll('doll', (0.0, 0.32, 0.668), 0.9, mats)      # on top of her lap, not sunk into it
     droot.rotation_euler = (0.15, 0, 0.0)
     # the shawl reddens: mix its base colour toward red over the shot
     sh = mats['wool_shawl']
     b = [n for n in sh.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0]
     node_keys(b.inputs['Base Color'], [(1, (0.3, 0.29, 0.3, 1)), (40, (0.3, 0.29, 0.3, 1)), (168, (0.62, 0.05, 0.04, 1))])
     keys(kp['head'], 'rotation_euler', [(1, (0.2, 0, 0)), (90, (0.25, 0, 0)), (168, (0.62, 0, 0.08))])
-    for s in (-1, 1):
-        keys(kp[f'arm{s}'], 'rotation_euler', [(1, (0.25, 0, 0)), (168, (0.35, 0, 0))])
+    bpy.context.view_layer.update()
+    lib.hand_pose(kp, 1, 'relax'); lib.hand_pose(kp, -1, 'relax')
+    lib.arm_to(kp, 1, V((0.035, 0.405, 0.668 + 0.11)), pole=(1.0, 0.5, -0.4), palm=(0.0, -1.0, 0.1))   # a hand on its back
+    lib.arm_to(kp, -1, V((-0.15, 0.3, 0.69)), pole=(-1.0, 0.3, -0.3), palm=(0.0, 0.0, -1.0))           # the other on her lap
     return sc
 
 
@@ -577,4 +634,45 @@ def E7(out, preview):
         pts.append(p)
     pts.append(V((2.25, -0.08, 1.0)))
     lib.tube('redline', pts, 0.01, mats['red'])
+    return sc
+
+
+# ── model review stills (not part of either film): python render.py -- K1 --still=1 ───────────────────
+@shot(exposure=1.0)
+def K1(out, preview):
+    """the knitter at the table, three-quarter front, lit warm"""
+    sc = lib.new_scene(1, out, preview=preview, pos_lo=(-4, -3, -1), pos_size=10.0)
+    cam, tgt = lib.camera(lens=40, fstop=8)
+    R = sets.interior(sc, cam, tgt, night=True, doll_pose='lying')
+    c = V((0.0, 1.3, 0.8))
+    cam_keys(cam, tgt, [(1, V((0.75, 0.42, 1.2)), c, 40, 1.3)])
+    light('AREA', 'k1key', (0.8, 0.2, 1.8), 60, color=(1.0, 0.8, 0.6), size=1.0, rot=(0.9, 0, 0.5))
+    return sc
+
+
+@shot(exposure=1.0)
+def K2(out, preview):
+    """her face and hands, close"""
+    sc = lib.new_scene(1, out, preview=preview, pos_lo=(-4, -3, -1), pos_size=10.0)
+    cam, tgt = lib.camera(lens=60, fstop=8)
+    R = sets.interior(sc, cam, tgt, night=True, doll_pose='lying')
+    bpy.context.view_layer.update()
+    h = R['kparts']['head'].matrix_world @ V((0, -0.04, 0.06))
+    cam_keys(cam, tgt, [(1, h + V((0.16, -0.62, 0.06)), h + V((0, 0, -0.07)), 60, 0.64)])
+    light('AREA', 'k2key', (0.6, 0.4, 1.6), 40, color=(1.0, 0.8, 0.6), size=0.8, rot=(1.0, 0, 0.6))
+    return sc
+
+
+@shot(exposure=1.0)
+def K3(out, preview):
+    """standing with the lantern, three-quarter"""
+    sc = lib.new_scene(1, out, preview=preview, pos_lo=(-6, -3, -1), pos_size=12.0)
+    cam, tgt = lib.camera(lens=28, fstop=8)
+    R = sets.interior(sc, cam, tgt, night=True, doll_pose='sit', knitter_on=False)
+    mats = M()
+    kr, kp = lib.knitter('knitter', (-0.9, 2.2, 0.0), mats, seated=False)
+    kr.rotation_euler = (0, 0, math.radians(-30))
+    c = V((-0.9, 2.2, 0.82))
+    cam_keys(cam, tgt, [(1, V((-1.85, 0.55, 1.05)), c, 28, 1.9)])
+    light('AREA', 'k3key', (0.4, 1.0, 1.9), 80, color=(1.0, 0.8, 0.6), size=1.2, rot=(0.9, 0, 0.6))
     return sc
