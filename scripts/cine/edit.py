@@ -125,6 +125,10 @@ def picture(film, draft):
             k = (j - (n - 48)) / 47
             seq[j] = ('paper', seq[j], k * k * (3 - 2 * k))
         seq.extend(('paperhold', None) for _ in range(24))
+        # the coda (docs/STORY.md, sealed): a hard cut off the paper to the window at night, then black
+        cuts['CODA'] = len(seq)
+        seq.extend(('png', p) for p in shot_frames('I4', draft)[:70])
+        seq.extend(('black', None) for _ in range(40))
     return seq, cuts
 
 
@@ -141,6 +145,8 @@ def render_item(it, f):
         a = render_item(it[1], f)
         p = np.ones_like(a) * PAPER + grain(f, 0.03)
         return a * (1 - it[2]) + p * it[2]
+    if kind == 'black':
+        return np.ones((H, W, 3), np.float32) * INK * 0.4
     if kind == 'paperhold':
         return np.ones((H, W, 3), np.float32) * PAPER + grain(f, 0.03)
 
@@ -250,7 +256,7 @@ def soundtrack(film, cuts, nframes):
         M.add(decode('chime', rate=0.75), at('TITLE', 30), 0.25)
         M.bed(wind, at('TITLE'), T, 0.35, fi=0.5, fo=2.5)
     else:
-        M.add(decode('mus_end'), 0.0, 0.5, fade_in=3, fade_out=5, dur=T + 1)
+        M.add(decode('mus_end'), 0.0, 0.5, fade_in=3, fade_out=5, dur=at('CODA') + 0.1)
         cave = decode('amb_cave')
         M.bed(cave, 0, at('E5'), 0.35, fi=2, fo=1.2)
         M.add(crackle(at('E3', 60)), 0, 0.35, fade_out=0.3)
@@ -258,7 +264,9 @@ def soundtrack(film, cuts, nframes):
         M.add(decode('release', rate=0.5), at('E3', 58), 0.45)
         M.add(decode('bell'), at('E4', 42), 0.7); M.add(decode('bowl'), at('E4', 42), 0.4)
         M.add(decode('chime', rate=0.75), at('E4', 200), 0.4, fade_in=0.4)
-        M.bed(decode('amb_wind', af='lowpass=f=900'), at('E5'), T, 0.12, fi=2, fo=3)
+        M.bed(decode('amb_wind', af='lowpass=f=900'), at('E5'), at('CODA'), 0.12, fi=2, fo=1)
+        M.bed(wind_in, at('CODA'), at('CODA', 72), 0.8, fi=0.02, fo=0.05)
+        M.add(breath(2.6), at('CODA', 8), 1.0)
         M.add(decode('creak', rate=0.55), at('E6', 1), 0.25, fade_in=1.5, fade_out=1.5, dur=7.5)
     y = M.buf[: int((T + 0.5) * SR)]
     peak = np.abs(y).max()

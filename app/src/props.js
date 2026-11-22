@@ -33,6 +33,15 @@ export const LORE = [
   ['signpost', 17.6, -193, -1],
   // the Loom
   ['baskets', 50.5, -245, 1],
+  // the ones before you (docs/STORY.md): eight dolls that never reached the bottom, grimmer the deeper they lie
+  ['huskeye', 47.6, -8, 1],             // the Throat: only a button eye and a scrap
+  ['husk', 65.0, -33, 1],               // face down at the end of a ledge
+  ['husk', 28.4, -60, -1],              // the Root Gardens: sat against nothing, slumped
+  ['husknest', 32.6, -80, 1],           // eaten hollow beside the moths' fungus
+  ['huskhung', 41.4, -122, 1],          // the Bell Gallery: hung from a stake by its own thread
+  ['husk', 85.0, -122, 1],              // fell short of the last ring and lay where it landed
+  ['husk', 90.6, -192, -1],             // the Ink Mere: the first island, no further
+  ['huskink', 53.6, -191, 1],           // the ink got into this one
   // the hidden rooms (level.js SECRETS): each was somebody's private place
   ['baskets', 8.2, -4, 1],             // the Cellar
   ['lantern', 83.8, -15, 1], ['bucket', 88.4, -15, -1],         // the Diggers' Cache
@@ -44,6 +53,11 @@ export const LORE = [
 
 // each prop keeps a faint cold after-glow so its outline reads from a distance; a few carry their own light
 const LIGHT = {
+  husk: { dy: 0.3, r: 2.2, i: 0.16, c: [0.72, 0.74, 0.86], flicker: 0 },
+  huskeye: { dy: 0.2, r: 1.8, i: 0.16, c: [0.72, 0.74, 0.86], flicker: 0 },
+  husknest: { dy: 0.3, r: 2.2, i: 0.16, c: [0.72, 0.74, 0.86], flicker: 0 },
+  huskink: { dy: 0.3, r: 2.0, i: 0.12, c: [0.72, 0.74, 0.86], flicker: 0 },
+  huskhung: { dy: 0.9, r: 2.6, i: 0.2, c: [0.72, 0.74, 0.86], flicker: 0 },
   candles: { dy: 0.4, r: 2.8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   pots: { dy: 0.5, r: 2.6, i: 0.26, c: [0.62, 0.85, 0.75], flicker: 0.1 },
 };
@@ -104,6 +118,34 @@ class Pen {
     const e = this.e, X = this.X(x), Y = this.Y(y), R = r * this.k;
     const gr = e.createRadialGradient(X, Y, 0, X, Y, R); gr.addColorStop(0, rgba); gr.addColorStop(1, 'rgba(0,0,0,0)');
     e.fillStyle = gr; e.beginPath(); e.arc(X, Y, R, 0, TAU); e.fill();
+  }
+}
+
+// a fallen doll lying on its side: knitted sack, head turned to the floor, X eye, an empty socket where the button
+// was, limbs flung out, a snapped stub of thread. `tone` greys it further for the deeper ones.
+function huskBody(P, r, tone, eaten) {
+  const tw = (r() - 0.5) * 0.08;
+  P.line([[0.18, 0.06], [0.36, 0.03 + tw], [0.44, 0.04]], tone + 0.1, 0.05);
+  P.line([[0.16, 0.13], [0.34, 0.2 + tw], [0.42, 0.17]], tone + 0.04, 0.05);
+  P.ell(0.45, 0.04, 0.05, 0.03, 0, tone * 0.5);
+  P.ell(-0.02, 0.12, 0.24, 0.12, 0.05, tone);
+  for (let x = -0.2; x < 0.2; x += 0.05) P.line([[x, 0.04], [x + 0.02, 0.2]], tone * 0.6, 0.007);
+  P.line([[-0.06, 0.22], [0.08, 0.32 + tw], [0.16, 0.3]], tone + 0.06, 0.045);
+  P.ell(-0.38, 0.15, 0.17, 0.15, 0.2, tone + 0.14);
+  for (let y = 0.05; y < 0.28; y += 0.045) P.line([[-0.52, y], [-0.24, y + 0.02]], tone * 0.7, 0.006);
+  P.line([[-0.44, 0.2], [-0.38, 0.14]], 0.03, 0.016); P.line([[-0.38, 0.2], [-0.44, 0.14]], 0.03, 0.016);
+  P.ell(-0.3, 0.12, 0.035, 0.035, 0, 0.05, null);
+  P.line([[-0.3, 0.12], [-0.26, 0.06], [-0.28, 0.02]], 0.2, 0.008);
+  if (!eaten) for (const [ox, a] of [[-0.42, 0.3], [-0.38, -0.2]]) P.line([[ox, 0.29], [ox - 0.1, 0.38 + a * 0.1], [ox - 0.16, 0.33]], tone + 0.2, 0.02);
+  P.line([[0.05, 0.12], [0.24, 0.13], [0.32, 0.1], [0.36, 0.14]], 0.18, 0.014);
+}
+
+// the dolls that died on your own way down stay where they fell (world.husks, kept in the save)
+export function drawHusks(D, ctx, ectx) {
+  for (const h of D.w.husks || []) {
+    if (!D.vis(h.x, h.y + 0.3, 2)) continue;
+    const P = new Pen(D, ctx, ectx, h);
+    (KINDS[h.kind] || KINDS.husk)(P, mulberry(h.seed), D.time, h);
   }
 }
 
@@ -406,6 +448,53 @@ const KINDS = {
     P.line([[0.55, 1.3], [0.55, 1.02]], 0.25, 0.012);
     P.line([[0.58, 1.18], [0.7, 1.14]], 0.25, 0.008);
     P.line([[0.05, 1.2], [0.42, 1.18]], 0.22, 0.008); P.line([[0.05, 1.12], [0.35, 1.1]], 0.22, 0.008);
+  },
+  // ── the ones before you: earlier dolls, at the doll's own scale, gone grey ──
+  // a lone button eye, a scrap of knitting and a tuft of thread: all that is left of the first
+  huskeye(P) {
+    const k = 1.8, Q = (pts) => pts.map(([x, y]) => [x * k, y * k]);
+    P.poly(Q([[-0.34, 0.0], [-0.08, 0.0], [-0.04, 0.07], [-0.16, 0.1], [-0.3, 0.08]]), 0.4);
+    for (let x = -0.3; x < -0.08; x += 0.04) P.line(Q([[x, 0.015], [x + 0.015, 0.06]]), 0.24, 0.01);
+    P.ell(0.08 * k, 0.06 * k, 0.06 * k, 0.06 * k, 0, 0.04, 0.42, 0.016);
+    for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.ell((0.08 + a * 0.017) * k, (0.06 + b * 0.017) * k, 0.014, 0.014, 0, 0.6, null);
+    P.ell(0.06 * k, 0.08 * k, 0.02, 0.016, 0.4, 0.85, null);
+    P.line(Q([[0.1, 0.07], [0.2, 0.14], [0.26, 0.07], [0.34, 0.1]]), 0.22, 0.016);
+    P.line(Q([[0.26, 0.07], [0.3, 0.0]]), 0.22, 0.014);
+  },
+  // a doll lying where it gave out: face down, an eye torn off, its thread snapped short and gone grey
+  husk(P, r) { huskBody(P, r, 0.44, false); },
+  // the moths got to this one: holes eaten through, stuffing gone, rows pulled loose and trailing away
+  husknest(P, r, t) {
+    huskBody(P, r, 0.4, true);
+    for (const [x, y, s] of [[-0.05, 0.13, 0.05], [0.1, 0.1, 0.04], [-0.42, 0.16, 0.035], [0.02, 0.06, 0.03]]) P.ell(x, y, s, s * 0.8, 0.3, 0.03, null);
+    const sw = Math.sin(t * 0.8) * 0.01;
+    P.line([[0.12, 0.08], [0.3, 0.02], [0.48, 0.05 + sw], [0.66, 0.0], [0.82, 0.03 + sw]], 0.4, 0.014);
+    P.line([[0.0, 0.18], [0.12, 0.3], [0.3, 0.26 + sw], [0.42, 0.34]], 0.36, 0.01);
+    P.ell(0.88, 0.04, 0.05, 0.045, 0, 0.42);
+  },
+  // the ink got into this one: black to the waist, sagging into a puddle that never dried
+  huskink(P, r, t) {
+    P.ell(0.0, 0.0, 0.62, 0.04, 0, 0.0, null);
+    huskBody(P, r, 0.14, false);
+    P.poly([[-0.2, 0.0], [0.34, 0.0], [0.3, 0.16], [0.1, 0.22], [-0.1, 0.2]], 0.03, null);
+    for (let i = 0; i < 3; i++) { const x = -0.05 + i * 0.13, d = ((t * 0.3 + i * 0.37) % 1); P.line([[x, 0.12], [x + 0.01, 0.12 - d * 0.1]], 0.0, 0.02); }
+  },
+  // hung from a stake by its own thread, turning a little
+  huskhung(P, r, t) {
+    P.beam(0, -0.05, 0.08, 1.55, 0.07, 0.32);
+    P.beam(0.04, 1.42, 0.62, 1.5, 0.05, 0.34);
+    const sw = Math.sin(t * 0.55) * 0.04, X = (x, y) => 0.55 + x + sw * (1.47 - y) / 0.6;
+    P.line([[0.55, 1.47], [X(0, 1.04), 1.04]], 0.22, 0.014);
+    P.line([[0.52, 1.47], [0.56, 1.52], [0.6, 1.46]], 0.22, 0.012);
+    P.ell(X(0, 0.9), 0.9, 0.15, 0.16, 0.1, 0.58);
+    P.line([[X(-0.08, 0.95), 0.95], [X(-0.02, 0.89), 0.89]], 0.03, 0.016); P.line([[X(-0.02, 0.95), 0.95], [X(-0.08, 0.89), 0.89]], 0.03, 0.016);
+    P.ell(X(0.06, 0.92), 0.92, 0.04, 0.04, 0, 0.08, null);
+    P.ell(X(0, 0.58), 0.58, 0.13, 0.19, 0, 0.42);
+    for (let y = 0.45; y < 0.74; y += 0.05) P.line([[X(-0.11, y), y], [X(0.11, y), y + 0.01]], 0.28, 0.007);
+    for (const s of [-1, 1]) {
+      P.line([[X(s * 0.11, 0.66), 0.66], [X(s * 0.14, 0.5), 0.5], [X(s * 0.13, 0.4), 0.4]], 0.5, 0.04);
+      P.line([[X(s * 0.05, 0.4), 0.4], [X(s * 0.06, 0.24), 0.24]], 0.5, 0.045);
+    }
   },
   // baskets of grey yarn and a few dropped spindles
   baskets(P, r) {

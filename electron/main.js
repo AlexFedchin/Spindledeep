@@ -19,7 +19,12 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-unsafe-webgpu');
 app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-if (SMOKE) app.commandLine.appendSwitch('disable-renderer-backgrounding');
+if (SMOKE) {
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+}
 
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 function readSettings() { try { return JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch { return {}; } }
@@ -30,17 +35,20 @@ function createWindow() {
   const w = Math.min(1600, wa.width - 80), h = Math.round(w * 9 / 16);
   const win = new BrowserWindow({
     width: w, height: h, minWidth: 960, minHeight: 540,
-    backgroundColor: '#07060a', autoHideMenuBar: true, show: false,
+    backgroundColor: '#07060a', autoHideMenuBar: true, show: false, skipTaskbar: !!SMOKE, focusable: !SMOKE,
     title: 'Spindledeep', icon: path.join(__dirname, '..', 'build', 'icon.png'),
     fullscreen: !SMOKE && s.fullscreen !== false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false,
-      backgroundThrottling: false, offscreen: false,
+      backgroundThrottling: false, offscreen: false, paintWhenInitiallyHidden: true,
     },
   });
   win.setMenuBarVisibility(false);
   if (SMOKE) win.webContents.setAudioMuted(true);
-  win.once('ready-to-show', () => win.show());
+  // test runs (--smoke) must not be noticeable: the window is fully transparent, shown without activation (a never-shown
+  // window pauses requestAnimationFrame, so the game loop would not run), not focusable, off the taskbar, and muted
+  if (SMOKE) win.once('ready-to-show', () => { win.setOpacity(0); win.setIgnoreMouseEvents(true); win.showInactive(); });
+  else win.once('ready-to-show', () => win.show());
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type !== 'keyDown') return;
     if (input.key === 'F11' || (input.alt && input.key === 'Enter')) {

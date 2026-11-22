@@ -68,7 +68,7 @@ async function boot() {
   show($('loading'), false);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
   requestAnimationFrame(tick);
 }
 
@@ -151,6 +151,7 @@ function save() {
   const data = {
     cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
+    husks: W.husks.map((h) => [+h.x.toFixed(2), +h.y.toFixed(2), h.kind, h.flip, h.seed]),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
     dead: Array.from(th.dead.subarray(0, n)),
   };
@@ -168,6 +169,7 @@ function applySave(s) {
   W.pegs.forEach((p, i) => (p.tied = !!s.pegs[i]));
   W.gates.forEach((g) => { const bs = W.bells.filter((b) => b.gate === g.id); if (bs.length && bs.every((b) => b.lit > 0)) g.open = 1; });
   s.areas.forEach((a) => W.areaSeen.add(a));
+  W.husks = (s.husks || []).map(([x, y, kind, flip, seed]) => ({ x, y, kind, flip, seed }));
   const n = s.tx.length;
   for (let i = 0; i < n; i++) { th.x[i] = th.ox[i] = s.tx[i]; th.y[i] = th.oy[i] = s.ty[i]; th.dead[i] = s.dead[i]; }
   th.n = th.fixedN = th.liveStart = n; th.anchored = true;
@@ -287,6 +289,10 @@ function startEnding() {
   A.endMusic = true;
   A.setMusic('mus_end', 3);
   A.play('tie', { vol: 0.8 }); A.play('chime', { vol: 0.6, rate: 0.6 });
+  // her candle goes out the moment the threads are tied
+  W.candleOut = W.time;
+  W.lamps = W.lamps.filter((l) => !(l.y < -240 && Math.abs(l.x - 33) < 0.5));
+  A.play('release', { vol: 0.5, rate: 0.45, x: 33, y: W.finale.y });
   D.spawn('spark', W.player.x, W.player.y, 30, { speed: 3, life: 1.5 });
   show($('prompt'), false);
 }

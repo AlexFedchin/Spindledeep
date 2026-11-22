@@ -14,6 +14,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 6. Dead ends fixed (`deadends/`) | https://claude.ai/artifact/G8XsmEWzRJh2bCP3XYXowF |
 | 7. A swing has to be earned (`swinghang/`) | https://claude.ai/artifact/JDuPHDEdDW5Lgax7SXdFro |
 | 8. Six hidden rooms (`secrets/`) | https://claude.ai/artifact/TT7w5yYxQK7PtmWbsMjiNK |
+| 9. A darker thread: story rewrite (`story/`, plot sealed) | https://claude.ai/artifact/WGTgv9q1fD1XJBdv9Kqnc8 |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -30,3 +31,8 @@ Lean is now tangential and speed-scaled (`pumpWith 6, pumpRef 8, pumpStart 0.06`
 open-air pumping grows 6/16/31/52/54/81°. All 12 gaps re-verified (verify2.js; pillar 3→4 hold-forward window is the tightest, 0.6 s).
 Scratchpad `secrets.js` walks into and out of all six hidden rooms in real physics (Sill: drop, lower, pump, let go, 14.6 s);
 `probe2.js` flood fill includes the keepsakes. Hidden rooms are drawn from a separate visual SDF (`Terrain.visualHalf`/`revealPatch`).
+
+## Story rewrite (2026-11-22)
+Plot in `docs/STORY.md` (spoilers; keep out of summaries). All 9 voice lines re-recorded (Whisper acc 0.93–1.0; old takes in
+`scripts/voice/.cache/raw_v1`). Death marks: thorn/ink deaths verified to leave a mark that survives save → `__SD.cont()`.
+Smoke harness now uses a transparent, inactive, shown window: a never-shown window paused rAF (the loop didn't run).

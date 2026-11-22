@@ -181,17 +181,17 @@ export const GATES = [
 // `hide` is drawn as solid rock until the room is first entered, so only the crack's mouth shows (physics never sees it).
 export const SECRETS = [
   { name: 'The Cellar', hide: [0.3, -5.2, 13.0, -0.6], r: [9.6, -3.2, 2.6, 1.3], x: 10.8, y: -4.4, kind: 'spool', what: 'a wooden spool',
-    text: 'Her first spool, worn smooth where her thumb sat.' },
+    text: 'Her first spool. Scratched into the end, over and over, in clumsy letters: I WAS MADE.' },
   { name: "The Diggers' Cache", hide: [76.5, -17.2, 89.6, -12.4], r: [85.8, -14.7, 3.2, 1.85], x: 86.6, y: -16.4, kind: 'button', what: 'a brass coat button',
-    text: 'From his coat. She kept the other five in a tin.' },
+    text: "From a miner's coat. They dug down to kill the thing that calls. The coats came back up the well, folded. The men didn't." },
   { name: 'The Seed Hollow', hide: [0.3, -86.8, 10.4, -81.4], r: [3.6, -84.6, 2.9, 1.7], x: 3.5, y: -86.2, kind: 'seeds', what: 'a packet of seeds',
-    text: "Sweet peas, never planted. 'For the spring,' it says." },
+    text: "Sweet peas. 'For the spring,' it says. There has not been a spring on the Brink in seventy years." },
   { name: "The Ringer's Cell", hide: [0.3, -118.0, 10.6, -113.6], r: [4.0, -116.0, 2.5, 1.6], x: 3.4, y: -117.4, kind: 'thimble', what: 'a silver thimble',
-    text: 'Dented on one side, from seventy winters of needles.' },
+    text: 'Not hers. Older. Dented in the same place, by the same needle, by the woman who knitted her.' },
   { name: 'The Sill', hide: [112.6, -157.0, 119.8, -152.8], r: [116.4, -154.7, 2.7, 1.6], x: 116.0, y: -156.1, kind: 'eye', what: 'a spare button eye',
-    text: 'She always sewed a spare. In case you lost one down here.' },
+    text: 'A button eye, not yours. You have been passing them all the way down.' },
   { name: 'The Last Basket', hide: [62.4, -244.6, 74.0, -240.0], r: [70, -242.4, 3.2, 1.8], x: 69.4, y: -244.0, kind: 'mitten', what: 'a half-knitted mitten',
-    text: 'Small, too small for her. One thumb, and the needles still in it.' },
+    text: "Half-knitted, needles still in it, sized for a hand with no fingers. It isn't for you. It's for the next one." },
 ];
 
 export const SKEINS = [
@@ -228,19 +228,20 @@ export const GREY = [
 ];
 
 // Her memories, knotted into the grey thread. `line` keys the voice file (assets/voice/<id>.ogg).
+// The story they tell (and where it turns) is in docs/STORY.md: it darkens with depth; keep the order.
 export const MEMORIES = [
-  { id: 'm0', x: 37, y: 0.8, text: "I've gone down after the light, little one. Don't follow me. ...But if you do, keep hold of the thread." },
-  { id: 'm1', x: 48.5, y: -25.4, text: 'Seventy winters I sat at that window and watched the dark breathe. Last night, it called me by my name.' },
-  { id: 'm2', x: 26, y: -61, text: "I made you from the scraps of everything I loved. A sleeve of his coat. The ribbon from my wedding. You're stronger than you look." },
-  { id: 'm3', x: 30, y: -81.6, text: "The moths came for my yarn first. They don't mean any harm. They're only hungry for warm things." },
-  { id: 'm4', x: 56.5, y: -120.2, text: 'The bells still remember songs. Pluck your thread, and they will answer. Everything down here is only waiting to be answered.' },
-  { id: 'm5', x: 64.5, y: -190.2, text: "Don't let the ink touch the thread. It makes things forget. It made me forget... the colour red." },
-  { id: 'm6', x: 17, y: -218, text: "I'm so tired, little one. My yarn's run grey. I don't think I can climb back up." },
+  { id: 'm0', x: 37, y: 0.8, text: "I've gone down after the light, little one. Don't follow me. ...But if you do, keep hold of the thread. Never let go of the thread." },
+  { id: 'm1', x: 48.5, y: -25.4, text: 'Seventy winters I sat at that window and listened to the dark breathe. Every winter it calls one name up the well. Last night... it called mine.' },
+  { id: 'm2', x: 26, y: -61, text: "I made you from the scraps of everything I loved. A sleeve of his coat. The ribbon from my wedding. You're stronger than the others were." },
+  { id: 'm3', x: 30, y: -81.6, text: "The moths found the others first. Don't grieve for them, little one. They were only practice." },
+  { id: 'm4', x: 56.5, y: -120.2, text: 'Pluck your thread, and the bells will answer. They rang for everyone it took. The ringer rang until his hands bled... and then they rang for him.' },
+  { id: 'm5', x: 64.5, y: -190.2, text: "Don't let the ink touch you. It makes things forget what they are. I forgot for seventy winters... I forgot that I was made, too." },
+  { id: 'm6', x: 17, y: -218, text: "She's so tired, little one. Her yarn's run grey. She can't climb back up. ...Come down. Come and sit with us. It's warm in the Loom." },
 ];
 export const FINALE = {
   x: 31, y: -244.6,
-  text: "You came all this way. Tie us together, then... and we'll go home the long way.",
-  after: 'There. Now we are one thread.',
+  text: "There you are. I came all this way too, once, and tied my thread to an old woman's. Tie yours to mine, little one... someone has to go home.",
+  after: 'There. Next winter, it will call your name. Start knitting early, little one... it takes a few.',
 };
 export const LIGHTS = [
   // static lamps: glow-fungus, the cottage window, her candle

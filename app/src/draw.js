@@ -3,7 +3,7 @@
 import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
 import { SNAG_R } from './player.js';
-import { drawLore, drawKeepsakes } from './props.js';
+import { drawLore, drawKeepsakes, drawHusks } from './props.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -54,6 +54,7 @@ export class Drawer {
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
     drawLore(this, ctx, ectx);
+    drawHusks(this, ctx, ectx);
     this.drawThorns(ctx, ectx);
     this.drawGates(ctx, ectx);
     this.drawHooks(ctx, ectx);
@@ -715,9 +716,15 @@ export class Drawer {
     ctx.fillStyle = g(0.45); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, 0.025 * k);
     ctx.fillRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k); ctx.strokeRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k);
     ctx.fillStyle = g(0.7); ctx.fillRect(SX - 0.11 * k, SY - 0.28 * k, 0.22 * k, 0.24 * k);
-    // her candle on the floor beside the chair
+    // her candle on the floor beside the chair (snuffed the moment the threads are tied: a last thread of smoke)
     const CX = this.sx(33), CY = this.sy(f.y + 0.05);
     ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.45 * k, 0.12 * k, 0.45 * k);
+    if (this.w.candleOut !== undefined) {
+      const a = Math.max(0, 1 - (this.w.time - this.w.candleOut) / 6);
+      if (a > 0) { ctx.strokeStyle = g(0.6, a * 0.6); ctx.lineWidth = Math.max(1, 0.02 * k); ctx.beginPath(); ctx.moveTo(CX, CY - 0.47 * k);
+        for (let i = 1; i < 8; i++) ctx.lineTo(CX + Math.sin(this.w.time * 1.3 + i * 0.9) * 0.05 * i * k, CY - (0.47 + i * 0.16) * k); ctx.stroke(); }
+      return;
+    }
     const fl = 1 + Math.sin(this.time * 15) * 0.1;
     const gr = ectx.createRadialGradient(CX, CY - 0.55 * k, 0, CX, CY - 0.55 * k, 1.5 * k);
     gr.addColorStop(0, `rgba(255,200,120,${0.85 * fl})`); gr.addColorStop(0.15, `rgba(255,140,60,${0.3 * fl})`); gr.addColorStop(1, 'rgba(0,0,0,0)');

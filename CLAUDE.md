@@ -37,6 +37,19 @@ After **every** batch of changes (aka user's message) the user asked for, publis
 
 ## Testing headlessly
 
+**Standing rule from the user: every test run must be unnoticeable on their PC.** No audio, no windows popping up
+or stealing focus, no taskbar entries, nothing played or opened for them to see.
+- `--smoke` runs are built for this (`electron/main.js`): the window is fully transparent (`setOpacity(0)`),
+  click-through, shown with `showInactive()` (never activated), not focusable, off the taskbar, and muted
+  (`setAudioMuted`). It must be *shown*: a never-shown window pauses requestAnimationFrame, so screenshots still
+  render but the game loop does not run (deaths, timers, saves silently never happen). Occlusion/background
+  throttling switches are off in smoke mode. Never remove those, and never launch the game without `--smoke` for a test.
+- When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
+  stashing `electron/main.js` brings back a visible window.
+- Page screenshots: headless Edge only (`--headless=new`). Never open pages, images, videos or audio in a viewer/player
+  to check them; read images with the Read tool and probe media with ffprobe/ffmpeg to files.
+- Blender, ffmpeg, Python, TTS: background/CLI only (`blender -b`), no previews, no playback, no `start`/`explorer`.
+
 - `unset ELECTRON_RUN_AS_NODE; node_modules/electron/dist/electron.exe . --smoke=out.png --shots=list.json`
   where the list is `[{js, wait, out, log}]`. `window.__SD` exposes `begin()`, `go(x,y)`, `W` (world),
   `cam`, `SWING` (live swing tuning).
@@ -44,6 +57,13 @@ After **every** batch of changes (aka user's message) the user asked for, publis
   (see `docs/pages/INDEX.md` for what was verified). Any change to swing physics or ring/platform
   positions must be re-verified for all 12 ring gaps.
 - Python here defaults to cp1251: run edit scripts with `PYTHONUTF8=1` or pass `encoding='utf-8'`.
+
+## Story (spoilers in docs/STORY.md)
+
+The plot was rewritten on 2026-11-22 to the user's brief: not straightforward, dark, ominous, unexpected, and darker
+the deeper you go. The user asked **not to be spoiled**: never put plot content in chat summaries or in the open part
+of a changes page; describe structure only and put the plot behind a sealed `<details>` block. Any new line, keepsake
+or prop must fit the escalation map in `docs/STORY.md` (nothing at a shallower depth may be grimmer than what's below).
 
 ## Hidden rooms
 

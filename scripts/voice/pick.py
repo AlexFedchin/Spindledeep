@@ -14,7 +14,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
-from lines import LINES  # noqa: E402
+from lines import LINES, WRONG  # noqa: E402
 
 RAW = os.path.join(HERE, '.cache', 'raw')
 MODELS = os.environ.get('QWEN_MODELS', os.path.join(HERE, '.cache', 'models'))
@@ -54,7 +54,15 @@ def main():
         chain = ('highpass=f=80,lowpass=f=11000,equalizer=f=220:t=q:w=1:g=2,equalizer=f=3200:t=q:w=1.2:g=-1.5,'
                  'acompressor=threshold=-22dB:ratio=2.5:attack=8:release=200,'
                  'aecho=0.8:0.5:60|110:0.10|0.06,loudnorm=I=-17:TP=-2:LRA=9,apad=pad_dur=0.4')
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', best[1], '-af', chain, '-ar', '44100', '-ac', '1', '-c:a', 'libvorbis', '-q:a', '5', out], check=True)
+        if lid in WRONG:
+            # something else speaking with her voice: a copy a fifth lower, a hair late, mixed underneath
+            w = WRONG[lid]
+            graph = (f'[0]asplit=2[a][b];[b]asetrate=24000*0.667,aresample=24000,atempo=1.5,adelay=35,lowpass=f=2400[lo];'
+                     f'[a][lo]amix=inputs=2:weights=1 {w}:normalize=0,{chain}[out]')
+            cmd = ['ffmpeg', '-v', 'error', '-y', '-i', best[1], '-filter_complex', graph, '-map', '[out]']
+        else:
+            cmd = ['ffmpeg', '-v', 'error', '-y', '-i', best[1], '-af', chain]
+        subprocess.run(cmd + ['-ar', '44100', '-ac', '1', '-c:a', 'libvorbis', '-q:a', '5', out], check=True)
         print(lid, 'picked', os.path.basename(best[1]), round(best[0], 3), flush=True)
     json.dump(report, open(os.path.join(HERE, '.cache', 'scores.json'), 'w', encoding='utf-8'), indent=1)
 

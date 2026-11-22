@@ -55,6 +55,7 @@ export class World {
     this.hints = makeHints();
     this.time = 0;
     this.ending = null;
+    this.husks = [];        // the dolls you lost on the way down stay where they fell
     this.reset();
   }
 
@@ -289,6 +290,13 @@ export class World {
     const p = this.player;
     p.dead = true; p.deadT = 0;
     this.emit('death', { x: p.x, y: p.y, cause });
+    // leave the body: floating on the ink, eaten hollow if the moths had it, otherwise lying on the floor below
+    let y = p.y, kind = cause === 'moths' ? 'husknest' : 'husk';
+    const pool = this.ink.find((k) => p.x > k.x0 && p.x < k.x1 && p.y < k.y + 1.5);
+    if (cause === 'ink' && pool) { y = pool.y - 0.06; kind = 'huskink'; }
+    else { const gy = this.T.ground(p.x, p.y + 0.3, 40); if (gy !== null) y = gy - 0.03; }
+    this.husks.push({ x: p.x, y, kind, flip: p.facing, seed: (Math.random() * 1e6) | 0 });
+    if (this.husks.length > 40) this.husks.shift();
   }
   _respawn() {
     const c = this.checkpoint, p = this.player;
@@ -370,7 +378,8 @@ export class World {
     }
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
-    if (vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });
+    for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
+    if (this.candleOut === undefined && vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
     for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
