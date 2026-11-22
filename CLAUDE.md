@@ -46,6 +46,11 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
   throttling switches are off in smoke mode. Never remove those, and never launch the game without `--smoke` for a test.
 - Test runs use their own profile (`%TEMP%/spindledeep-smoke`, set in `electron/main.js`), so they never touch the
   player's save. `__SD.cont()` continues from the save like the title's Continue.
+- Real input for tests: a shots step can take `click: '<css selector>'` and `keys: ['Enter', 'Space', ...]`
+  (`sendInputEvent`, so focus and default actions behave like a real player's). Session logs land in
+  `<profile>/logs/session-*.log` (player: `%APPDATA%\Spindledeep\logs`); read them first when the user reports a bug.
+- Overlays hide with opacity, so `show()` in main.js also sets `inert`: never hide UI with opacity alone (a focused
+  hidden menu button once restarted the game whenever Enter/Space was pressed in play).
 - When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
   stashing `electron/main.js` brings back a visible window.
 - Page screenshots: headless Edge only (`--headless=new`). Never open pages, images, videos or audio in a viewer/player

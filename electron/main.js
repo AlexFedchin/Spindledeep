@@ -32,6 +32,24 @@ const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 // the run in progress: written by the main process straight to disk (atomically) every time the game saves,
 // so it survives a crash or a killed process; localStorage is only a fallback/migration source
 const savePath = () => path.join(app.getPath('userData'), 'save.json');
+// a plain-text log of each session (what screen the game is on, saves, deaths, respawns, errors, crashes), one file
+// per launch in userData/logs, the last 10 kept. The player can send these in when something goes wrong.
+let logFile = null;
+function logLine(src, msg) {
+  try {
+    if (!logFile) {
+      const dir = path.join(app.getPath('userData'), 'logs');
+      fs.mkdirSync(dir, { recursive: true });
+      const old = fs.readdirSync(dir).filter((f) => f.endsWith('.log')).sort();
+      for (const f of old.slice(0, Math.max(0, old.length - 9))) fs.rmSync(path.join(dir, f), { force: true });
+      logFile = path.join(dir, 'session-' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
+      fs.appendFileSync(logFile, `Spindledeep ${app.getVersion()} · Electron ${process.versions.electron} · ${process.platform} ${require('os').release()}
+`);
+    }
+    fs.appendFileSync(logFile, `${new Date().toISOString()} [${src}] ${msg}
+`);
+  } catch { /* logging must never break the game */ }
+}
 function readSettings() { try { return JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch { return {}; } }
 
 function createWindow() {
@@ -89,6 +107,17 @@ async function runSmoke(win) {
         // [{ js, wait, out }]: run, wait, capture — one window, many pictures
         for (const s of JSON.parse(fs.readFileSync(shots, 'utf8'))) {
           if (s.js) await win.webContents.executeJavaScript(s.js).catch((e) => console.log('shot js error', e.message));
+          // real input, as the OS would deliver it (focus and default actions included): a mouse click on an element,
+          // then key taps, e.g. { click: '#menu button', keys: ['Enter'] }
+          if (s.click) {
+            const r = await win.webContents.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.click)}).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; })()`);
+            for (const type of ['mouseMove', 'mouseDown', 'mouseUp']) { win.webContents.sendInputEvent({ type, x: Math.round(r[0]), y: Math.round(r[1]), button: 'left', clickCount: 1 }); await wait(40); }
+          }
+          for (const k of s.keys || []) {
+            win.webContents.sendInputEvent({ type: 'keyDown', keyCode: k }); await wait(30);
+            if (k === 'Enter' || k === 'Space') win.webContents.sendInputEvent({ type: 'char', keyCode: k === 'Space' ? ' ' : '\r' });
+            await wait(60); win.webContents.sendInputEvent({ type: 'keyUp', keyCode: k }); await wait(60);
+          }
           await wait(s.wait ?? 1500);
           if (s.out) { const im = await win.webContents.capturePage(); fs.writeFileSync(s.out, im.toPNG()); }
           if (s.log) console.log('LOG', await win.webContents.executeJavaScript(s.log).catch((e) => e.message));
@@ -125,8 +154,17 @@ app.whenReady().then(() => {
     try { fs.mkdirSync(path.dirname(savePath()), { recursive: true }); fs.writeFileSync(savePath() + '.tmp', txt); fs.renameSync(savePath() + '.tmp', savePath()); e.returnValue = true; }
     catch (err) { console.error('save failed', err); e.returnValue = false; }
   });
+  ipcMain.on('log', (_e, msg) => logLine('game', String(msg).slice(0, 2000)));
   ipcMain.on('save:clear', (e) => { try { fs.rmSync(savePath(), { force: true }); } catch { /* ignore */ } e.returnValue = true; });
   ipcMain.handle('app:fullscreen', (e, v) => { const w = BrowserWindow.fromWebContents(e.sender); w.setFullScreen(v); });
-  createWindow();
+  logLine('app', 'start, profile ' + app.getPath('userData'));
+  const win = createWindow();
+  win.webContents.on('render-process-gone', (_e, d) => logLine('app', `renderer gone: ${d.reason} (exit ${d.exitCode})`));
+  win.webContents.on('unresponsive', () => logLine('app', 'renderer unresponsive'));
+  win.webContents.on('responsive', () => logLine('app', 'renderer responsive again'));
+  win.webContents.on('did-start-loading', () => logLine('app', 'page loading'));
+  win.on('closed', () => logLine('app', 'window closed'));
+  app.on('child-process-gone', (_e, d) => logLine('app', `child process gone: ${d.type} ${d.reason} (exit ${d.exitCode})`));
 });
+app.on('will-quit', () => logLine('app', 'quit'));
 app.on('window-all-closed', () => app.quit());

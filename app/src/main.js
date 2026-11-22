@@ -10,11 +10,20 @@ import * as L from './level.js';
 import { clamp, damp, lerp, smooth } from './util.js';
 
 const SD = (window.__SD = { ready: false, errors: [] });
-addEventListener('error', (e) => SD.errors.push(String(e.message)));
-addEventListener('unhandledrejection', (e) => SD.errors.push(String(e.reason?.message || e.reason)));
+// session log (electron/main.js writes it to userData/logs): screens, menu choices, saves, deaths, errors
+const log = (m) => { try { window.host?.log?.(m); } catch { /* ignore */ } };
+addEventListener('error', (e) => { SD.errors.push(String(e.message)); log(`ERROR ${e.message} at ${e.filename}:${e.lineno}:${e.colno}`); });
+addEventListener('unhandledrejection', (e) => { SD.errors.push(String(e.reason?.message || e.reason)); log(`ERROR (promise) ${e.reason?.stack || e.reason}`); });
 const Q = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
-const show = (el, on) => el.classList.toggle('hidden', !on);
+// Hidden overlays only fade (opacity), so they are also made inert: a menu button that kept keyboard focus after
+// a mouse click used to be "clicked" again by Enter/Space during play (Enter is the act key), which restarted the
+// game from the prologue and wiped the save.
+const show = (el, on) => {
+  el.classList.toggle('hidden', !on);
+  el.inert = !on;
+  if (!on && el.contains(document.activeElement)) document.activeElement.blur();
+};
 const SAVE_KEY = 'spindledeep.save.v1';
 const FIXED = 1 / 120;
 
@@ -60,12 +69,15 @@ async function boot() {
   } catch (e) {
     console.error(e);
     SD.errors.push(String(e.message || e));
+    log('FATAL could not start: ' + (e.stack || e));
     $('fatal').textContent = 'Spindledeep could not start.\n\n' + (e.message || e) + '\n\nIt needs a GPU with WebGPU support (Windows 10/11, recent drivers).';
     show($('fatal'), true);
     return;
   }
   addEventListener('resize', () => R.resize());
+  document.querySelectorAll('.hidden').forEach((el) => (el.inert = true));
   show($('loading'), false);
+  log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
   Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
@@ -80,12 +92,16 @@ function menu(nav, items) {
   items.forEach((it, i) => {
     const b = document.createElement('button');
     b.textContent = it.label;
+    b.tabIndex = -1;                                   // menus are driven by the game's own input, never by DOM focus
+    b.onmousedown = (e) => e.preventDefault();         // a click must not leave the button focused
     b.onmouseenter = () => selectItem(nav, i);
-    b.onclick = () => { A?.resume(); it.fn(); };
+    b.onclick = () => { if (!menuLive(nav)) { log(`ignored click on "${it.label}" (state ${state})`); return; } log(`menu "${it.label}" (mouse)`); A?.resume(); it.fn(); };
     nav.appendChild(b);
   });
   selectItem(nav, 0);
 }
+// a menu only acts while its own screen is up: the title menu on the title, the pause menu while paused
+function menuLive(nav) { return nav.id === 'menu' ? state === 'title' : paused; }
 function selectItem(nav, i) {
   nav._sel = (i + nav._items.length) % nav._items.length;
   [...nav.children].forEach((b, k) => b.classList.toggle('sel', k === nav._sel));
@@ -93,13 +109,14 @@ function selectItem(nav, i) {
 function navInput(nav) {
   if (I.pressed.up) { selectItem(nav, nav._sel - 1); A.play('step1', { vol: 0.2, verb: 0.2 }); }
   if (I.pressed.down) { selectItem(nav, nav._sel + 1); A.play('step2', { vol: 0.2, verb: 0.2 }); }
-  if (I.pressed.act || I.pressed.jump) { A.resume(); nav._items[nav._sel].fn(); }
+  if (I.pressed.act || I.pressed.jump) { log(`menu "${nav._items[nav._sel].label}" (keys)`); A.resume(); nav._items[nav._sel].fn(); }
 }
 
 function enterTitle() {
   state = 'title';
   W.reset();
   const has = !!loadSave(true);
+  log(`title screen · save ${has ? 'present' : 'none'}`);
   const items = [];
   if (has) items.push({ label: 'Continue', fn: () => startGame(true) });
   items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => playCine('intro', () => startGame(false)) });
@@ -121,6 +138,7 @@ function startGame(cont) {
   W = new World(T);
   D = new Drawer(W);
   if (cont) applySave(loadSave()); else clearSave();
+  log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
   finAPlayed = false;
   state = 'play';
@@ -132,6 +150,7 @@ function startGame(cont) {
 }
 function setPaused(on) {
   paused = on;
+  log(on ? 'paused' : 'resumed');
   show($('pause'), on);
   if (on) {
     menu($('pmenu'), [
@@ -158,6 +177,7 @@ function readSaveTxt() {
   return saveTxt;
 }
 function clearSave() {
+  log('save cleared');
   saveTxt = null;
   try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
   try { window.host?.clearSave?.(); } catch { /* ignore */ }
@@ -176,7 +196,9 @@ function save() {
   };
   saveTxt = JSON.stringify(data);
   try { localStorage.setItem(SAVE_KEY, saveTxt); } catch { /* ignore */ }
-  try { window.host?.writeSave?.(saveTxt); } catch { /* ignore */ }
+  let ok = false;
+  try { ok = window.host?.writeSave?.(saveTxt); } catch { /* ignore */ }
+  log(`saved · pole ${data.cp}${ok === false ? ' · FILE WRITE FAILED' : ''}`);
 }
 function loadSave(peek) { try { const s = JSON.parse(readSaveTxt()); return s && s.cp !== undefined ? s : null; } catch { return null; } }
 function applySave(s) {
@@ -244,6 +266,7 @@ function handleEvents() {
       case 'taut': A.play('tie', { vol: 0.25, rate: 0.8, x: p.x, y: p.y }); if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
       case 'snag': A.play('snag', { vol: 0.55, x: p.x, y: p.y + 2 }); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
       case 'tie':
+        log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
         A.play('tie', { vol: 0.7, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.75, x: e.x, y: e.y });
         D.spawn('spark', e.x, e.y + 0.5, 18, { speed: 2.5, life: 1.0 }); D.spawn('ring', e.x, e.y + 0.5, 1, { speed: 0, life: 0.9 });
         save();
@@ -266,12 +289,13 @@ function handleEvents() {
         break;
       case 'dissolve': A.play('splash', { vol: 0.6, x: e.x, y: e.y }); A.play('cut', { vol: 0.5, rate: 0.8, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 8, { speed: 1.5, life: 1.2 }); toast('the ink ate the thread', 2.5); break;
       case 'death':
+        log(`death · ${e.cause} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
         A.play('tear', { vol: 0.9, x: e.x, y: e.y });
         if (e.cause === 'ink') A.play('splash', { vol: 0.9, rate: 0.7, x: e.x, y: e.y });
         D.spawn('fiber', e.x, e.y, 40, { speed: 3, life: 2 });
         cam.shake = 0.4;
         break;
-      case 'respawn': A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
+      case 'respawn': log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
       case 'skein':
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
         toast(`a skein of her red yarn · ${e.n} of ${W.skeins.length}`, 3);
@@ -284,11 +308,11 @@ function handleEvents() {
         save();
         break;
       case 'memory': playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 }); save(); break;
-      case 'area': if (state === 'play') card(e.name); else W.areaSeen.delete(e.id); A.setArea(e.id); break;
+      case 'area': log(`entered ${e.name}`); if (state === 'play') card(e.name); else W.areaSeen.delete(e.id); A.setArea(e.id); break;
       case 'areaQuiet': A.setArea(e.id); break;
       case 'drip': A.play('drip', { vol: 0.5, vary: 0.2, x: e.x, y: e.y, verb: 1 }); break;
       case 'splash': A.play('splash', { vol: 0.35, vary: 0.2, x: e.x, y: e.y }); D.spawn('splash', e.x, e.y, 6, { speed: 2.5, vy: 2, life: 0.8 }); break;
-      case 'finale': startEnding(); break;
+      case 'finale': log('finale'); startEnding(); break;
     }
   }
   W.events.length = 0;
@@ -344,6 +368,7 @@ function endingUpdate(dt) {
 }
 
 function rollCredits() {
+  log('credits');
   state = 'credits';
   const ks = W.secrets.filter((k) => k.taken);
   $('ckeeps').textContent = ks.length ? `${ks.length} of ${W.secrets.length} · ${ks.map((k) => k.what).join(' · ')}` : `none of ${W.secrets.length} · they are still down there`;
@@ -358,18 +383,20 @@ function rollCredits() {
 let cine = null;
 function playCine(name, onEnd) {
   const v = $('cine');
-  cine = { onEnd, hold: 0, hint: 0, done: false, prev: state };
+  log(`film ${name} start`);
+  cine = { onEnd, hold: 0, hint: 0, done: false, prev: state, name };
   state = 'cine';
   show($('title'), false);
   A.master.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
   v.src = 'assets/cine/' + name + '.mp4';
   v.volume = Math.min(1, settings.volume ?? 1);
-  v.onended = endCine; v.onerror = endCine;
+  v.onended = endCine; v.onerror = () => { log(`film ${name} failed to play: ${v.error?.message || v.error?.code}`); endCine(); };
   v.play().then(() => show(v, true)).catch(endCine);
 }
 function endCine() {
   if (!cine || cine.done) return;
   cine.done = true;
+  log(`film ${cine.name} end (${cine.hold > 0.9 ? 'skipped' : 'finished'})`);
   const v = $('cine'), f = cine.onEnd;
   show(v, false); show($('skip'), false);
   setTimeout(() => { v.pause(); v.removeAttribute('src'); v.load(); }, 900);

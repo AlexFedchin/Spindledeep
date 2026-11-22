@@ -16,6 +16,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 8. Six hidden rooms (`secrets/`) | https://claude.ai/artifact/TT7w5yYxQK7PtmWbsMjiNK |
 | 9. A darker thread: story rewrite (`story/`, plot sealed) | https://claude.ai/artifact/WGTgv9q1fD1XJBdv9Kqnc8 |
 | 10. Clean films, kept runs (`filmfix/`) | https://claude.ai/artifact/RqUUscR5hSEKuRaCpLP4Rm |
+| 11. The ghost on the title screen (`restart/`) | https://claude.ai/artifact/WB3XZc4gqW8iqyPkNFtitx |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
