@@ -311,6 +311,28 @@ def I7(out, preview):
     return sc
 
 
+def _sill_thread(n_per=6):
+    """the red thread from the doll's waist on the sill to the spool on the floor, lying on things instead of
+    through them: across the sill top (z 1.0), round its front edge (y 0.32), down onto the table (top z 0.79),
+    across the table, over its back edge (y 1.12) and down to the spool lying on the floor"""
+    r = 0.0016 + 0.0015
+    key = [V((0.03, 0.185, 1.10)), V((0.055, 0.25, 1.0 + r)), V((0.072, 0.318, 1.0 + r)), V((0.076, 0.322 + r * 0.7, 1.0 - r * 0.3)),
+           V((0.08, 0.322 + r, 0.97)), V((0.09, 0.33, 0.84)), V((0.1, 0.345, 0.79 + r)), V((0.46, 1.1, 0.79 + r)),
+           V((0.47, 1.12 + r * 0.7, 0.79 - r * 0.3)), V((0.48, 1.12 + r, 0.76)), V((0.56, 1.15, 0.25)), V((0.615, 1.163, 0.057))]
+    pts = []
+    for a, b in zip(key, key[1:]):
+        for i in range(n_per):
+            pts.append(a.lerp(b, i / n_per))
+    pts.append(key[-1])
+    return pts
+
+
+def _sill_spool(R):
+    # lying on its side on the floor (it used to sit half sunk into the boards)
+    R['spool'].location = (0.6, 1.2, 0.031)
+    R['spool'].rotation_euler = (math.pi / 2, 0, 0.4)
+
+
 @shot(exposure=0.75)
 def I8(out, preview):
     """the doll on the windowsill, from behind, facing the storm; the room is cold and dark now; the red thread
@@ -322,10 +344,8 @@ def I8(out, preview):
     R = sets.interior(sc, cam, tgt, night=True, doll_pose='sill', knitter_on=False, candle_lit=False)
     mats = M()
     d = R['doll']
-    line = lib.tube('redline', lib.catenary(V((0.03, 0.18, 1.1)), V((0.6, 1.2, 0.04)), sag=0.0, n=30,
-                                            lift=lambda p: 0.99 if p.y < 0.32 else (0.0 if p.y > 0.5 else 0.99 - (p.y - 0.32) * 5.5)), 0.0016, mats['red'])
-    R['spool'].location = (0.6, 1.2, 0.0)
-    R['spool'].rotation_euler = (math.pi / 2, 0, 0.4)
+    line = lib.tube('redline', _sill_thread(), 0.0016, mats['red'])
+    _sill_spool(R)
     door = R['door']
     keys(door, 'rotation_euler', [(1, (0, 0, math.radians(60))), (70, (0, 0, math.radians(60))), (84, (0, 0, math.radians(3))), (88, (0, 0, math.radians(12))), (96, (0, 0, math.radians(1))), (150, (0, 0, math.radians(25))), (192, (0, 0, math.radians(40)))])
     cold = light('AREA', 'doorcold', (-3.4, 1.65, 1.2), 30.0, color=(0.6, 0.7, 1.0), size=1.2, rot=(0, math.radians(90), 0))
@@ -346,7 +366,8 @@ def I9(out, preview):
     hc = dp['head'].matrix_world.translation.copy() + V((0, 0, -0.03))
     p0 = lib.frame_pos(hc + V((0, 0, -0.06)), (1.0, 0.12, 0.12), 0.24, 70, 0.95); p1 = lib.frame_pos(hc, (1.0, 0.06, 0.08), 0.17, 70, 0.95)
     cam_keys(cam, tgt, [(1, p0, hc, 70, (p0 - hc).length), (120, p1, hc + V((0, 0, -0.01)), 70, (p1 - hc).length)])
-    line = lib.tube('redline', lib.catenary(V((0.03, 0.18, 1.1)), V((0.4, 0.9, 0.5)), sag=0.05, n=24), 0.0016, mats['red'])
+    line = lib.tube('redline', _sill_thread(), 0.0016, mats['red'])
+    _sill_spool(R)
     glint = light('POINT', 'glint', (0.4, -0.3, 1.5), 0.0, color=(0.8, 0.85, 1.0), size=0.02)
     keys(glint, 'location', [(30, (0.6, -0.4, 1.5)), (70, (-0.3, -0.4, 1.4))])
     light_keys(glint, [(1, 0.0), (34, 0.0), (48, 6.0), (62, 6.0), (76, 0.0)])
@@ -401,7 +422,7 @@ def E2(out, preview):
     mats = M()
     L = sets.loom_cave(sc, cam, tgt, mats)
     kp = L['kparts']
-    droot, dp = lib.doll('doll', (0.0, 0.32, 0.64), 0.9, mats)
+    droot, dp = lib.doll('doll', (0.0, 0.32, 0.705), 0.9, mats)      # on top of her lap (z 0.70), not sunk into it
     droot.rotation_euler = (0.15, 0, 0.0)
     # the shawl reddens: mix its base colour toward red over the shot
     sh = mats['wool_shawl']

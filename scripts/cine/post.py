@@ -129,6 +129,11 @@ def process(fdir, f, exposure, boil, first_k=None):
         beauty_bg = beauty
     yy, xx = torch.meshgrid(torch.arange(H, device=dev, dtype=torch.float32), torch.arange(W, device=dev, dtype=torch.float32), indexing='ij')
     sky = (dep > 380) | (Praw.abs().sum(0) < 1e-6)
+    sky0 = sky                  # exposure is measured against the true sky only, so the look of a shot doesn't shift
+    # surfaces outside the shot's encoded position box come out clamped (constant P, zero gradient), so world-
+    # anchored lines there are pure noise and flicker frame to frame: engrave them like the sky instead
+    clip = ((Praw < 0.003) | (Praw > 0.997)).any(0).float()
+    sky = sky | (blur(clip[None], 2.0)[0] > 0.3)
     # metres per pixel per metre of depth (from the position pass where surfaces are smooth)
     camj = CAM.get(fdir)
     if camj is None:
@@ -145,7 +150,7 @@ def process(fdir, f, exposure, boil, first_k=None):
     # tone
     lumv = (beauty_bg * torch.tensor([0.3, 0.52, 0.18], device=dev).view(3, 1, 1)).sum(0)
     if AUTO.get(fdir) is None:
-        sel = (~sky) & (aux[1] < 0.02)
+        sel = (~sky0) & (aux[1] < 0.02)
         med = torch.quantile(lumv[sel][::7], 0.6) if sel.any() else torch.tensor(0.05, device=dev)
         AUTO[fdir] = float((0.2 / med.clamp(min=1e-4)).clamp(0.4, 60))
         print('auto exposure', fdir, round(AUTO[fdir], 2), flush=True)
@@ -186,12 +191,19 @@ def process(fdir, f, exposure, boil, first_k=None):
     wz = smoothstep(torch.tensor(-0.15, device=dev), torch.tensor(0.15, device=dev), zh - fh)
     nzs = blur(nrm[2:3].abs(), 5.0)[0]
     wz = wz * (1 - smoothstep(torch.tensor(0.45, device=dev), torch.tensor(0.7, device=dev), nzs))   # floors and slopes: lines across the ground
+    # a family whose field barely changes across the surface (fwd lines on a wall facing the camera, z lines on
+    # flat ground) has a near-zero gradient: its octave then comes from position-pass noise and its lines boil
+    # from frame to frame. Wherever one family is several times better defined than the other, use that one.
+    r = torch.log2(blur(zg[None], 4.0)[0]) - torch.log2(blur(fgm[None], 4.0)[0])
+    wz = torch.maximum(wz, smoothstep(torch.tensor(1.5, device=dev), torch.tensor(3.0, device=dev), r))
+    wz = wz * (1 - smoothstep(torch.tensor(1.5, device=dev), torch.tensor(3.0, device=dev), -r))
     mask = m_f + (m_z - m_f) * wz
     if DEBUG:
         def dbg(name, x, lo=0.0, hi=1.0):
             y = ((x - lo) / (hi - lo)).clamp(0, 1)
             cv2.imwrite(os.path.join(DEBUG, name + '.png'), (y.cpu().numpy() * 255).astype(np.uint8))
-        yy0, xx0 = 430, 1500
+        yy0, xx0 = (int(v) for v in os.environ.get('PROBE', '430,1500').split(','))
+        print('probe2 zg', float(zg[yy0, xx0]), 'fg', float(fgm[yy0, xx0]), 'r', float(r[yy0, xx0]), 'wz', float(wz[yy0, xx0]), 'nzs', float(nzs[yy0, xx0]), 'dep', float(dep[yy0, xx0]), 'ffr', float(ffr[yy0, xx0]), 'f0', float(f0[yy0, xx0]))
         print('probe v', float(v[yy0, xx0]), 'z0', float(z0[yy0, xx0]), 'z1', float(z1[yy0, xx0]), 'zfr', float(zfr[yy0, xx0]), 'wob', float(wob[yy0, xx0]), 'mz', float(m_z[yy0, xx0]), 'aa', aa, 'zg', float(zg[yy0, xx0]))
         dbg('wz', wz); dbg('zh', zh); dbg('fh', fh); dbg('mz', m_z); dbg('mf', m_f); dbg('v', v)
         dbg('zg', torch.log10(zg), -5, -1); dbg('fg', torch.log10(fgm), -5, -1); dbg('sky', sky.float()); dbg('dep', dep, 0, 60)

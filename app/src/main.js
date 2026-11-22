@@ -120,7 +120,7 @@ function startGame(cont) {
   show($('title'), false);
   W = new World(T);
   D = new Drawer(W);
-  if (cont) applySave(loadSave()); else localStorage.removeItem(SAVE_KEY);
+  if (cont) applySave(loadSave()); else clearSave();
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
   finAPlayed = false;
   state = 'play';
@@ -128,6 +128,7 @@ function startGame(cont) {
   A.endMusic = false;
   cam.x = W.player.x; cam.y = W.player.y + 1;
   SD.W = W;
+  save();            // a new run replaces the old save at once; a continued one is re-written as is
 }
 function setPaused(on) {
   paused = on;
@@ -137,15 +138,33 @@ function setPaused(on) {
       { label: 'Resume', fn: () => setPaused(false) },
       { label: 'Fullscreen', fn: toggleFullscreen },
       { label: `Volume · ${Math.round((settings.volume ?? 1) * 100)}%`, fn: () => { const v = [1, 0.7, 0.45, 0.2, 0][([1, 0.7, 0.45, 0.2, 0].indexOf(settings.volume ?? 1) + 1) % 5]; settings.volume = v; A.setVolume(v); window.host?.setSettings?.(settings); setPaused(true); } },
-      { label: 'Return to the cottage', fn: () => { setPaused(false); enterTitle(); } },
-      { label: 'Leave', fn: () => window.host?.quit?.() },
+      { label: 'Return to the cottage', fn: () => { save(); setPaused(false); enterTitle(); } },
+      { label: 'Leave', fn: () => { save(); window.host?.quit?.(); } },
     ]);
     A.ctx.suspend();
   } else A.resume();
 }
 
 // ── saves ────────────────────────────────────────────────────────────────
+// The run is saved at every peg (the checkpoint you respawn and continue from), at bells, memories and keepsakes,
+// and when the game is left or closed. It goes to userData/save.json through the main process (survives a crash);
+// localStorage keeps a copy, and is read only if there is no file (saves from before the file existed).
+let saveTxt;
+function readSaveTxt() {
+  if (saveTxt === undefined) {
+    try { saveTxt = window.host?.readSave?.() ?? null; } catch { saveTxt = null; }
+    if (!saveTxt) try { saveTxt = localStorage.getItem(SAVE_KEY); } catch { saveTxt = null; }
+  }
+  return saveTxt;
+}
+function clearSave() {
+  saveTxt = null;
+  try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+  try { window.host?.clearSave?.(); } catch { /* ignore */ }
+}
+addEventListener('beforeunload', () => save());
 function save() {
+  if (state !== 'play' || !W) return;
   const th = W.thread;
   const n = th.fixedN;
   const data = {
@@ -155,9 +174,11 @@ function save() {
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
     dead: Array.from(th.dead.subarray(0, n)),
   };
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  saveTxt = JSON.stringify(data);
+  try { localStorage.setItem(SAVE_KEY, saveTxt); } catch { /* ignore */ }
+  try { window.host?.writeSave?.(saveTxt); } catch { /* ignore */ }
 }
-function loadSave(peek) { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && s.cp !== undefined ? s : null; } catch { return null; } }
+function loadSave(peek) { try { const s = JSON.parse(readSaveTxt()); return s && s.cp !== undefined ? s : null; } catch { return null; } }
 function applySave(s) {
   if (!s) return;
   const th = W.thread;
@@ -317,7 +338,7 @@ function endingUpdate(dt) {
   }
   if (e.said && e.t > 2.5 + e.dur + 9 && !e.done) {
     e.done = true;
-    localStorage.removeItem(SAVE_KEY);
+    clearSave();
     playCine('outro', rollCredits);
   }
 }

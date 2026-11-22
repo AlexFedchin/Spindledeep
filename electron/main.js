@@ -11,6 +11,8 @@ const APP_DIR = path.join(__dirname, '..', 'app');
 const arg = (k) => { const a = process.argv.find((s) => s.startsWith('--' + k)); return a ? (a.split('=')[1] ?? true) : null; };
 const SMOKE = arg('smoke');
 const DEV = !!arg('dev');
+// test runs keep their own profile (settings, save) so they never touch the player's save
+if (SMOKE) app.setPath('userData', path.join(app.getPath('temp'), 'spindledeep-smoke'));
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -27,6 +29,9 @@ if (SMOKE) {
 }
 
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
+// the run in progress: written by the main process straight to disk (atomically) every time the game saves,
+// so it survives a crash or a killed process; localStorage is only a fallback/migration source
+const savePath = () => path.join(app.getPath('userData'), 'save.json');
 function readSettings() { try { return JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch { return {}; } }
 
 function createWindow() {
@@ -115,6 +120,12 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:get', () => readSettings());
   ipcMain.handle('settings:set', (_e, s) => { fs.writeFileSync(settingsPath(), JSON.stringify(s)); return true; });
   ipcMain.handle('app:quit', () => app.quit());
+  ipcMain.on('save:read', (e) => { try { e.returnValue = fs.readFileSync(savePath(), 'utf8'); } catch { e.returnValue = null; } });
+  ipcMain.on('save:write', (e, txt) => {
+    try { fs.mkdirSync(path.dirname(savePath()), { recursive: true }); fs.writeFileSync(savePath() + '.tmp', txt); fs.renameSync(savePath() + '.tmp', savePath()); e.returnValue = true; }
+    catch (err) { console.error('save failed', err); e.returnValue = false; }
+  });
+  ipcMain.on('save:clear', (e) => { try { fs.rmSync(savePath(), { force: true }); } catch { /* ignore */ } e.returnValue = true; });
   ipcMain.handle('app:fullscreen', (e, v) => { const w = BrowserWindow.fromWebContents(e.sender); w.setFullScreen(v); });
   createWindow();
 });

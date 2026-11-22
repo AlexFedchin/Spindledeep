@@ -15,6 +15,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 7. A swing has to be earned (`swinghang/`) | https://claude.ai/artifact/JDuPHDEdDW5Lgax7SXdFro |
 | 8. Six hidden rooms (`secrets/`) | https://claude.ai/artifact/TT7w5yYxQK7PtmWbsMjiNK |
 | 9. A darker thread: story rewrite (`story/`, plot sealed) | https://claude.ai/artifact/WGTgv9q1fD1XJBdv9Kqnc8 |
+| 10. Clean films, kept runs (`filmfix/`) | https://claude.ai/artifact/RqUUscR5hSEKuRaCpLP4Rm |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -36,3 +37,8 @@ Scratchpad `secrets.js` walks into and out of all six hidden rooms in real physi
 Plot in `docs/STORY.md` (spoilers; keep out of summaries). All 9 voice lines re-recorded (Whisper acc 0.93–1.0; old takes in
 `scripts/voice/.cache/raw_v1`). Death marks: thorn/ink deaths verified to leave a mark that survives save → `__SD.cont()`.
 Smoke harness now uses a transparent, inactive, shown window: a never-shown window paused rAF (the loop didn't run).
+
+## Film fixes + saves (2026-11-22)
+Re-rendered I1 I2 I7 I8 I9 E2 E3 E5 E7; all 15 re-graded (post.py: clamped-position areas as sky, degenerate line family
+overridden; exposure still from the true sky so looks didn't shift). Saves: userData/save.json via IPC (atomic), verified
+across three real launches in the smoke profile (Continue resumes at the pole; Begin anew replaces).

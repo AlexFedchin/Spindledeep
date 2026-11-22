@@ -123,9 +123,12 @@ def cottage(mats, window_glow=1.0, interior=True, door_open=0.0, window_alpha=0.
         prim('cube', 'win_frame', loc=(lx, -0.06, lz), scale=(sx, 0.06, sz), material=mats['darkwood'])
     prim('cube', 'sill_out', loc=((wx0 + wx1) / 2, -0.18, wz0 - 0.06), scale=((wx1 - wx0) / 2 + 0.15, 0.14, 0.04), material=mats['darkwood'])
     prim('cube', 'sill_snow', loc=((wx0 + wx1) / 2, -0.2, wz0 - 0.0), scale=((wx1 - wx0) / 2 + 0.12, 0.13, 0.03), material=mats['snow'])
-    # shutters, one hanging crooked
-    prim('cube', 'shutterL', loc=(wx0 - 0.38, -0.1, (wz0 + wz1) / 2), scale=(0.3, 0.03, 0.56), material=mats['plank'])
-    sh = prim('cube', 'shutterR', loc=(wx1 + 0.4, -0.16, (wz0 + wz1) / 2 - 0.08), rot=(0, 0.18, -0.35), scale=(0.3, 0.03, 0.56), material=mats['plank'])
+    # shutters, one hanging crooked. The front logs bulge out to y = -0.17, so the boards sit just in front of
+    # that (they used to be buried in the logs); the loose one swings out from its hinge edge, never into the wall
+    yf = -0.17 - 0.03 - 0.006
+    prim('cube', 'shutterL', loc=(wx0 - 0.38, yf, (wz0 + wz1) / 2), scale=(0.3, 0.03, 0.56), material=mats['plank'])
+    a = 0.35
+    sh = prim('cube', 'shutterR', loc=(wx1 + 0.1 + 0.3 * math.cos(a), yf - 0.3 * math.sin(a), (wz0 + wz1) / 2 - 0.08), rot=(0, 0.18, -a), scale=(0.3, 0.03, 0.56), material=mats['plank'])
     # door
     dx0, dx1, dz0, dz1 = door
     hinge = empty('door_hinge', (dx0, -0.02, 0.0))
@@ -390,9 +393,10 @@ def loom_cave(sc, cam, tgt, mats=None, progress_obj=None):
         lib.curve_obj(f'warp{k}', [(x, 3.2, 1.5), (x, 3.2, 3.32)], bevel=0.0018, material=mats['grey_thread'], order=2)
     # her chair
     wood = mats['darkwood']
-    prim('cube', 'seat', loc=(0, 0.6, 0.45), scale=(0.3, 0.28, 0.03), material=wood)
-    prim('cube', 'chairback', loc=(0, 0.88, 0.95), rot=(-0.12, 0, 0), scale=(0.3, 0.03, 0.5), material=wood)
-    for (x, y) in [(-0.27, 0.35), (0.27, 0.35), (-0.27, 0.85), (0.27, 0.85)]:
+    # the back stands behind her shawl (which reaches y = 0.90); it used to cut through her back and arm
+    prim('cube', 'seat', loc=(0, 0.66, 0.45), scale=(0.3, 0.33, 0.03), material=wood)
+    prim('cube', 'chairback', loc=(0, 0.98, 0.95), rot=(-0.12, 0, 0), scale=(0.3, 0.03, 0.5), material=wood)
+    for (x, y) in [(-0.27, 0.36), (0.27, 0.36), (-0.27, 0.95), (0.27, 0.95)]:
         prim('cyl', 'cleg', loc=(x, y, 0.22), scale=(0.025, 0.025, 0.23), material=wood, vertices=8)
     kr, kp = lib.knitter('knitter', (0.0, 0.62, 0.0), mats, seated=True)
     # stool with the candle

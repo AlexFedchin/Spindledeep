@@ -44,6 +44,8 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
   (`setAudioMuted`). It must be *shown*: a never-shown window pauses requestAnimationFrame, so screenshots still
   render but the game loop does not run (deaths, timers, saves silently never happen). Occlusion/background
   throttling switches are off in smoke mode. Never remove those, and never launch the game without `--smoke` for a test.
+- Test runs use their own profile (`%TEMP%/spindledeep-smoke`, set in `electron/main.js`), so they never touch the
+  player's save. `__SD.cont()` continues from the save like the title's Continue.
 - When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
   stashing `electron/main.js` brings back a visible window.
 - Page screenshots: headless Edge only (`--headless=new`). Never open pages, images, videos or audio in a viewer/player
@@ -86,6 +88,12 @@ film shows; keep its content out of pages and summaries.
   game's engraving (same ink/paper/line maths as `app/src/shaders.js`; lines anchored in world space).
 - Edit: `<art venv>/python scripts/cine/edit.py intro|outro` cuts, adds title/fade, mixes the soundtrack
   from `app/assets/audio`, encodes H.264/AAC (VP9 1080p fails to decode in Electron here). `preview_all.sh` renders half-res stills of every shot.
+- Checking films for faults: `scratchpad flick.py`-style back-and-forth metric (|b-a|+|c-b|-|c-a| per pixel) finds
+  flicker; snow scores high legitimately, so look at consecutive frames. Faults found 2026-11-22: lines boiling on
+  surfaces outside a shot's `pos_lo/pos_size` box (clamped position pass, now engraved as sky in post.py) and on
+  surfaces where one line family has ~zero gradient (now forced to the other family); threads built as straight
+  catenaries through furniture (route them over real surfaces, see `_sill_thread`); props placed inside the log
+  walls (front logs bulge to y = -0.17). Re-render only the touched shots, but re-grade all after a post.py change.
 - EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
   negatives (offsets go through math nodes).
 
