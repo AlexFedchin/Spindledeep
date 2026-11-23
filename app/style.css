@@ -74,3 +74,5 @@ kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(-
 /* the cards at the end of the second ending */
 #endcard { position: fixed; left: 50%; top: 42vh; transform: translateX(-50%); width: min(900px, 80vw); text-align: center; font-style: italic;
   font-size: clamp(22px, 2vw, 34px); color: var(--paper); text-shadow: 0 2px 16px #000; transition: opacity 2s; pointer-events: none; z-index: 25; }
+/* no pointer over the game: shown only while a menu (title, pause) is up */
+body.nocursor, body.nocursor * { cursor: none !important; }

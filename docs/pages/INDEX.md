@@ -23,6 +23,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 15. Her, at last: the old-lady model (`oldlady/`) | https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt |
 | 16. Much deeper: four new areas, the Loom, a second ending (`deep/`, plot sealed) | https://claude.ai/artifact/9FAgaVuMKJjeRyNrvpxfRS |
 | 17. The cave breathes: zoom by room size, look up/down (`camera/`) | https://claude.ai/artifact/AzfFSJ6SAUkTvQczMzuRap |
+| 18. Out into the storm: prologue → game handover, walk out of the cottage, hidden pointer (`walkout/`) | https://claude.ai/artifact/3D4qdQVi67pjES3hUbNQeu |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -74,3 +75,9 @@ with the cloth rising (~55 s; also from peg 26). Loom ring: 12/20 phases. Both e
 Over all standing spots: ~1 m crawls → 12+ m Mere/Loom, median 5.7 m (`OPEN.mid`). View = area viewH × (open/5.7)^0.45,
 clamped 0.66–1.42, max 31 m. Look up/down only when grounded, not climbing, thread not gripped; pan after 0.2 s hold.
 Teleport tests in the Treadles/Hush/Gallery x=90 kill the parked doll (hazards) and respawn at peg 0: pick safe spots.
+
+## Walk-out (2026-11-23)
+After the intro film only (`startGame(false, true)`; `__SD.walkOut()` for tests, `__SD.begin()` skips it). `W.intro` drives
+door/doll/hints; scripted input `walkInput`. Audio bridge `A.storm()` starts at film end − 4.2 s (verified at 8× playback;
+seeking the film throws an AAC decode error → endCine, a test artifact). A light at the doll's height washes her out on the
+bright Brink: keep doorway lights low and the room dark. Cursor: `body.nocursor` unless title/loading/paused.

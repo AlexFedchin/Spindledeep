@@ -345,6 +345,7 @@ export class World {
   _hintsUpdate() {
     const p = this.player;
     this.hint = null;
+    if (this.intro && !this.intro.done) return;      // no prompts while she walks out of the cottage
     for (const h of this.hints) {
       if (h.done) continue;
       if (h.when && !h.when(this)) continue;
@@ -402,6 +403,8 @@ export class World {
     for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     if (this.extraLights) out.push(...this.extraLights);
+    // the cottage doorway while she walks out: warm room light spilling onto the snow
+    if (this.intro && this.intro.door > 0.01) out.push({ x: L.COTTAGE.x + 5.975, y: L.COTTAGE.y + 0.15, r: 3.2, i: 0.28 * this.intro.door, c: [1.0, 0.62, 0.3], soft: 10 });   // low, on the step: a lamp at her height washes her out
     return out;
   }
 }

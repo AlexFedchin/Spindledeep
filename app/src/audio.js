@@ -34,6 +34,7 @@ export class Audio {
     const comp = c.createDynamicsCompressor();
     comp.threshold.value = -10; comp.knee.value = 6; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.25;
     this.master.connect(comp).connect(c.destination);
+    this.out = comp;                 // the storm bridge plays here, past the master (which is silent during films)
     this.bus = {};
     for (const [k, v] of Object.entries({ music: 0.42, amb: 0.8, sfx: 0.9, voice: 1.0 })) { const gn = c.createGain(); gn.gain.value = v; gn.connect(this.master); this.bus[k] = gn; }
     // a long dark "cave" reverb for sfx and voice
@@ -64,6 +65,45 @@ export class Audio {
       } catch (e) { /* missing sounds are tolerated */ }
       progress?.(++done / FILES.length);
     }));
+  }
+  // master fades (the walk out of the cottage brings the game's sound up slowly, not with a snap)
+  fadeMaster(v, tau) {
+    const g = this.master.gain, t = this.ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.setTargetAtTime(0.9 * v, t, tau);
+  }
+  // The storm bridge between the prologue film and the game: the gale as heard from inside the cottage (heavily
+  // muffled) rises under the fading title card, past the silenced master, and keeps blowing over the cut. When
+  // the cottage door opens, stormOpen() throws the filter open (the full storm for a moment) and hands over to
+  // the game's own wind as the master comes up.
+  storm(rise = 2.2) {
+    if (this.br || !this.buf.amb_wind) return;
+    const c = this.ctx, t = c.currentTime;
+    const src = c.createBufferSource(); src.buffer = this.buf.amb_wind; src.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 0.4;
+    const lp2 = c.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 700;
+    const gn = c.createGain(); gn.gain.value = 0; gn.gain.setTargetAtTime(0.95 * this.volume, t, rise / 3);
+    src.connect(lp).connect(lp2).connect(gn).connect(this.out);
+    src.playbackRate.value = 0.92;
+    src.start(0, Math.random() * this.buf.amb_wind.duration);
+    // a low moan that breathes, so the bed under the title isn't a flat hiss
+    const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 0.13; lg.gain.value = 0.05;
+    lfo.connect(lg).connect(src.playbackRate); lfo.start();
+    this.br = { src, lp, lp2, gn, lfo };
+  }
+  stormOpen() {
+    const B = this.br; if (!B || B.open) return;
+    B.open = true;
+    const t = this.ctx.currentTime;
+    B.lp.frequency.setTargetAtTime(5000, t, 0.12); B.lp2.frequency.setTargetAtTime(6000, t, 0.12);
+    B.gn.gain.setTargetAtTime(1.05 * this.volume, t, 0.1);
+    B.gn.gain.setTargetAtTime(0, t + 0.9, 1.4);
+    setTimeout(() => this.stormStop(), 9000);
+  }
+  stormStop() {
+    const B = this.br; if (!B) return;
+    this.br = null;
+    B.gn.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2);
+    setTimeout(() => { try { B.src.stop(); B.lfo.stop(); } catch { /* already stopped */ } }, 1200);
   }
   resume() { if (this.ctx.state !== 'running') this.ctx.resume(); }
   setVolume(v) { this.volume = v; this.master.gain.setTargetAtTime(0.9 * v, this.ctx.currentTime, 0.05); }

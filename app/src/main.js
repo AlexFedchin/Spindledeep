@@ -91,7 +91,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
   requestAnimationFrame(tick);
 }
 
@@ -133,11 +133,12 @@ function enterTitle() {
   log(`title screen · save ${has ? 'present' : 'none'}`);
   const items = [];
   if (has) items.push({ label: 'Continue', fn: () => startGame(true) });
-  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => playCine('intro', () => startGame(false)) });
+  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => playCine('intro', () => startGame(false, true)) });
   items.push({ label: 'Fullscreen', fn: toggleFullscreen });
   items.push({ label: 'Leave', fn: () => window.host?.quit?.() ?? window.close() });
   menu($('menu'), items);
   show($('title'), true);
+  A.stormStop(); A.fadeMaster(A.volume, 0.3);
   A.setArea('brink');
   A.setMusic('mus_title', 3);
   cam.x = 27; cam.y = 5.5; cam.viewH = 15.5;
@@ -147,7 +148,7 @@ function toggleFullscreen() {
   window.host?.setFullscreen?.(settings.fullscreen);
   window.host?.setSettings?.(settings);
 }
-function startGame(cont) {
+function startGame(cont, walkOut = false) {
   show($('title'), false);
   W = new World(T);
   D = new Drawer(W);
@@ -161,6 +162,7 @@ function startGame(cont) {
   A.endMusic = false;
   cam.x = W.player.x; cam.y = W.player.y + 1; snapOpen();
   SD.W = W;
+  if (walkOut) beginWalkOut(); else A.fadeMaster(A.volume, 0.05);
   save();            // a new run replaces the old save at once; a continued one is re-written as is
 }
 function setPaused(on) {
@@ -501,12 +503,14 @@ function endCine() {
   const v = $('cine'), f = cine.onEnd;
   show(v, false); show($('skip'), false);
   setTimeout(() => { v.pause(); v.removeAttribute('src'); v.load(); }, 900);
-  A.setVolume(A.volume);
+  if (cine.name === 'intro') A.storm(0.6); else A.setVolume(A.volume);
   cine = null;
   f();
 }
 function cineUpdate(dt) {
   if (!cine) return;
+  const vid = $('cine');
+  if (cine.name === 'intro' && vid.duration && vid.currentTime > vid.duration - 4.2) A.storm(2.4);
   const anyHeld = I.held.act || I.held.jump || I.held.pause || I.held.grip;
   const anyPressed = Object.values(I.pressed).some(Boolean);
   if (anyPressed) cine.hint = 2.5;
@@ -515,6 +519,58 @@ function cineUpdate(dt) {
   show($('skip'), cine.hint > 0 || cine.hold > 0);
   $('skip').querySelector('i').style.width = Math.min(100, cine.hold / 0.9 * 100) + '%';
   if (cine.hold > 0.9) endCine();
+}
+
+// ── out of the cottage ──────────────────────────────────────────────────
+// After the prologue the game doesn't cut in on her standing in the yard. It fades up from black on the shut
+// cottage door with the storm still muffled (the bridge started under the film's title card), the door swings
+// open on the warm room, she stands a moment on the sill looking up into the snow, steps down and walks out
+// into the yard. The door bangs shut behind her in the wind and the view eases back out. Control is hers once
+// she is out (about 6 s). W.intro is read by the drawer (door, doorway light, her size on the sill).
+const WALK = { fade: 2.8, open: 1.7, sill: 2.4, step: 3.2, stepEnd: 3.7, shut: 5.0, stopX: 20.3, closeVh: 9.5, out: 7.2 };
+const DOOR = { x: L.COTTAGE.x + 5.3 + 0.675, y: L.COTTAGE.y + 0.55 + 0.27 };   // doorway centre; her body centre standing on the sill
+function beginWalkOut() {
+  log('walk out of the cottage');
+  A.fadeMaster(0, 0.02);
+  A.storm(0.8);
+  W.intro = { t: 0, door: 0, hide: true, scale: 0.84, look: 0, walking: false, done: false, sfx: {} };
+  const p = W.player; p.x = DOOR.x; p.y = DOOR.y; p.vx = p.vy = 0; p.facing = 1;
+  cam.x = DOOR.x + 0.6; cam.y = DOOR.y + 1.3; cam.viewH = WALK.closeVh;
+}
+const walkInput = { axisX: 0, axisY: 0, held: {}, pressed: {} };
+// one fixed step of the walk-out: called after W.update (which ran on walkInput)
+function walkStep(dt) {
+  const w = W.intro, p = W.player;
+  if (!w || w.done) return;
+  w.t += dt;
+  const t = w.t, once = (k, f) => { if (!w.sfx[k]) { w.sfx[k] = true; f(); } };
+  // the door: swings open, later bangs shut in a gust
+  if (t >= WALK.open) once('open', () => {
+    A.play('creak', { vol: 0.75, rate: 0.85, x: DOOR.x, y: DOOR.y, verb: 0.2 });
+    A.stormOpen(); A.fadeMaster(A.volume, 0.6);
+  });
+  w.door = t < WALK.shut ? smooth(WALK.open, WALK.open + 0.8, t) : 1 - smooth(WALK.shut, WALK.shut + 0.22, t);
+  if (t >= WALK.shut + 0.18) once('bang', () => {
+    A.play('gate', { vol: 0.55, rate: 0.55, x: DOOR.x, y: DOOR.y, verb: 0.5 });
+    A.play('land', { vol: 0.8, rate: 0.45, x: DOOR.x, y: DOOR.y });
+    cam.shake = 0.18;
+    for (let i = 0; i < 26; i++) D.fx.push({ kind: 'snow', x: DOOR.x - 0.6 + Math.random() * 1.4, y: DOOR.y + Math.random() * 2.4, vx: 0.5 + Math.random() * 0.7, vy: -0.4 + Math.random() * 0.9, life: 0.7 + Math.random() * 0.9, t: 0, r: 0.5 + Math.random() * 0.8, rot: Math.random() * 6, par: 1 });
+  });
+  w.hide = w.door < 0.35 && t < WALK.sill;
+  if (t < WALK.stepEnd) {
+    // on the sill, then the step down (held in place: the sill is above the yard)
+    const k = smooth(WALK.step, WALK.stepEnd, t);
+    p.x = DOOR.x + k * 0.55; p.y = DOOR.y + (L.COTTAGE.y + 0.3 - DOOR.y) * k + Math.sin(k * Math.PI) * 0.12;
+    p.vx = 0; p.vy = 0; p.facing = 1;
+    w.scale = 0.84 + 0.16 * k;
+    w.look = t > WALK.sill + 0.2 && t < WALK.step ? 0.7 : 0;   // she looks up into the snow before she steps down
+    walkInput.axisX = 0;
+  } else {
+    w.scale = 1; w.look = 0;
+    walkInput.axisX = p.x < WALK.stopX ? 0.4 : 0;
+    if (t >= WALK.stepEnd) once('land', () => A.pick(['snow1', 'snow2', 'snow3'], { vol: 0.5, x: p.x, y: p.y }));
+  }
+  if (t >= WALK.out && p.x >= WALK.stopX - 0.3) { w.done = true; walkInput.axisX = 0; log('walk out done'); }
 }
 
 // ── camera ───────────────────────────────────────────────────────────────
@@ -546,10 +602,10 @@ function updateCamera(dt) {
   const p = W.player, a = W.area();
   let tx, ty, vh;
   // look up / down (W/S, arrows, stick): only standing free, since the same keys reel the thread and climb ropes
-  const canLook = state === 'play' && !p.dead && p.grounded && !p.climb && !W.thread.locked && !SD.viewLock;
+  const canLook = state === 'play' && !(W.intro && !W.intro.done) && !p.dead && p.grounded && !p.climb && !W.thread.locked && !SD.viewLock;
   const ay = canLook ? I.axisY : 0;
   lookT = ay ? lookT + dt : 0;
-  p.look = damp(p.look || 0, ay, 9, dt);                                   // her head turns at once
+  p.look = damp(p.look || 0, W.intro && !W.intro.done ? W.intro.look : ay, W.intro && !W.intro.done ? 3 : 9, dt);                                   // her head turns at once
   lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
   if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
@@ -564,11 +620,12 @@ function updateCamera(dt) {
     const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
     vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
     if (a.id === 'loom' && p.y > -452) vh = 12.5;          // at the top of the Loom: close on her
+    if (W.intro && !W.intro.done) { const k = smooth(WALK.step, WALK.out + 0.5, W.intro.t); vh = WALK.closeVh + (vh - WALK.closeVh) * k; tx = lerp(DOOR.x + 0.6, tx, k); ty = lerp(DOOR.y + 1.3, ty, k); }
     ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
   }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
-  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, state === 'play' ? 0.9 : 1.2, dt);
+  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 1.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
   cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
@@ -646,7 +703,9 @@ function tick(now) {
     acc += dt;
     let steps = 0;
     while (acc >= FIXED && steps < 10) {
-      W.update(FIXED, I, state === 'play');
+      const walking = W.intro && !W.intro.done;
+      W.update(FIXED, walking ? walkInput : I, state === 'play');
+      if (walking) walkStep(FIXED);
       if (steps === 0) for (const k in I.pressed) I.pressed[k] = false;
       handleEvents();
       acc -= FIXED; steps++;
@@ -657,6 +716,7 @@ function tick(now) {
     updateCamera(dt);
   }
   updateUI(dt);
+  document.body.classList.toggle('nocursor', !(state === 'title' || state === 'loading' || paused));
 
   // audio continuous layers
   if (A) {
@@ -682,7 +742,7 @@ function tick(now) {
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;
   const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.6, 1.5, W.player.deadT) * 0.85 : 0, CUT ? (CUT.dark || 0) : 0);
-  const respawnFade = W.player.deadT === 0 && W._fadeIn ? 0 : 0;
+  const respawnFade = W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0;      // the walk-out fades up from black
   R.frame({
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon,
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),

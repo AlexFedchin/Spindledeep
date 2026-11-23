@@ -81,8 +81,10 @@ export class Drawer {
   drawDoll(ctx, ectx, dt) {
     const p = this.w.player, th = this.w.thread;
     if (p.dead && p.deadT > 0.9) return;
+    const wi = this.w.intro && !this.w.intro.done ? this.w.intro : null;     // walking out of the cottage
+    if (wi && wi.hide) return;
     const k = this.k;
-    const s = p.scale * (p.dead ? Math.max(0, 1 - p.deadT / 0.9) : 1);
+    const s = p.scale * (p.dead ? Math.max(0, 1 - p.deadT / 0.9) : 1) * (wi ? wi.scale : 1);
     const X = this.sx(p.x), Y = this.sy(p.y);
     const f = p.facing;
     const swing = th.locked && !p.grounded;
@@ -410,13 +412,33 @@ export class Drawer {
     // ── door: planks, strap hinges, the knob, a worn step and an unlit lantern ──
     const dx = gx + 5.3, dw = 1.35, dh = 2.45;
     poly([[dx - 0.12, base], [dx - 0.12, base + dh + 0.14], [dx + dw + 0.12, base + dh + 0.14], [dx + dw + 0.12, base]], 0.5, 0.03);
-    poly([[dx, base], [dx, base + dh], [dx + dw, base + dh], [dx + dw, base]], 0.17, 0.03);
-    for (let i = 1; i < 4; i++) line(dx + i * dw / 4, base + 0.04, dx + i * dw / 4, base + dh - 0.04, 0.08, 0.015);
-    for (const hy of [base + 0.45, base + dh - 0.45]) {
-      line(dx + 0.02, hy, dx + 0.85, hy, 0.03, 0.06);
-      ctx.fillStyle = g(0.6); for (const nx of [0.15, 0.45, 0.75]) { ctx.beginPath(); ctx.arc(X(dx + nx), Y(hy), 0.022 * k, 0, TAU); ctx.fill(); }
+    // the door swings out toward us on its left-hand hinges when she walks out (after the prologue)
+    const op = this.w.intro ? this.w.intro.door : 0;
+    if (op > 0.01) {
+      // the room behind: firelit, the floorboards and the foot of her chair in the light
+      poly([[dx, base], [dx, base + dh], [dx + dw, base + dh], [dx + dw, base]], 0.07, 0.03);
+      for (let i = 1; i < 5; i++) line(dx + 0.02, base + i * 0.09, dx + dw - 0.02, base + i * 0.09 + 0.01, 0.34, 0.01);
+      line(dx + dw * 0.72, base, dx + dw * 0.78, base + 0.9, 0.08, 0.05); line(dx + dw * 0.98, base, dx + dw * 0.92, base + 0.9, 0.08, 0.05);
+      line(dx + dw * 0.7, base + 0.9, dx + dw, base + 0.9, 0.08, 0.05);
+      const fl = 0.85 + Math.sin(this.time * 11) * 0.06 + Math.sin(this.time * 6.3) * 0.05;
+      // firelight from deeper in the room: only a low warm wash along the floor, so she reads pale against the dark doorway
+      { const fg = ectx.createLinearGradient(0, Y(base), 0, Y(base + 0.9)); fg.addColorStop(0, `rgba(255,140,60,${0.2 * op * fl})`); fg.addColorStop(1, 'rgba(255,140,60,0)'); ectx.fillStyle = fg; ectx.fillRect(X(dx) + 2, Y(base + 0.9), dw * k - 4, 0.9 * k); }
+      // light thrown out over the step and the snow
+      const spill = ectx.createLinearGradient(0, Y(base), 0, Y(gy - 0.3));
+      spill.addColorStop(0, `rgba(255,160,80,${0.1 * op * fl})`); spill.addColorStop(1, 'rgba(255,160,80,0)');
+      ectx.fillStyle = spill;
+      ectx.beginPath(); ectx.moveTo(X(dx), Y(base)); ectx.lineTo(X(dx + dw), Y(base)); ectx.lineTo(X(dx + dw + 1.6), Y(gy - 0.3)); ectx.lineTo(X(dx - 1.0), Y(gy - 0.3)); ectx.closePath(); ectx.fill();
     }
-    ctx.fillStyle = g(0.85); ctx.beginPath(); ctx.arc(X(dx + dw - 0.22), Y(base + 1.1), 0.07 * k, 0, TAU); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.015); ctx.stroke();
+    // the leaf: foreshortened as it turns on the hinges, its free edge swinging out and a little up/down in perspective
+    const lw2 = dw * (1 - 0.82 * op), pe = 0.16 * op;
+    poly([[dx, base], [dx, base + dh], [dx + lw2, base + dh + pe], [dx + lw2, base - pe]], 0.17 - 0.05 * op, 0.03);
+    for (let i = 1; i < 4; i++) { const f = i / 4; line(dx + f * lw2, base + 0.04 - pe * f, dx + f * lw2, base + dh - 0.04 + pe * f, 0.08, 0.015); }
+    for (const hy of [base + 0.45, base + dh - 0.45]) {
+      const sk = (hy - base - dh / 2) / (dh / 2) * pe;
+      line(dx + 0.02, hy, dx + 0.02 + 0.83 * lw2 / dw, hy + sk * 0.6, 0.03, 0.06);
+      ctx.fillStyle = g(0.6); for (const nx of [0.15, 0.45, 0.75]) { ctx.beginPath(); ctx.arc(X(dx + nx * lw2 / dw), Y(hy + sk * nx), 0.022 * k, 0, TAU); ctx.fill(); }
+    }
+    ctx.fillStyle = g(0.85); ctx.beginPath(); ctx.arc(X(dx + lw2 - 0.22 * lw2 / dw), Y(base + 1.1), 0.07 * k, 0, TAU); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = lw(0.015); ctx.stroke();
     poly([[dx - 0.35, base], [dx + dw + 0.35, base], [dx + dw + 0.45, base - 0.22], [dx - 0.45, base - 0.22]], 0.5, 0.03);
     line(dx + dw + 0.2, base + 2.5, dx + dw + 0.6, base + 2.5, 0.04, 0.04); line(dx + dw + 0.55, base + 2.5, dx + dw + 0.55, base + 2.35, 0.04, 0.02);
     poly([[dx + dw + 0.44, base + 2.35], [dx + dw + 0.66, base + 2.35], [dx + dw + 0.62, base + 1.98], [dx + dw + 0.48, base + 1.98]], 0.5, 0.03, 0.02);
