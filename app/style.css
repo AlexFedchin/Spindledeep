@@ -70,3 +70,7 @@ kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(-
 #skip { position: fixed; right: 4vw; bottom: 5vh; z-index: 41; font-style: italic; font-size: 18px; color: var(--paper-dim); display: flex; align-items: center; gap: 12px; transition: opacity 0.6s; text-shadow: 0 1px 8px #000; }
 #skip .bar { width: 70px; height: 1px; background: rgba(232, 220, 196, 0.2); }
 #skip .bar i { display: block; height: 1px; width: 0; background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* the cards at the end of the second ending */
+#endcard { position: fixed; left: 50%; top: 42vh; transform: translateX(-50%); width: min(900px, 80vw); text-align: center; font-style: italic;
+  font-size: clamp(22px, 2vw, 34px); color: var(--paper); text-shadow: 0 2px 16px #000; transition: opacity 2s; pointer-events: none; z-index: 25; }

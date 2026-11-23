@@ -254,6 +254,62 @@ def _():
     write('mus_end', y, 'lowpass=f=5200,highpass=f=28', lufs=-21, q=4)
 
 
+@recipe('amb_beat')
+def _():
+    """the Loom working, somewhere below: a slow heavy wooden beat (the batten), a creak of treadles between, 12 s loop"""
+    D = 12.0
+    n = int(D * SR)
+    y = np.zeros((n, 2), np.float32)
+    A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
+    land, creak = A('land'), A('creak')
+    thud = _resample(land, 0.32)
+    k = _resample(creak, 0.6)[: int(1.6 * SR)].copy()
+    k *= np.linspace(1, 0, len(k))[:, None] ** 1.5
+    def put(x, at, g):
+        i = int(at * SR) % n; m = min(len(x), n - i)
+        y[i:i + m] += x[:m] * g
+        if m < len(x):
+            y[:len(x) - m] += x[m:] * g
+    for j, at in enumerate([0.0, 3.0, 6.0, 9.0]):
+        put(thud, at, 0.9 if j % 2 == 0 else 0.7)
+        put(k, at + 1.5, 0.18)
+    write('amb_beat', y, 'lowpass=f=1800,highpass=f=30,aecho=0.6:0.5:180|420:0.35|0.2', lufs=-27, q=3)
+
+
+@recipe('mus_weaver')
+def _():
+    """the Loom: the dirge's drone gone wrong. A cluster of three low tones grinding against each other, a slow throb
+    like a heart under cloth (0.75 Hz), the bowl struck far down, and the music box pulled out of tune. 64 s loop."""
+    rng = np.random.default_rng(13)
+    D = 64.0
+    n = int(D * SR)
+    t = np.arange(n) / SR
+    y = np.zeros((n, 2), np.float32)
+    throb = (0.5 + 0.5 * np.sin(2 * np.pi * 0.75 * t)) ** 3
+    for f, a, pan in ((41.2, 0.32, -0.2), (43.65, 0.26, 0.2), (46.25, 0.2, 0.0), (82.4, 0.06, -0.4), (87.3, 0.05, 0.4)):
+        v = a * (0.45 + 0.55 * throb) * np.sin(2 * np.pi * f * t + 0.4 * np.sin(2 * np.pi * t / 9.0))
+        y[:, 0] += v * (1 - pan) * 0.7; y[:, 1] += v * (1 + pan) * 0.7
+    nz = rng.standard_normal((n, 2)).astype(np.float32)
+    for k in (200, 80):
+        nz = np.stack([np.convolve(nz[:, c], np.ones(k) / k, mode='same') for c in range(2)], 1)
+    y += nz / (np.abs(nz).max() + 1e-6) * 0.06 * (0.6 + 0.4 * np.sin(2 * np.pi * t / 16))[:, None]
+    A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
+    gong = _resample(A('bowl'), 0.2)
+    box = _resample(A('skein'), 0.55)
+    def put(x, at, g, pan=0.0):
+        i = int(at * SR) % n; m = min(len(x), n - i)
+        y[i:i + m, 0] += x[:m, 0] * g * (1 - pan); y[i:i + m, 1] += x[:m, -1] * g * (1 + pan)
+        if m < len(x):
+            r = len(x) - m
+            y[:r, 0] += x[m:, 0] * g * (1 - pan); y[:r, 1] += x[m:, -1] * g * (1 + pan)
+    for at in (2.0, 18.0, 34.0, 50.0):
+        put(gong, at, 0.5)
+    for at, r in ((10.0, 0.97), (42.0, 1.03)):
+        put(_resample(box, r), at, 0.09, pan=0.5 if r > 1 else -0.5)
+    y = np.tanh(y * 1.3) / 1.3
+    write('mus_weaver', y, 'lowpass=f=4200,highpass=f=25', lufs=-21, q=4)
+
+
 def credits():
     m = meta()
     lines = ['# Sound & music credits', '', '## Music', '',

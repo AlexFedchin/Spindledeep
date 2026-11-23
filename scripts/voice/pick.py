@@ -23,7 +23,7 @@ import torch
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
-from lines import LINES, WRONG  # noqa: E402
+from lines import LINES, WRONG, OTHER, CHORUS  # noqa: E402
 from age import measures, age_score  # noqa: E402
 
 RAW = os.path.join(HERE, '.cache', 'raw')
@@ -87,7 +87,10 @@ def main():
     ref_e = emb(ra, rsr)
     os.makedirs(OUT, exist_ok=True)
     report = {}
+    only = [a for a in sys.argv[1:] if not a.startswith('--')]
     for lid, (text, _) in LINES.items():
+        if only and lid not in only:
+            continue
         ref = words(text)
         best = None
         for f in sorted(os.listdir(RAW)):
@@ -99,7 +102,7 @@ def main():
             acc = difflib.SequenceMatcher(None, ref, words(asr.transcribe(p, language='en')['text'])).ratio()
             m = measures(a, sr)
             ag = age_score(m)
-            sim = float(np.dot(emb(a, sr), ref_e))
+            sim = 0.5 if lid in OTHER else float(np.dot(emb(a, sr), ref_e))   # the other woman is not meant to sound like her
             wps = len(ref) / max(dur, 0.1)
             pace = 1 - min(1, abs(wps - 2.1) / 2.0)
             words_term = 4.0 if acc >= 0.97 else (4.0 * acc - 2.0)    # any misread word costs more than age can win back
@@ -110,7 +113,7 @@ def main():
         if not ranked:
             continue
         out = os.path.join(OUT, lid + '.ogg')
-        need = 0.95 if lid in WRONG else 0.99         # the lines with a second voice under hers may blur a word
+        need = 0.95 if lid in WRONG else 0.85 if lid in CHORUS else 0.99         # the lines with a second voice under hers may blur a word
         for r in ranked[:6]:
             # a hurried take is eased back toward ~2.4 words/s (at most 15 % slower): she is old and in no rush
             slow = max(0.85, min(1.0, 2.4 / r['wps']))
@@ -119,7 +122,15 @@ def main():
             src = os.path.join(HERE, '.cache', f'_trem_{lid}.wav')
             a, sr = sf.read(os.path.join(RAW, r['take']))
             sf.write(src, tremble(a, sr), sr)
-            if lid in WRONG:
+            if lid in CHORUS:
+                # many of her at once: the take, and copies a little lower/higher, a little late, spread left and right
+                n = CHORUS[lid]
+                rates = [0.94, 1.05, 0.89, 1.1, 0.84, 0.97][:n - 1]
+                parts = ''.join(f'[c{i}]asetrate=24000*{r},aresample=24000,atempo={1 / r:.4f},adelay={40 + 37 * i},volume=0.55[v{i}];' for i, r in enumerate(rates))
+                graph = (f'[0]{fx},asplit={n}[m]' + ''.join(f'[c{i}]' for i in range(n - 1)) + ';' + parts +
+                         '[m]' + ''.join(f'[v{i}]' for i in range(n - 1)) + f'amix=inputs={n}:normalize=0,{CHAIN}[out]')
+                cmd = ['ffmpeg', '-v', 'error', '-y', '-i', src, '-filter_complex', graph, '-map', '[out]']
+            elif lid in WRONG:
                 w = WRONG[lid]
                 graph = (f'[0]{fx},asplit=2[a][b];[b]asetrate=24000*0.667,aresample=24000,atempo=1.5,adelay=35,lowpass=f=2400[lo];'
                          f'[a][lo]amix=inputs=2:weights=1 {w}:normalize=0,{CHAIN}[out]')

@@ -763,17 +763,35 @@ def _hand(name, s, m, P):
     return h
 
 
+def _flip(P, s):
+    """the model's right hand (s = -1) is anatomical: its frame is the hand-built right hand's turned 180 degrees about
+    its length (the hand-built right hand was a mirrored left one). Values written for the old frame are converted."""
+    return P.get('oldlady') and s == -1
+
+
+def hand_local(P, s, loc, rot):
+    """a location and Euler given in the hand-built hand frame, in this hand's frame"""
+    if _flip(P, s):
+        return (-loc[0], -loc[1], loc[2]), (-rot[0], -rot[1], rot[2])
+    return loc, rot
+
+
 def hand_pose(P, s, pose='relax'):
     """curl the fingers: 'relax' (soft curl), 'hold' (round an object), 'pinch' (thumb and index tip together, the
     rest tucked), 'grip' (closed round a handle)"""
     curls = {'relax': [(0.35, 0.3)] * 4, 'hold': [(0.75, 0.6)] * 4, 'grip': [(1.25, 1.1)] * 4,
              'pinch': [(0.85, 0.55), (1.2, 1.0), (1.35, 1.1), (1.4, 1.1)]}[pose]
     for (j1, j2, _), (c1, c2) in zip(P[f'fingers{s}'], curls):
-        j1.rotation_euler = (0, s * c1, 0); j2.rotation_euler = (0, s * c2, 0)
+        j1.rotation_euler = hand_local(P, s, (0, 0, 0), (0, s * c1, 0))[1]; j2.rotation_euler = hand_local(P, s, (0, 0, 0), (0, s * c2, 0))[1]
     t1, t2, _ = P[f'thumb{s}']
-    th = {'relax': ((0.5, s * 0.5, 0), (0.0, s * 0.25, 0)), 'hold': ((0.75, s * 0.7, 0), (0, s * 0.35, 0)),
-          'grip': ((0.9, s * 1.0, 0), (0, s * 0.6, 0)), 'pinch': ((0.95, s * 0.55, 0), (0.0, s * 0.3, 0))}[pose]
-    t1.rotation_euler = th[0]; t2.rotation_euler = th[1]
+    if P.get('oldlady'):
+        # the model's thumb rests spread out from the palm; these swing it in toward the index (x) and curl it (y)
+        th = {'relax': ((0.15, s * 0.15, 0), (0.0, s * 0.2, 0)), 'hold': ((0.35, s * 0.35, 0), (0, s * 0.35, 0)),
+              'grip': ((0.5, s * 0.6, 0), (0, s * 0.6, 0)), 'pinch': ((0.55, s * 0.3, 0), (0.0, s * 0.25, 0))}[pose]
+    else:
+        th = {'relax': ((0.5, s * 0.5, 0), (0.0, s * 0.25, 0)), 'hold': ((0.75, s * 0.7, 0), (0, s * 0.35, 0)),
+              'grip': ((0.9, s * 1.0, 0), (0, s * 0.6, 0)), 'pinch': ((0.95, s * 0.55, 0), (0.0, s * 0.3, 0))}[pose]
+    t1.rotation_euler = hand_local(P, s, (0, 0, 0), th[0])[1]; t2.rotation_euler = hand_local(P, s, (0, 0, 0), th[1])[1]
 
 
 def _basis(z_down, side):
@@ -804,7 +822,7 @@ def arm_to(P, s, target, pole=None, offset=None, wrist=None, palm=None):
     if pole is None:
         pole = (side * 0.6 + Rp @ V((0, 0.5, -0.6))).normalized()
     pole = V(pole)
-    hand.rotation_euler = wrist or (0, 0, 0)
+    hand.rotation_euler = hand_local(P, s, (0, 0, 0), wrist or (0, 0, 0))[1]
     Rw = Euler(hand.rotation_euler).to_matrix()
 
     def palm_rot(Rf):
@@ -815,7 +833,7 @@ def arm_to(P, s, target, pole=None, offset=None, wrist=None, palm=None):
             fdir = Rf @ V((0, -1, 0))
         fdir.normalize()
         from mathutils import Matrix
-        zc = -fdir; x = n * -s; y = zc.cross(x)
+        zc = -fdir; x = n * (-1 if P.get('oldlady') else -s); y = zc.cross(x)
         return Rf.inverted() @ Matrix((x, y, zc)).transposed()
     T = V(target)
     W = T.copy()
@@ -873,7 +891,21 @@ def _loft(name, sections, n=40, material=None, gap=None, cap_top=True):
     return o
 
 
+USE_MODEL = True     # False: the hand-built knitter below (kept for comparison renders)
+
+
 def knitter(name, loc=(0, 0, 0), mats=None, seated=False, pose=None):
+    """the knitter: the rigged old-lady model (oldlady.py) driven through the same control skeleton as the
+    hand-built figure, so every shot poses her the same way"""
+    if not USE_MODEL:
+        return knitter_proc(name, loc, mats, seated, pose)
+    import oldlady
+    root, P = oldlady.build(name, loc, seated, __import__(__name__))
+    set_pose(root, P, pose or ('knit' if seated else 'side'))
+    return root, P
+
+
+def knitter_proc(name, loc=(0, 0, 0), mats=None, seated=False, pose=None):
     """the old knitter: small and hunched, grey hair in a bun, wire spectacles, a cardigan over a dark dress with a
     lace collar and an apron, a fringed shawl, a folded skirt, stockings and shoes; jointed arms (shoulder, elbow,
     wrist) and hands with jointed fingers. Parts: 'torso' (the spine from the hips), 'head', 'arm-1'/'arm1' (shoulder
@@ -1020,7 +1052,8 @@ def knitting_needles(P, name, mats):
     """a pair of needles, one in each hand, tips crossing in front of her, a little knitted piece hanging off them"""
     for s in (-1, 1):
         h = P[f'hand{s}']
-        nd = prim('cyl', name + f'_kneedle{s}', loc=(-s * 0.025, -0.035, -0.105), rot=(0.7, -s * 0.8, 0), scale=(0.0022, 0.0022, 0.1), material=mats['iron'], vertices=8)
+        lo, ro = hand_local(P, s, (-s * 0.025, -0.035, -0.105), (0.7, -s * 0.8, 0))
+        nd = prim('cyl', name + f'_kneedle{s}', loc=lo, rot=ro, scale=(0.0022, 0.0022, 0.1), material=mats['iron'], vertices=8)
         parent(nd, h, keep=False)
     sw = prim('cube', name + '_swatch', loc=(-0.07, -0.05, -0.15), rot=(0.3, 0, 0), scale=(0.05, 0.004, 0.035), material=mats['wool_grey'])
     parent(sw, P['hand1'], keep=False)
@@ -1040,7 +1073,10 @@ def set_pose(root, P, pose):
     bpy.context.view_layer.update()
     mw = root.matrix_world
     for s in (-1, 1):
-        if pose == 'knit':
+        if pose == 'knit' and P.get('oldlady'):
+            # her forearms are fuller than the hand-built ones: hands a little apart and higher, over the table edge
+            tgt, wr, hp = (s * 0.13, -0.31, 0.96), (0.6, s * 0.2, -s * 0.5), 'hold'
+        elif pose == 'knit':
             tgt, wr, hp = (s * 0.08, -0.33, 0.87), (0.6, s * 0.2, -s * 0.5), 'hold'      # above a table edge at 0.79
         elif pose == 'lap':
             tgt, wr, hp = (s * 0.11, -0.3, 0.6), (0.9, 0, -s * 0.2), 'relax'

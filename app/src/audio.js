@@ -9,7 +9,7 @@ const FILES = [
   'step1', 'step2', 'step3', 'step4', 'snow1', 'snow2', 'snow3',
   'jump', 'land', 'grip', 'release', 'creak', 'tie', 'harp', 'bell', 'bowl', 'chime', 'moth', 'chew',
   'tear', 'splash', 'drip', 'gate', 'skein', 'cut', 'snag', 'mend',
-  'mus_title', 'mus_gardens', 'mus_gallery', 'mus_mere', 'mus_loom', 'mus_end',
+  'mus_title', 'mus_gardens', 'mus_gallery', 'mus_mere', 'mus_loom', 'mus_end', 'mus_weaver', 'amb_beat',
 ];
 const AREA_BEDS = {
   brink: { amb_cave: 0.0 },
@@ -17,9 +17,12 @@ const AREA_BEDS = {
   gardens: { amb_cave: 0.45, amb_drips: 0.4, amb_hum: 0.18 },
   gallery: { amb_cave: 0.55, amb_hum: 0.25, amb_drips: 0.15 },
   mere: { amb_cave: 0.45, amb_ink: 0.45, amb_drips: 0.3 },
-  loom: { amb_cave: 0.35, amb_hum: 0.3 },
+  hall: { amb_cave: 0.35, amb_hum: 0.3 },
+  hush: { amb_hum: 0.5, amb_drips: 0.08 },
+  treadles: { amb_cave: 0.35, amb_beat: 0.7 },
+  loom: { amb_hum: 0.3, amb_beat: 0.25 },
 };
-const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', loom: 'mus_loom' };
+const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', hall: 'mus_loom', hush: null, treadles: null, loom: 'mus_weaver' };
 // a minor pentatonic over two octaves: the thread only ever sings in tune
 const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
 
@@ -117,7 +120,7 @@ export class Audio {
   }
   setArea(id) {
     const beds = AREA_BEDS[id] || {};
-    for (const n of ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum']) this.loop(n, beds[n] || 0);
+    for (const n of ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum', 'amb_beat']) this.loop(n, beds[n] || 0);
     if (!this.endMusic) this.setMusic(AREA_MUSIC[id] ?? null);
   }
   setMusic(name, fade = 4) {

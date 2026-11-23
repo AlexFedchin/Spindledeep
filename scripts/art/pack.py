@@ -29,6 +29,9 @@ PICKS = {
     'bells': ('realvis/bells_11.png', 0.70),
     'mere': ('sdxl/mere_12.png', 0.72),
     'loom': ('realvis/loom_11.png', 0.70),
+    'hush': ('realvis/hush_13.png', 0.72),
+    'treadles': ('realvis/treadles_12.png', 0.70),
+    'loomdeep': ('realvis/loomdeep_11.png', 0.74),
 }
 
 _depth = None

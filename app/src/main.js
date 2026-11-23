@@ -3,6 +3,7 @@ import { Renderer } from './renderer.js';
 import { buildTerrain } from './terrain.js';
 import { World } from './world.js';
 import { Drawer } from './draw.js';
+import { loadSprites } from './drawdeep.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { SWING } from './player.js';
@@ -54,10 +55,20 @@ async function boot() {
     R.setSDF(T.visualHalf(L.SECRETS.map((s) => s.hide)));
     await step('engraving the dark…', 0.45);
     const layers = await Promise.all(L.BACKDROPS.map(async (b) => {
-      const blob = await (await fetch('assets/art/' + b.img + '.png')).blob();
-      return createImageBitmap(blob, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+      try {
+        const r = await fetch('assets/art/' + b.img + '.png');
+        if (!r.ok) throw new Error('missing');
+        return await createImageBitmap(await r.blob(), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+      } catch {
+        // a painting that isn't there yet: an empty layer (no tone, far depth) instead of failing to start
+        log(`backdrop ${b.img} missing`);
+        const c = new OffscreenCanvas(1024, 1024), x = c.getContext('2d');
+        x.fillStyle = 'rgba(10,10,10,1)'; x.fillRect(0, 0, 1024, 1024);
+        return createImageBitmap(c);
+      }
     }));
     R.setBackdrops(layers);
+    Drawer.IMG = await loadSprites();
     await step('listening for her voice…', 0.6);
     W = new World(T);
     D = new Drawer(W);
@@ -80,7 +91,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
   requestAnimationFrame(tick);
 }
 
@@ -115,7 +126,7 @@ function navInput(nav) {
 function enterTitle() {
   state = 'title';
   // back from the credits (or the pause menu) the title shows a fresh world, not the last run's red thread and lamps
-  END = null;
+  END = null; CUT = null;
   W = new World(T); D = new Drawer(W); SD.W = W;
   R.setSDF(T.visualHalf(W.secrets.map((k) => k.hide)));
   const has = !!loadSave(true);
@@ -144,7 +155,7 @@ function startGame(cont) {
   log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
   finAPlayed = false;
-  END = null;        // the last ending's red pulse lived here: left set, it kept her grey thread red in the next run
+  END = null; CUT = null;        // the last ending's red pulse lived here: left set, it kept her grey thread red in the next run
   state = 'play';
   A.setMusic(null, 4);
   A.endMusic = false;
@@ -192,7 +203,7 @@ function save() {
   const th = W.thread;
   const n = th.fixedN;
   const data = {
-    cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
+    v: 2, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
     husks: W.husks.map((h) => [+h.x.toFixed(2), +h.y.toFixed(2), h.kind, h.flip, h.seed]),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
@@ -215,7 +226,8 @@ function applySave(s) {
   W.bells.forEach((b, i) => { if (s.bells[i]) b.lit = 1; });
   W.pegs.forEach((p, i) => (p.tied = !!s.pegs[i]));
   W.gates.forEach((g) => { const bs = W.bells.filter((b) => b.gate === g.id); if (bs.length && bs.every((b) => b.lit > 0)) g.open = 1; });
-  s.areas.forEach((a) => W.areaSeen.add(a));
+  // saves from before the deep (no v): their 'loom' was the chamber that is now the Hall of Chairs
+  s.areas.forEach((a) => W.areaSeen.add(!s.v && a === 'loom' ? 'hall' : a));
   W.husks = (s.husks || []).map(([x, y, kind, flip, seed]) => ({ x, y, kind, flip, seed }));
   const n = s.tx.length;
   for (let i = 0; i < n; i++) { th.x[i] = th.ox[i] = s.tx[i]; th.y[i] = th.oy[i] = s.ty[i]; th.dead[i] = s.dead[i]; }
@@ -249,7 +261,8 @@ function updateUI(dt) {
   const hs = h ? keysHTML(h.keys) + ' <span>' + h.text + '</span>' : '';
   if (hs !== lastHint) { lastHint = hs; if (hs) $('hint').innerHTML = hs; show($('hint'), !!hs); }
   const p = playing && W.prompt ? W.prompt : null;
-  const ps = p ? keysHTML([p.a]) + ' <span>' + p.t + '</span>' : '';
+  const p2 = playing && p && W.prompt2 ? W.prompt2 : null;
+  const ps = (p ? keysHTML([p.a]) + ' <span>' + p.t + '</span>' : '') + (p2 ? ' &nbsp;&nbsp;·&nbsp;&nbsp; ' + keysHTML([p2.a]) + ' <span>' + p2.t + '</span>' : '');
   if (ps !== lastPrompt) { lastPrompt = ps; if (ps) $('prompt').innerHTML = ps; show($('prompt'), !!ps); }
 }
 
@@ -316,7 +329,23 @@ function handleEvents() {
       case 'areaQuiet': A.setArea(e.id); break;
       case 'drip': A.play('drip', { vol: 0.5, vary: 0.2, x: e.x, y: e.y, verb: 1 }); break;
       case 'splash': A.play('splash', { vol: 0.35, vary: 0.2, x: e.x, y: e.y }); D.spawn('splash', e.x, e.y, 6, { speed: 2.5, vy: 2, life: 0.8 }); break;
-      case 'finale': log('finale'); startEnding(); break;
+      case 'finale': log('finale · tied'); startEnding(); break;
+      case 'finaleCut': log('finale · bitten through'); startCut(); break;
+      case 'climb': A.pick(['step1', 'step3'], { vol: 0.22, rate: 1.3, vary: 0.2, x: p.x, y: p.y, verb: 0.3 }); break;
+      case 'reach': A.play('chew', { vol: 0.3, rate: 0.55, vary: 0.2, x: e.x, y: e.y, verb: 0.8 }); A.play('creak', { vol: 0.15, rate: 0.5, x: e.x, y: e.y }); break;
+      case 'recoil': A.play('release', { vol: 0.35, rate: 0.6, vary: 0.2, x: e.x, y: e.y, verb: 0.6 }); break;
+      case 'stampWarn': A.play('creak', { vol: 0.45, rate: e.kind === 'needle' ? 1.4 : 0.55, x: e.x, y: e.y, verb: 0.5 }); break;
+      case 'stamp':
+        A.play('land', { vol: 0.9, rate: e.kind === 'needle' ? 1.6 : 0.4, x: e.x, y: e.y, verb: 1.2 });
+        if (e.kind !== 'needle') { A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
+        break;
+      case 'rise':
+        log('the Weaver wakes');
+        A.play('tear', { vol: 1.0, rate: 0.35, verb: 1.6 }); A.play('gate', { vol: 0.8, rate: 0.45, verb: 1.4 }); A.play('chew', { vol: 0.6, rate: 0.3, verb: 1.5 });
+        cam.shake = 0.9;
+        if (e.first) toast('the cloth is rising · climb', 4);
+        break;
+      case 'riseStop': A.play('gate', { vol: 0.6, rate: 0.6, verb: 1.4 }); break;
     }
   }
   W.events.length = 0;
@@ -334,14 +363,14 @@ function startEnding() {
   const g = W.grey, gi = W.finale.gi;
   const arc = new Float32Array(gi + 1);
   for (let i = gi - 1; i >= 0; i--) arc[i] = arc[i + 1] + Math.hypot(g.x[i] - g.x[i + 1], g.y[i] - g.y[i + 1]);
-  END = { t: 0, arc, total: arc[0], gi, dur: 26, said: false, bellsRung: new Set(), done: false };
+  END = { t: 0, arc, total: arc[0], gi, dur: 40, said: false, bellsRung: new Set(), done: false };
   A.endMusic = true;
   A.setMusic('mus_end', 3);
   A.play('tie', { vol: 0.8 }); A.play('chime', { vol: 0.6, rate: 0.6 });
   // her candle goes out the moment the threads are tied
   W.candleOut = W.time;
-  W.lamps = W.lamps.filter((l) => !(l.y < -240 && Math.abs(l.x - 33) < 0.5));
-  A.play('release', { vol: 0.5, rate: 0.45, x: 33, y: W.finale.y });
+  W.lamps = W.lamps.filter((l) => !l.finale);
+  A.play('release', { vol: 0.5, rate: 0.45, x: 19, y: W.finale.y });
   D.spawn('spark', W.player.x, W.player.y, 30, { speed: 3, life: 1.5 });
   show($('prompt'), false);
 }
@@ -371,14 +400,82 @@ function endingUpdate(dt) {
   }
 }
 
-function rollCredits() {
+// ── the other ending: she bites through the old woman's thread ───────────────
+let CUT = null;
+function startCut() {
+  state = 'ending';
+  CUT = { t: 0, stage: 0 };
+  A.endMusic = true;
+  A.setMusic(null, 2);
+  A.play('cut', { vol: 0.9 }); A.play('tear', { vol: 0.5, rate: 0.8 });
+  show($('prompt'), false);
+  playLine('fin_cut', L.FINALE.cut);
+  // her grey thread goes slack from her hands: everything above her goes dark grey
+  W.greyCut = W.time;
+}
+function cutUpdate(dt) {
+  const c = CUT; c.t += dt;
+  const th = W.thread, p = W.player;
+  if (c.stage === 0 && c.t > 6) {
+    c.stage = 1;
+    W.candleOut = W.time; W.lamps = W.lamps.filter((l) => !l.finale);
+    A.play('release', { vol: 0.5, rate: 0.45, x: 19, y: W.finale.y });
+  }
+  if (c.stage === 1 && c.t > 10) {
+    // something below takes hold of the red thread: it pulls taut, and the doll bites through her own
+    c.stage = 2;
+    A.play('snag', { vol: 0.9, rate: 0.5 }); A.play('creak', { vol: 0.6, rate: 0.4 }); cam.shake = 0.5;
+    th.pluck(2.5);
+  }
+  if (c.stage === 2 && c.t > 13.5) {
+    c.stage = 3;
+    for (let i = 0; i < th.n; i++) th.dead[i] = 1;
+    th.liveStart = th.n; th.anchored = false; th.locked = false; th.pivots = [];
+    A.play('cut', { vol: 1.0, rate: 0.8 }); D.spawn('fiber', p.x, p.y + 0.2, 20, { speed: 1.5, life: 1.6 });
+  }
+  if (c.stage >= 3) c.dark = clamp((c.t - 14) / 5, 0, 1);
+  if (c.stage === 3 && c.t > 21) { c.stage = 4; endCards(['That winter, no name was called up the well.', 'In the spring, the snow on the Brink began to melt.'], () => { c.stage = 5; }); }
+  if (c.stage === 5 && !c.done) { c.done = true; clearSave(); rollCredits(true); }
+}
+function endCards(lines, done) {
+  const el = $('endcard');
+  let i = 0;
+  const next = () => {
+    if (i >= lines.length) { show(el, false); setTimeout(done, 2200); return; }
+    el.textContent = lines[i++]; show(el, true);
+    setTimeout(() => { show(el, false); setTimeout(next, 2200); }, 5200);
+  };
+  next();
+}
+
+function rollCredits(cut) {
   log('credits');
+  $('credits').classList.toggle('cut', !!cut);
   state = 'credits';
   const ks = W.secrets.filter((k) => k.taken);
   $('ckeeps').textContent = ks.length ? `${ks.length} of ${W.secrets.length} · ${ks.map((k) => k.what).join(' · ')}` : `none of ${W.secrets.length} · they are still down there`;
   show($('credits'), true);
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
-  setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }, 76000);
+  setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); }, 76000);
+}
+// after the credits of the second ending: the doll in her chair at the top of the Loom, in the dark, and needles
+function coda() {
+  log('coda');
+  state = 'coda';
+  CUT = { t: 0, coda: true, dark: 0.82 };
+  const f = W.finale;
+  W.player.dead = false; W.player.x = f.x + 1.2; W.player.y = f.y + 0.32; W.player.vx = W.player.vy = 0; W.player.facing = -1;
+  W.coda = true;
+  cam.x = f.x + 1; cam.y = f.y + 1.2; cam.viewH = 7;
+  A.setMusic(null, 1);
+  let n = 0;
+  const tick = () => {
+    if (state !== 'coda') return;
+    A.play('snag', { vol: 0.12, rate: 2.6 + Math.random() * 0.3, x: cam.x, y: cam.y });
+    if (++n < 40) setTimeout(tick, 380 + Math.random() * 160);
+    else setTimeout(() => { if (state === 'coda') enterTitle(); }, 3000);
+  };
+  setTimeout(tick, 2500);
 }
 
 // ── cinematics ──────────────────────────────────────────────────────────
@@ -426,12 +523,15 @@ function updateCamera(dt) {
   let tx, ty, vh;
   if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
+  } else if (state === 'ending' && CUT && !CUT.coda) {
+    tx = W.finale.x + 1.5; ty = W.finale.y + 1.2 - (CUT.t > 10 ? Math.min(6, (CUT.t - 10) * 0.6) : 0); vh = 11 + Math.min(10, CUT.t * 0.5);
   } else if (state === 'ending' && END && END.t > 2.5) {
     tx = END.px; ty = END.py + 1; vh = END.s / END.total > 0.97 ? 15 : 22;
   } else {
     tx = p.x + clamp(p.vx * 0.35, -3, 3);
     ty = p.y + 1.2 + clamp(p.vy * 0.12, -2.5, 1);
     vh = a.viewH + (W.thread.locked && !p.grounded ? 2.5 : 0);
+    if (a.id === 'loom' && p.y > -452) vh = 12.5;          // at the top of the Loom: close on her
   }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
@@ -461,6 +561,7 @@ function buildPts(viewW, viewH, k) {
     if (!inV(x, y)) { brk(); continue; }
     let r = 0.6, gg = 0.58, b = 0.55, a = 0.75, w = Math.max(1, k * 0.014);
     if (END && i <= END.gi && END.arc[i] <= redTo) { r = 0.85; gg = 0.1; b = 0.1; a = 1; w = wLive * 0.85; }
+    if (W.greyCut !== undefined && i <= W.finale.gi) { r = 0.3; gg = 0.29; b = 0.28; a = 0.55; }      // bitten through: dead yarn
     put(x, y, w, a, r, gg, b); open = true;
   }
   brk();
@@ -504,9 +605,11 @@ function tick(now) {
   else if (paused) { navInput($('pmenu')); if (I.pressed.pause) setPaused(false); }
   else if (state === 'play' && I.pressed.pause) setPaused(true);
   if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
-  if (state === 'credits' && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); }
+  if (state === 'credits' && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
+  if (state === 'coda' && (I.pressed.pause || I.pressed.act)) enterTitle();
 
-  if (!paused && state !== 'credits' && state !== 'cine') {
+  if (state === 'coda') { W.time += dt; }
+  if (!paused && state !== 'credits' && state !== 'cine' && state !== 'coda') {
     acc += dt;
     let steps = 0;
     while (acc >= FIXED && steps < 10) {
@@ -517,7 +620,7 @@ function tick(now) {
     }
     if (steps >= 10) acc = 0;
     if (state === 'play' && !finAPlayed && Math.hypot(W.player.x - W.finale.x, W.player.y - W.finale.y) < 7) { finAPlayed = true; playLine('fin_a', L.FINALE.text); }
-    if (state === 'ending') endingUpdate(dt);
+    if (state === 'ending') { if (CUT && !CUT.coda) cutUpdate(dt); else endingUpdate(dt); }
     updateCamera(dt);
   }
   updateUI(dt);
@@ -545,7 +648,7 @@ function tick(now) {
   });
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;
-  const deathFade = W.player.dead ? smooth(0.6, 1.5, W.player.deadT) * 0.85 : 0;
+  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.6, 1.5, W.player.deadT) * 0.85 : 0, CUT ? (CUT.dark || 0) : 0);
   const respawnFade = W.player.deadT === 0 && W._fadeIn ? 0 : 0;
   R.frame({
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon,

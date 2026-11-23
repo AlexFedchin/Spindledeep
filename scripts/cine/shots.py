@@ -153,8 +153,8 @@ def I3(out, preview):
     # she leans in over the work, the doll drawn to her edge of the table so her hands reach it (her chest stays
     # clear of the table edge at y 1.12)
     kr.location = (0.05, 1.36, 0.0); R['stool'].location.y = 1.46
-    kp['torso'].rotation_euler = (0.26, 0, 0)
-    kp['head'].rotation_euler = (0.38, 0, 0.1)
+    kp['torso'].rotation_euler = (0.2, 0, 0)
+    kp['head'].rotation_euler = (0.22, 0, 0.1)        # her head stays back, out of the way of her working arm
     R['doll'].location = (-0.08, 0.72, 0.862)    # on the table (0.84 sank it 1.5 cm in); lying head toward her
     bpy.context.view_layer.update()
     eye = R['dparts']['eye'].matrix_world.translation.copy() + V((0, 0, 0.004))
@@ -176,7 +176,7 @@ def I3(out, preview):
     # her hands: the right pinches the needle (the needle is where her fingers are), the left steadies the doll
     lib.hand_pose(kp, 1, 'pinch'); lib.hand_pose(kp, -1, 'hold')
     poff = lib.pinch_offset(kp, 1)
-    lib.arm_to(kp, -1, head + V((-0.112, 0.01, 0.035)), pole=(-1.0, 0.3, -0.3), palm=(1.0, 0.0, -0.35))   # cupping the doll's head
+    lib.arm_to(kp, -1, head + V((-0.165, 0.025, 0.055)), pole=(-1.0, 0.3, -0.3), palm=(1.0, 0.0, -0.35))   # cupping the doll's head
     u = (NEEDLE[1] - NEEDLE[0]).normalized()                 # the needle lies along the pull; she holds its back end
 
     def upd(f):
@@ -187,7 +187,7 @@ def I3(out, preview):
         d = back - eye
         pts = lib.catenary(eye, back, sag=0.004 + 0.02 * max(0.0, 0.12 - d.length), n=16)
         lib.tube_update(stitch, pts)
-        lib.arm_to(kp, 1, p + u * 0.044, offset=poff, pole=(1.0, 0.35, -0.5), palm=(-0.5, 0.2, -0.85))
+        lib.arm_to(kp, 1, p + u * 0.044, offset=poff, pole=(1.0, 0.55, -0.25), palm=(-0.5, 0.2, -0.85))
     lib.FRAME_FNS.append(upd)
     lib.register_frames()
     return sc
@@ -263,7 +263,7 @@ def I5(out, preview):
     for s in (-1, 1):
         lib.hand_pose(kp, s, 'relax')
     bpy.context.view_layer.update()
-    rest = {-1: V((-0.3, 1.0, 0.85)), 1: V((0.34, 1.06, 0.85))}     # resting on the table, clear of the doll and scissors
+    rest = {-1: V((-0.3, 1.1, 0.9)), 1: V((0.34, 1.12, 0.9))}     # resting on the table, clear of the doll and scissors
 
     def hands(f):
         dl = lib.eval_fc(d, 'location', f, d.location)
@@ -273,7 +273,7 @@ def I5(out, preview):
         if side.x < 0:
             side = -side                                        # so each hand takes the side nearer to it
         for s in (-1, 1):
-            g = dl + side * (s * 0.11) + V((0, 0, 0.1))
+            g = dl + side * (s * (0.135 if s > 0 else 0.165)) + V((0, 0, 0.1))
             palm = V((0, 0, -1)).lerp(-side * s, k)              # palms down on the table → turned in to the doll
             lib.arm_to(kp, s, rest[s].lerp(g, k), pole=(s * 1.0, 0.3, 0.0), palm=palm)     # elbows out to the sides
     lib.FRAME_FNS.append(hands)
@@ -477,6 +477,9 @@ def E2(out, preview):
     mats = M()
     L = sets.loom_cave(sc, cam, tgt, mats)
     kp = L['kparts']
+    if kp.get('oldlady'):
+        import oldlady
+        oldlady.shawl(kp, mats['wool_shawl'], lib)      # her shawl, which turns red (the model came without one)
     droot, dp = lib.doll('doll', (0.0, 0.32, 0.668), 0.9, mats)      # on top of her lap, not sunk into it
     droot.rotation_euler = (0.15, 0, 0.0)
     # the shawl reddens: mix its base colour toward red over the shot
@@ -486,7 +489,7 @@ def E2(out, preview):
     keys(kp['head'], 'rotation_euler', [(1, (0.2, 0, 0)), (90, (0.25, 0, 0)), (168, (0.62, 0, 0.08))])
     bpy.context.view_layer.update()
     lib.hand_pose(kp, 1, 'relax'); lib.hand_pose(kp, -1, 'relax')
-    lib.arm_to(kp, 1, V((0.035, 0.405, 0.668 + 0.11)), pole=(1.0, 0.5, -0.4), palm=(0.0, -1.0, 0.1))   # a hand on its back
+    lib.arm_to(kp, 1, V((0.035, 0.44, 0.668 + 0.12)), pole=(1.0, 0.5, -0.4), palm=(0.0, -1.0, 0.1))   # a hand on its back
     lib.arm_to(kp, -1, V((-0.15, 0.3, 0.69)), pole=(-1.0, 0.3, -0.3), palm=(0.0, 0.0, -1.0))           # the other on her lap
     return sc
 

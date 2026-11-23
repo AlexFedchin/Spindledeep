@@ -26,8 +26,23 @@ sc = shots.SHOTS[shot](out, True)
 frames = [int(a) for a in argv[1:]] or [round(sc.frame_start + (sc.frame_end - sc.frame_start) * k / 7) for k in range(8)]
 
 
+def ol_part(bone):
+    """the model's skin is one mesh per garment: split it by the bone that weighs most on each vertex. The upper arm
+    and the neck are left out, so neighbouring parts never 'overlap' along their shared seam."""
+    side = '1' if bone.endswith('.l') else '-1'
+    if any(k in bone for k in ('forearm', 'hand', 'index', 'middle', 'ring', 'pinky', 'thumb')):
+        return 'arm' + side
+    if bone.startswith('arm_') or bone.startswith('shoulder') or bone.startswith('neck'):
+        return None
+    if bone.startswith('head') or bone.startswith('c_') or bone.startswith('tong'):
+        return 'head'
+    return 'body'
+
+
 def group(o):
     n = o.name
+    if '_ol_' in n:
+        return 'ol' if o.type == 'MESH' and not o.hide_render else None
     if o.type != 'MESH' or o.hide_render:
         return None
     if n.startswith('knitter'):
@@ -64,6 +79,18 @@ def trees():
         mw = ev.matrix_world
         verts = [mw @ v.co for v in me.vertices]
         polys = [tuple(p.vertices) for p in me.polygons]
+        if g == 'ol':
+            names = {vg.index: vg.name for vg in o.vertex_groups}
+            part = []
+            for v in me.vertices:
+                best = max(v.groups, key=lambda e: e.weight, default=None)
+                part.append(ol_part(names.get(best.group, '')) if best else None)
+            ev.to_mesh_clear()
+            for gname in ('arm1', 'arm-1', 'head', 'body'):
+                sub = [p for p in polys if all(part[i] == gname for i in p)]
+                if sub:
+                    T[f'{o.name}_{gname.replace("body", "body")}'.replace('_body', '_body')] = (gname, BVHTree.FromPolygons(verts, sub))
+            continue
         ev.to_mesh_clear()
         T[o.name] = (g, BVHTree.FromPolygons(verts, polys))
     return T

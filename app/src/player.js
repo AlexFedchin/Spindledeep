@@ -16,7 +16,7 @@ export class Player {
     Object.assign(this, {
       x, y, vx: 0, vy: 0, facing: 1, grounded: false, coyote: 0, jumpBuf: 0, jumping: false,
       gripLock: false, nx: 0, ny: 1, walk: 0, squash: 0, landV: 0, air: 0, tieT: 0, swingT: 0,
-      dead: false, deadT: 0, scale: 1, events: [],
+      dead: false, deadT: 0, scale: 1, events: [], climb: null,
     });
   }
   get bx() { return this.x - this.facing * 0.08; }
@@ -58,6 +58,13 @@ export class Player {
     if (ax) this.facing = Math.sign(ax);
     if (inp.pressed.jump) this.jumpBuf = 0.13;
     if (!inp.held.grip) this.gripLock = false;
+    // ropes and warp threads (the deep): hold grip beside one to climb it, jump to leap off, let go to drop
+    if (this.climb && (!inp.held.grip || th.locked)) this.climb = null;
+    if (!this.climb && inp.held.grip && !th.locked && !this.gripLock && ctx.ropeNear) {
+      const r = ctx.ropeNear(this.x, this.y, 0.8);
+      if (r && (!this.grounded || ay > 0)) { this.climb = r; this.vx = 0; this.vy = 0; this.events.push('grip'); }
+    }
+    if (this.climb) { this._climb(dt, inp, ctx); return; }
 
     // grip / release
     const budgetLeft = ctx.budgetLeft();
@@ -70,6 +77,8 @@ export class Player {
         if (d < 5 && d > SNAG_R && dy > -1.6 && dx * this.vx > 0) { waitRing = true; break; }
       }
     }
+    // ...or a rope within reach: the grip is saved for the rope, not spent on the thread
+    if (!this.grounded && inp.held.grip && !th.locked && ctx.ropeNear && ctx.ropeNear(this.x, this.y, 1.8)) waitRing = true;
     if (inp.held.grip && !this.gripLock && !th.locked && th.anchored && !waitRing) {
       // in the air a grip gives a little slack, so pressing it early in a jump still carries you to a ring
       if (th.grip(this.bx, this.by, false, this.grounded ? 0 : 1.2)) this.events.push('grip');
@@ -205,6 +214,26 @@ export class Player {
     }
     this.tieT = Math.max(0, this.tieT - dt);
     this.swingT += dt;
+  }
+
+  _climb(dt, inp, ctx) {
+    const r = this.climb, ay = inp.axisY, ax = inp.axisX;
+    if (ax) this.facing = Math.sign(ax);
+    if (this.jumpBuf > 0) {
+      // leap off sideways (toward the held direction, or the way she faces)
+      this.climb = null; this.jumpBuf = 0; this.gripLock = true;
+      this.vx = (ax || this.facing) * 5.4; this.vy = 8.6; this.jumping = true; this.squash = -0.2; this.events.push('jump');
+      return;
+    }
+    this.x += (r.x - this.x) * Math.min(1, dt * 12);
+    this.vx = 0; this.vy = ay * 3.6;
+    this.y = clamp(this.y + this.vy * dt, r.y0 + 0.35, r.y1);
+    this.grounded = false;
+    this._collide(ctx.gates);
+    this.coyote = 0; this.air = 0;
+    this.walk += Math.abs(this.vy) * dt * 2.2;
+    if (Math.abs(this.vy) > 0.5) { const st = Math.floor(this.walk / Math.PI); if (st !== this._step) { this._step = st; this.events.push('climb'); } }
+    this.squash = damp(this.squash, 0, 10, dt); this.tieT = Math.max(0, this.tieT - dt); this.swingT += dt;
   }
 
   _wantsAway(th, ax) {

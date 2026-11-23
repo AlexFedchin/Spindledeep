@@ -4,6 +4,7 @@ import { Thread, SP } from './thread.js';
 import { Player } from './player.js';
 import { clamp, rand, mulberry, lerp } from './util.js';
 import { buildLore, loreLights } from './props.js';
+import { Deep } from './deep.js';
 
 const BASE_YARN = 92, SKEIN_YARN = 14;
 const RED = [1.0, 0.16, 0.12];
@@ -20,7 +21,8 @@ export class World {
       const g = T.ground(e.x, y0, 7); return g === null ? e : { ...e, y: g };
     };
     this.pegs = L.PEGS.map((p, i) => ({ ...snap(p), i, tied: !!p.home, glow: p.home ? 1 : 0 }));
-    this.hooks = L.HOOKS.map((h) => ({ ...h, ring: 0 }));
+    // a swinging ring hangs from an anchor `len` above where it rests
+    this.hooks = L.HOOKS.map((h) => ({ ...h, ring: 0, ...(h.sway ? { ax: h.x, ay: h.y + h.sway[0], rx: h.x, ry: h.y } : {}) }));
     this.bells = L.BELLS.map((b, i) => ({ ...snap(b), i, lit: 0, ring: 0, sway: rand(0, 6) }));
     this.gates = L.GATES.map((g) => ({ ...g, open: 0 }));
     this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
@@ -42,11 +44,12 @@ export class World {
     this.ink = L.INK;
     this.drips = L.DRIPS.map((d, i) => ({ ...d, t: 1.5 + i * 1.3, drop: null, swell: 0 }));
     this.grey = buildGrey(T);
-    this.memories = L.MEMORIES.map((m) => ({ ...m, ...nearestOn(this.grey, m.x, m.y), heard: false }));
+    this.memories = L.MEMORIES.map((m) => ({ ...m, ...(m.thread === 'old' ? {} : nearestOn(this.grey, m.x, m.y)), heard: false }));
     this.finale = { ...L.FINALE, ...nearestOn(this.grey, L.FINALE.x, L.FINALE.y) };
-    // her chair and candle stand on the Loom's floor (they were drawn at the thread's height and floated)
-    const fl = (x) => T.ground(x, this.finale.y + 2, 8) ?? this.finale.y;
-    Object.assign(this.finale, { chairY: Math.min(fl(this.finale.x + 1.0), fl(this.finale.x + 2.2)), spoolY: fl(this.finale.x), candleY: fl(33) });
+    // her empty chair in the Hall stands on the floor (it used to be drawn at the thread's height and floated)
+    const fl = (x, y) => T.ground(x, y + 2, 8) ?? y;
+    this.chair = { x: L.CHAIR.x, y: Math.min(fl(L.CHAIR.x - 0.6, L.CHAIR.y), fl(L.CHAIR.x + 0.6, L.CHAIR.y)), candleY: fl(34.2, L.CHAIR.y) };
+    this.finale.candleY = fl(19, this.finale.y);
     this.lamps = L.LIGHTS;
     this.lore = buildLore(T);
     this.nests = L.NESTS.map((n) => ({ ...n, spawned: 0 }));
@@ -59,6 +62,7 @@ export class World {
     this.time = 0;
     this.ending = null;
     this.husks = [];        // the dolls you lost on the way down stay where they fell
+    this.deep = new Deep(this);
     this.reset();
   }
 
@@ -84,9 +88,11 @@ export class World {
 
   update(dt, inp, controls = true) {
     this.time += dt;
+    if (this.ending) this.ending.t += dt;
     const p = this.player, th = this.thread;
-    const ctx = { budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks };
+    const ctx = { budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
+    this.deep.pre(dt);
     p.update(dt, controls && !p.dead && !this.ending ? inp : blank, th, ctx);
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, this.budgetLeft(), false);
@@ -97,6 +103,7 @@ export class World {
     this._gates(dt);
     this._moths(dt);
     this._hazards(dt);
+    this.deep.update(dt);
     this._pickups();
     this._memories();
     this._hintsUpdate();
@@ -119,6 +126,7 @@ export class World {
     const mi = th.anchored ? -1 : th.mendIndex();
     const nearMend = mi >= 0 && Math.hypot(th.x[mi] - p.bx, th.y[mi] - p.by) < 1.4;
     const nearFinale = Math.hypot(this.finale.x - p.x, this.finale.y - p.y) < 2.0;
+    this.prompt2 = nearFinale ? { a: 'pluck', t: 'Bite through her thread' } : null;
     if (nearFinale) this.prompt = { a: 'act', t: 'Tie the two threads together' };
     else if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
     else if (nearMend) this.prompt = { a: 'act', t: 'Mend the thread' };
@@ -134,7 +142,9 @@ export class World {
         this.emit('tie', { x: peg.x, y: peg.y });
       } else if (nearMend) { th.mend(); this.emit('mend', { x: p.x, y: p.y }); }
     }
+    if (nearFinale && inp.pressed.pluck) { this.ending = { t: 0, cut: true }; this.emit('finaleCut'); return; }
     if (inp.pressed.pluck && (this.pluckCD || 0) <= 0) {
+      this.deep.onPluck();
       this.pluckCD = 0.55;
       th.pluck(1);
       const tension = th.locked ? clamp(1 - th.Lfree / 20, 0, 1) : 0.35;
@@ -310,6 +320,7 @@ export class World {
     p.reset(c.x + 0.6, c.y + 0.6);
     this.hurt = 0;
     for (const m of this.moths) { m.st = 'wander'; m.idx = -1; m.flee = 1.5; m.x = m.nest.x; m.y = m.nest.y; }
+    this.deep.onRespawn();
     this.emit('respawn', { x: p.x, y: p.y });
   }
 
@@ -439,5 +450,9 @@ function makeHints() {
     { x0: 14, x1: 40, y0: -84, y1: -68, keys: ['pluck'], text: 'pluck the thread · the moths fear its song', until: (w) => w.bells[0].lit > 0 },
     { x0: 4, x1: 30, y0: -122, y1: -104, keys: ['grip', 'jump'], text: 'grip in the air near an iron ring to swing · jump to let go', until: (w) => w.player.x > 40 },
     { x0: 98, x1: 118, y0: -124, y1: -110, when: (w) => w.gates[1].open < 1, text: 'the veil listens for every bell your thread has touched', keys: ['pluck'] },
+    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'the hands hate the thread\'s song · pluck, and keep moving', until: (w) => w.player.x > 62 },
+    { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
+    { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
+    { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb · the warp threads', until: (w) => w.player.y > -515 },
   ];
 }

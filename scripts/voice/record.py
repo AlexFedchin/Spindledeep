@@ -18,7 +18,7 @@ import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from lines import LINES, PERSONAS  # noqa: E402
+from lines import LINES, PERSONAS, OTHER  # noqa: E402
 
 MODELS = os.environ.get('QWEN_MODELS', os.path.join(HERE, '.cache', 'models'))
 RAW = os.path.join(HERE, '.cache', 'raw')
@@ -48,7 +48,8 @@ def main():
         if not ks:
             continue
         torch.manual_seed(2000 + sum(map(ord, lid)) + ks[0])
-        w, sr = model.generate_voice_design(text=[text] * len(ks), language=['English'] * len(ks), instruct=[persona + ' Delivery: ' + delivery] * len(ks))
+        who = OTHER.get(lid, persona)      # m9: a different, older woman
+        w, sr = model.generate_voice_design(text=[text] * len(ks), language=['English'] * len(ks), instruct=[who + ' Delivery: ' + delivery] * len(ks))
         for j, k in enumerate(ks):
             sf.write(os.path.join(RAW, f'{lid}_d{k}.wav'), trim(w[j].astype(np.float32)), sr)
         print('design', lid, flush=True)
@@ -61,6 +62,8 @@ def main():
     ref_text = open(os.path.join(CAST, 'ref.txt'), encoding='utf-8').read().strip()
     prompt = model.create_voice_clone_prompt(ref_audio=ref, ref_text=ref_text)
     for lid, (text, delivery) in todo.items():
+        if lid in OTHER:
+            continue                      # not her voice: no clones of her
         ks = [k for k in range(nc) if not os.path.exists(os.path.join(RAW, f'{lid}_c{k}.wav'))]
         if not ks:
             continue

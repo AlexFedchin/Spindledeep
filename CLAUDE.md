@@ -120,6 +120,24 @@ film shows; keep its content out of pages and summaries.
 - EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
   negatives (offsets go through math nodes).
 
+## The knitter model (2026-11-23)
+
+The user's rigged "Old Lady" (Auto-Rig Pro FBX) lives in `../old-lady-fbx/` (not in the repo; `oldlady.py` also looks in
+`scripts/cine/.cache/old_lady/`). `lib.knitter` builds her via `oldlady.build`: the old control skeleton (empties) is built
+at her joints and each deforming bone follows a helper under its control (Copy Transforms), so `arm_to`/`hand_pose`/shot keys
+work unchanged. Her right hand is anatomical: values written for the old figure's s = -1 hand go through `lib.hand_local`.
+`USE_MODEL = False` in lib.py brings back the hand-built figure. E2 adds `oldlady.shawl` (it must turn red). `sprites.py`
+renders the in-game pictures of her (`app/assets/art/sprites/`); `clipcheck.py` splits her meshes by bone weight.
+
+## The deep (2026-11-23)
+
+Below the Ink Mere: Hall of Chairs → the Hush → the Treadles → the Loom (world h 604). Rules in `app/src/deep.js` (swinging
+rings, ropes, hands, stampers, the rising cloth `RISE`), drawing in `drawdeep.js`, data in `level.js` (`ROPES`, `HANDS`,
+`STAMPERS`, `RISE`, hooks with `sway`). Two endings: tie (act) or bite (pluck) at the finale (`startCut` in main.js).
+Route checks: scratchpad `route2.js` (real-physics segment bot: walk/drop/swing/climb/stamp/ring ops) and `gaps.js`
+(per-gap release windows over the swing phase). Any change to the deep's geometry or timing must be re-run through them.
+Teleport tests must re-tie the thread at a nearby peg first, or the overstretched thread pulls the doll back.
+
 ## Builds
 
 `build.cmd` writes `release/Spindledeep-1.0.0-portable.exe` and `-setup.exe`.

@@ -42,6 +42,11 @@ export const LORE = [
   ['husk', 85.0, -122, 1],              // fell short of the last ring and lay where it landed
   ['husk', 90.6, -192, -1],             // the Ink Mere: the first island, no further
   ['huskink', 53.6, -191, 1],           // the ink got into this one
+  // the deep (2026-11-23): fewer whole ones, and none of them got far
+  ['husk', 67.5, -282, -1],             // the Hush: in the tunnel, curled up as if to keep quiet
+  ['husknest', 58.4, -326, 1],          // pulled half into the wall of the long gallery
+  ['husk', 85.2, -358.2, 1],            // the Treadles: flattened where a heddle comes down
+  ['huskhung', 53.0, -503.6, -1],       // the Loom: hung from the first warp's ledge by its own thread
   // the hidden rooms (level.js SECRETS): each was somebody's private place
   ['baskets', 8.2, -4, 1],             // the Cellar
   ['lantern', 83.8, -15, 1], ['bucket', 88.4, -15, -1],         // the Diggers' Cache

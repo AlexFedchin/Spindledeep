@@ -42,6 +42,13 @@ SHOTS = {
              'water, a broken stone bridge, low fog over the water, faint light far away', 1344, 768),
     'loom': ('an enormous ancient wooden loom and a giant spinning wheel deep in a cave, thousands of threads strung across the '
              'cavern like a web, an empty rocking chair beneath it, dust in the air', 1344, 768),
+    # the deep (2026-11-23)
+    'hush': ('a long low cavern whose walls are made of packed grey woollen cloth and old blankets pressed into the rock, '
+             'countless limp knitted sleeves hanging from the ceiling like roots, total darkness fading into fog', 1344, 768),
+    'treadles': ('the underside of a colossal ancient wooden weaving loom in a cave, giant treadles, beams, ropes and pulleys, '
+                 'heavy heddle frames hanging on chains, dust, machinery of a forgotten mill', 1344, 768),
+    'loomdeep': ('a colossal cavern filled with thousands of vertical threads strung from a dark ceiling like a harp, a vast '
+                 'woven cloth floor rising in folds like a sea, a wooden beam high above, enormous scale, dread', 1024, 1152),
     'title': ('a tiny knitted yarn doll seen from behind standing on a rock ledge at the edge of an enormous dark abyss, '
               'a single thread trailing behind it up the cliff to a distant lone cottage with a lit window, huge pale moon', 1344, 768),
 }

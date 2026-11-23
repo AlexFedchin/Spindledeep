@@ -1,0 +1,209 @@
+<title>Spindledeep · Much Deeper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+
+  <style>
+    details.seal { margin: 34px 0 10px; border: 1px solid var(--rule); background: var(--ink-2); }
+    details.seal > summary { cursor: pointer; list-style: none; padding: 22px 24px; text-align: center;
+      font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--red); }
+    details.seal > summary::-webkit-details-marker { display: none; }
+    details.seal > summary span { display: block; margin-top: 8px; font-family: var(--italic, 'IM Fell English', serif);
+      font-style: italic; text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--paper-dim); }
+    details.seal[open] > summary { border-bottom: 1px solid var(--rule); }
+    details.seal .inner { padding: 4px 24px 26px; }
+    table.windows td, table.windows th { vertical-align: top; white-space: normal; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the deep</div>
+    <h1>Much Deeper</h1>
+    <p class="tag">Four new places below the Mere<span></span>and the Loom is no longer just a room</p>
+  </header>
+
+  <div class="col summary">
+    <p>The world is now twice as deep: 604&nbsp;m from the cottage to the bottom instead of 304. What used to be the bottom is now the first of four new areas. Each brings its own way of moving or its own danger. Together the route below the Ink Mere is now longer than everything above it, and harder. The Loom is now a real final act with something in it, and there are now two endings.</p>
+    <p>This page describes places and mechanics only. Who is down there and what happens is sealed at the bottom.</p>
+  </div>
+
+  <h2>What was added</h2>
+  <p class="ask">The game is beatable in like 5 minutes. There should be something terrifying in the Loom. You have to make the game much longer and the ending should be better.</p>
+  <div class="col">
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Area</th><th>What you do there</th></tr></thead>
+        <tbody>
+          <tr><td>The Hall of Chairs</td><td>The old bottom chamber, rebuilt. Rows of rocking chairs in the dark, one candle, and a hole in the floor: lower yourself down on your thread.</td></tr>
+          <tr><td>The Hush</td><td>Black caverns and an 80&nbsp;m gallery. Things reach out of the walls for anything that stays quiet. Pluck the thread to drive them back; lit bells keep them still; don't linger.</td></tr>
+          <tr><td>The Treadles</td><td>Rings that swing on chains over a barbed pit (wait for the ring to come to you). A rope to climb. A corridor of heddle frames that slam to a beat (listen for the creak). Then a long drop, in two stages, down a well.</td></tr>
+          <tr><td>The Loom</td><td>A cavern 120&nbsp;m tall strung with warp threads. Down to its floor, then a climb against the clock: ropes, a long swinging chain, needles that stab across the warp, and something coming up behind you.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure style="margin:18px 0 6px"><img src="img/hall.jpg" alt="The Hall of Chairs: rows of rocking chairs, one lit candle" style="width:100%;display:block;border:1px solid var(--rule)">
+      <figcaption>The Hall of Chairs</figcaption></figure>
+    <figure style="margin:18px 0 6px"><img src="img/hush.jpg" alt="The Hush: a long knitted arm reaching down from the ceiling toward the doll" style="width:100%;display:block;border:1px solid var(--rule)">
+      <figcaption>The Hush, standing still a moment too long</figcaption></figure>
+    <figure style="margin:18px 0 6px"><img src="img/tread.jpg" alt="The Treadles: pillars over a barbed pit, rings on chains" style="width:100%;display:block;border:1px solid var(--rule)">
+      <figcaption>The Treadles: three swinging rings over the barbs</figcaption></figure>
+    <figure style="margin:18px 0 6px"><img src="img/hed.jpg" alt="The heddle corridor: frames hanging from the roof, one slammed down" style="width:100%;display:block;border:1px solid var(--rule)">
+      <figcaption>The heddle corridor</figcaption></figure>
+    <figure style="margin:18px 0 6px"><img src="img/loom.jpg" alt="The Loom: a ledge, a warp thread, the long chain" style="width:100%;display:block;border:1px solid var(--rule)">
+      <figcaption>The Loom, partway up</figcaption></figure>
+
+    <ul class="what" style="margin-top:16px">
+      <li><b>New moves:</b> hold grip beside a rope or warp thread to climb it, and jump to leap off sideways.</li>
+      <li><b>New dangers:</b> the hands in the walls, the heddles, the needles, swinging rings, and a final climb with something rising behind you.</li>
+      <li><b>17 new poles</b> (30 in all), so a death never sends you far back. The well down to the Loom has a ledge halfway, because one fall was longer than your yarn.</li>
+      <li><b>Two new hidden rooms</b> with keepsakes (8 in all).</li>
+      <li><b>Five new voice lines</b>, recorded with the same old-woman voice pipeline. One of them uses a different voice on purpose.</li>
+      <li><b>New sound:</b> the Loom's machinery beating somewhere below in the Treadles, and a new cue in the Loom built from the game's own sounds. Neither has trumpets.</li>
+      <li><b>Three new paintings</b> behind the engraving: walls of draped cloth, the underside of a great loom, a cavern of hanging threads.</li>
+    </ul>
+  </div>
+
+  <h2>Played through by a bot</h2>
+  <div class="col">
+    <p>Every new stretch was played with the game's real physics by a scripted player that ties at a pole, then walks, jumps, swings, climbs, plucks and waits. It found real problems that are now fixed:</p>
+    <ul class="what">
+      <li>A hidden room you could only reach by jumping a 4.4&nbsp;m hole (the shaft mouth is now narrow).</li>
+      <li>A barbed trench at the very limit of a running jump (now 2.2&nbsp;m).</li>
+      <li>A swing whose landing ledge sat higher than the ring, so no swing could reach it.</li>
+      <li>A rope out of reach from its ledge.</li>
+      <li>The rising danger catching you the instant it woke, because the floor isn't flat to the centimetre.</li>
+      <li>The fall into the Loom being longer than the yarn, which would have left you dangling mid-shaft.</li>
+    </ul>
+    <div class="tablebox" style="margin-top:16px">
+      <table class="windows">
+        <thead><tr><th>Stretch</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Hall pole &rarr; down the hole &rarr; first pole of the Hush</td><td>passes, 9&nbsp;s</td></tr>
+          <tr><td>The Hush, plucking as you go, to the Treadles</td><td>passes, about 32&nbsp;s; standing still for 3&nbsp;s without plucking kills you, plucking keeps you alive</td></tr>
+          <tr><td>Hidden room in the Hush, there and back</td><td>passes</td></tr>
+          <tr><td>The three swinging rings</td><td>each gap has a window of good release times at most points of the swing; at a bad moment you wait a second for the ring to come back</td></tr>
+          <tr><td>Rope, heddle corridor (timed), the well</td><td>passes; running the heddles blindly gets you crushed</td></tr>
+          <tr><td>The Loom: floor to the top with the danger rising</td><td>passes in about 55&nbsp;s with time to spare; also from the mid-climb pole</td></tr>
+          <tr><td>The second ending, start to credits</td><td>runs through, with its own cards, credits and a scene after them</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">How long it takes now: a perfect scripted run through the new part alone takes about 2.5 minutes of pure movement. The new route is longer and harder than the old game was end to end, and the hands, heddles and the final climb are made to kill you a few times. I'd expect a first playthrough of the whole game to take well over twice as long as before. If you finish it and still find it short, I can go further.</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/level.js</code></b><span>The new areas, poles, rings, ropes, hands, heddles, needles, the rising danger, the new knots and hidden rooms.</span></div>
+      <div><b><code>app/src/deep.js</code> &middot; <code>drawdeep.js</code></b><span>The rules and the drawing for all of the deep's machinery.</span></div>
+      <div><b><code>app/src/player.js</code></b><span>Climbing ropes and warp threads.</span></div>
+      <div><b><code>app/src/main.js</code></b><span>The second ending, its cards and the scene after the credits; sounds for the new things; saves stay compatible.</span></div>
+      <div><b><code>docs/STORY.md</code></b><span>The plot (spoilers).</span></div>
+    </div>
+  </div>
+
+  <div class="col"><details class="seal">
+    <summary>The plot &middot; spoilers<span>Open only when you want to know. Everything below gives the deep and both endings away.</span></summary>
+    <div class="inner">
+      <p><b>The Hall of Chairs.</b> Forty-one rocking chairs, each with the same grey shawl over it; one candle still burns, by hers, and she isn't in it. Her knot: there are forty-one chairs and every one of them is hers. Every knitter was the same woman, because each doll is made in the image of the one who made it.</p>
+      <p><b>The Hush.</b> The walls are packed cloth, and the hands in them are knitted. The knot here is the wrong voice again, and it tells you <i>not</i> to pluck. It is trying to get you killed.</p>
+      <p><b>The Treadles.</b> A faded red thread lies along the ledge: a doll's thread from seventy winters ago. The knot in it isn't her voice but an older woman's, the knitter before her, saying word for word what the knitter will say to you at the end. The ending is a script, and it has been said forty-one times.</p>
+      <p><b>The Loom.</b> Its floor is woven cloth, and the cloth is faces, all the same face: hers. The chorus (many of her voices at once) tells you to sit down and be still. When you step off the pole on the cloth, the cloth heaves up into one vast figure with her face, the Weaver, and rises after you while you climb the warp. At the top she sits woven in to the waist, her candle beside her, with the grey thread in her hands. She is the model you chose, rendered into the game's engraving.</p>
+      <p><b>Two endings.</b> <i>Tie the threads</i> is the old ending, the cycle going on. <i>Bite through her thread</i> is new. "Oh... oh, little one. It's so quiet." The Weaver stops and sinks, and the faces close their eyes. Her candle goes out. Then something below takes hold of the red thread, the last line to the surface, and the doll bites through its own thread too. The light goes out. Cards: that winter no name was called up the well; in the spring the snow on the Brink began to melt. After the credits: the doll sitting in her place in the dark, and the sound of needles.</p>
+    </div>
+  </details></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc">four small mends</a> &middot; <a href="https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt">her, at last</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

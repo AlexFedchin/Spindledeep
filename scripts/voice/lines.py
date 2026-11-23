@@ -6,7 +6,12 @@ PERSONA = ("Female, about eighty, a frail old grandmother who knits: a soft, sli
            "gentle tremor of age, low and quiet, speaking slowly as if remembering, intimate and close; "
            "clear, unhurried English diction.")
 
-WRONG = {'m6': 0.55, 'fin_a': 0.3}
+WRONG = {'m6': 0.55, 'fin_a': 0.3, 'm8': 0.6}
+# the deep (2026-11-23): m9 is not her at all but the knitter before her, an older, different woman (her own persona,
+# design takes only); m10 is the chorus, all of them at once (pick.py layers the take into several pitched voices)
+OTHER = {'m9': ("Female, about ninety-five, an ancient woman from another century: a deep, dry, rasping, very slow voice, "
+                "heavy rural accent softened by age, each word worn smooth, faint and far away as if from the bottom of a well; English.")}
+CHORUS = {'m10': 6}
 
 # Re-recording (2026-11-22) for a voice that sounds old: candidate voice descriptions for casting (cast.py tries each
 # with several seeds and keeps the one that measures oldest, see age.py), and the sentence the candidates read.
@@ -40,4 +45,14 @@ LINES = {
            'Very close and very quiet; tired, kind on the surface and empty underneath; the last sentence a soft plea that is really an instruction.'),
     'fin_b': ('There. Next winter, it will call your name. Start knitting early, little one... it takes a few.',
            'A whisper, gentle and almost fond, with no comfort in it at all; a small breath before "it takes a few".'),
+    'm7': ("So many chairs. I counted them on my way down... forty-one. Every one of them has my shawl over it. Every one of them is mine.",
+           'Bewildered and slow, counting under her breath; the last sentence falls away into quiet horror, very soft.'),
+    'm8': ("Hush now, little one. Hush. Don't pluck your thread down here... they don't like the noise. Be quiet, and they'll let you by.",
+           'A lullaby voice, soothing and slow, much too sweet; the kindness is a lie and the voice does not care whether you live.'),
+    'm9': ("There you are. I came all this way too, once, and tied my thread to an old woman's. Tie yours to mine, little one... someone has to go home.",
+           'Very tired and very old, almost mechanical, as if she has said these exact words many times before and will again.'),
+    'm10': ("Forty-one winters. Forty-one of us. Every one of us came down for the one before. Sit down, little one. Sit down, and be still.",
+            'Slow, low, even and hollow, like a congregation reciting; no feeling at all, every word given the same weight.'),
+    'fin_cut': ("Oh... oh, little one. It's so quiet.",
+                'Surprised, then relieved and frightened at once, a long breath out; the last words barely a whisper.'),
 }

@@ -4,6 +4,7 @@ import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
 import { SNAG_R } from './player.js';
 import { drawLore, drawKeepsakes, drawHusks } from './props.js';
+import { drawDeep } from './drawdeep.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -15,7 +16,7 @@ export class Drawer {
     this.trees = makeTrees();
     this.fg = makeForeground(world);
     this.hookChains = world.hooks.map((h) => {
-      let top = h.y;
+      let top = h.sway ? h.ay : h.y;
       for (let k = 0; k < 160; k++) { top += 0.1; if (world.T.d(h.x, top) < 0) break; }
       return top;
     });
@@ -24,6 +25,9 @@ export class Drawer {
     this.wind = 4; this.gust = 0; this.out = 1;
     this.fog = makeFog();
   }
+
+  // pictures of her rendered from the model (main.js loads them once)
+  get img() { return Drawer.IMG; }
 
   // world → screen
   setView(cam, viewH, W, H) {
@@ -63,7 +67,7 @@ export class Drawer {
     this.drawSkeins(ctx, ectx);
     drawKeepsakes(this, ctx, ectx);
     this.drawMemories(ctx, ectx);
-    this.drawFinale(ctx, ectx);
+    drawDeep(this, ctx, ectx);
     this.drawDrips(ctx);
     this.drawFx(ctx, ectx, dt, false);
     for (const m of w.moths) if (this.vis(m.x, m.y)) this.drawMoth(ctx, ectx, m);
@@ -526,13 +530,19 @@ export class Drawer {
     this.w.hooks.forEach((h, i) => {
       if (!this.vis(h.x, h.y, 6)) return;
       const top = this.hookChains[i];
-      const sway = Math.sin(this.time * 0.8 + i) * 0.04 + h.ring * Math.sin(this.time * 18) * 0.08;
+      const sway = h.sway ? 0 : Math.sin(this.time * 0.8 + i) * 0.04 + h.ring * Math.sin(this.time * 18) * 0.08;
       const X = this.sx(h.x + sway), Y = this.sy(h.y);
       ctx.strokeStyle = g(0.08); ctx.lineWidth = Math.max(1, k * 0.03);
-      // chain links
-      for (let y = h.y + 0.3; y < top; y += 0.22) {
-        const xx = this.sx(h.x + sway * (top - y) / (top - h.y));
+      // chain links (a swinging ring: a fixed chain from the roof to its pivot, then the swinging length to the ring)
+      const ax = h.sway ? h.ax : h.x, ay = h.sway ? h.ay : h.y;
+      for (let y = ay + (h.sway ? 0 : 0.3); y < top; y += 0.22) {
+        const xx = this.sx(ax + sway * (top - y) / (top - h.y));
         ctx.beginPath(); ctx.ellipse(xx, this.sy(y), 0.04 * k, 0.09 * k, 0, 0, TAU); ctx.stroke();
+      }
+      if (h.sway) {
+        const L = Math.hypot(h.x - h.ax, h.y - h.ay), n = Math.floor(L / 0.22);
+        for (let j = 1; j < n; j++) { const t = j / n; ctx.beginPath(); ctx.ellipse(this.sx(h.ax + (h.x - h.ax) * t), this.sy(h.ay + (h.y - h.ay) * t), 0.04 * k, 0.09 * k, h.a || 0, 0, TAU); ctx.stroke(); }
+        ctx.fillStyle = g(0.3); ctx.fillRect(this.sx(h.ax) - 0.25 * k, this.sy(h.ay) - 0.08 * k, 0.5 * k, 0.16 * k);
       }
       ctx.lineWidth = Math.max(1.6, k * 0.06); ctx.strokeStyle = g(0.04);
       ctx.beginPath(); ctx.arc(X, Y, 0.22 * k, 0, TAU); ctx.stroke();
@@ -687,49 +697,6 @@ export class Drawer {
         ectx.fillStyle = gr; ectx.fillRect(X - 0.8 * k, Y - 0.8 * k, 1.6 * k, 1.6 * k);
       }
     }
-  }
-  drawFinale(ctx, ectx) {
-    const f = this.w.finale, k = this.k;
-    if (!this.vis(f.x, f.y, 8)) return;
-    // her rocking chair, her shawl, the needles, the end of her grey thread
-    const X = this.sx(f.x + 1.6), Y = this.sy(f.chairY - 0.05);
-    const rock = Math.sin(this.time * 0.7) * 0.03;
-    ctx.save(); ctx.translate(X, Y); ctx.rotate(rock);
-    ctx.strokeStyle = g(0.05); ctx.lineWidth = Math.max(1.5, 0.07 * k);
-    ctx.beginPath(); ctx.arc(0, -2.2 * k, 2.25 * k, Math.PI * 0.38, Math.PI * 0.62); ctx.stroke(); // rocker
-    ctx.beginPath();
-    ctx.moveTo(-0.65 * k, -0.08 * k); ctx.lineTo(-0.55 * k, -0.85 * k); ctx.lineTo(0.6 * k, -0.85 * k); ctx.lineTo(0.65 * k, -0.08 * k);
-    ctx.moveTo(0.55 * k, -0.85 * k); ctx.lineTo(0.8 * k, -2.3 * k);
-    ctx.moveTo(-0.55 * k, -0.85 * k); ctx.lineTo(-0.35 * k, -1.0 * k);
-    ctx.stroke();
-    ctx.lineWidth = Math.max(1, 0.04 * k);
-    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(0.58 * k + i * 0.04 * k, -0.9 * k - i * 0.28 * k); ctx.lineTo(0.2 * k + i * 0.06 * k, -1.05 * k - i * 0.25 * k); ctx.stroke(); }
-    // shawl draped over the seat
-    ctx.fillStyle = g(0.62);
-    ctx.beginPath(); ctx.moveTo(-0.5 * k, -0.85 * k); ctx.quadraticCurveTo(0.1 * k, -1.0 * k, 0.62 * k, -1.4 * k);
-    ctx.lineTo(0.7 * k, -0.7 * k); ctx.quadraticCurveTo(0.2 * k, -0.4 * k, -0.45 * k, -0.35 * k); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = g(0.3); ctx.lineWidth = 1;
-    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(-0.45 * k + i * 0.2 * k, -0.4 * k + i * 0.02 * k); ctx.lineTo(-0.4 * k + i * 0.2 * k, -0.25 * k + Math.sin(i) * 0.04 * k); ctx.stroke(); }
-    ctx.restore();
-    // the spool on the floor where her thread ends
-    const SX = this.sx(f.x), SY = this.sy(f.spoolY);
-    ctx.fillStyle = g(0.45); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, 0.025 * k);
-    ctx.fillRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k); ctx.strokeRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k);
-    ctx.fillStyle = g(0.7); ctx.fillRect(SX - 0.11 * k, SY - 0.28 * k, 0.22 * k, 0.24 * k);
-    // her candle on the floor beside the chair (snuffed the moment the threads are tied: a last thread of smoke)
-    const CX = this.sx(33), CY = this.sy(f.candleY);
-    ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.45 * k, 0.12 * k, 0.45 * k);
-    if (this.w.candleOut !== undefined) {
-      const a = Math.max(0, 1 - (this.w.time - this.w.candleOut) / 6);
-      if (a > 0) { ctx.strokeStyle = g(0.6, a * 0.6); ctx.lineWidth = Math.max(1, 0.02 * k); ctx.beginPath(); ctx.moveTo(CX, CY - 0.47 * k);
-        for (let i = 1; i < 8; i++) ctx.lineTo(CX + Math.sin(this.w.time * 1.3 + i * 0.9) * 0.05 * i * k, CY - (0.47 + i * 0.16) * k); ctx.stroke(); }
-      return;
-    }
-    const fl = 1 + Math.sin(this.time * 15) * 0.1;
-    const gr = ectx.createRadialGradient(CX, CY - 0.55 * k, 0, CX, CY - 0.55 * k, 1.5 * k);
-    gr.addColorStop(0, `rgba(255,200,120,${0.85 * fl})`); gr.addColorStop(0.15, `rgba(255,140,60,${0.3 * fl})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    ectx.fillStyle = gr; ectx.fillRect(CX - 1.5 * k, CY - 2.05 * k, 3 * k, 3 * k);
-    ectx.fillStyle = `rgba(255,220,150,${fl})`; ectx.beginPath(); ectx.ellipse(CX, CY - 0.55 * k, 0.04 * k, 0.1 * k * fl, 0, 0, TAU); ectx.fill();
   }
   drawDrips(ctx) {
     const k = this.k;

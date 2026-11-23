@@ -20,6 +20,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 12. Her own two hands (`knitter/`) | https://claude.ai/artifact/MswAJ32Cd7SY1zfuP2jvV1 |
 | 13. Seventy winters in her voice (`oldvoice/`) | https://claude.ai/artifact/KQdLD1viJRnYPpcjy6WBMh |
 | 14. Four small mends (`mends/`) | https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc |
+| 15. Her, at last: the old-lady model (`oldlady/`) | https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
