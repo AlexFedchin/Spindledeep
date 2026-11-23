@@ -91,10 +91,10 @@ export function buildLore(T) {
 // a pen that draws in metres relative to a prop's foot (y up), mirrored by `flip`
 class Pen {
   constructor(D, ctx, ectx, p) {
-    this.D = D; this.c = ctx; this.e = ectx; this.ox = p.x; this.oy = p.y; this.f = p.flip; this.k = D.k;
+    this.D = D; this.c = ctx; this.e = ectx; this.ox = p.x; this.oy = p.y; this.f = p.flip; this.s = p.s || 1; this.k = D.k * this.s;
   }
-  X(x) { return this.D.sx(this.ox + x * this.f); }
-  Y(y) { return this.D.sy(this.oy + y); }
+  X(x) { return this.D.sx(this.ox + x * this.f * this.s); }
+  Y(y) { return this.D.sy(this.oy + y * this.s); }
   w(m) { return Math.max(0.8, this.k * m); }
   path(pts, close) {
     const c = this.c; c.beginPath();
@@ -162,6 +162,26 @@ export function drawKeepsakes(D, ctx, ectx) {
     P.glow(0, 0.14, 0.42, `rgba(255,228,180,${0.16 + 0.06 * Math.sin(D.time * 1.7 + k.bob)})`);
     (KEEP[k.kind] || (() => {}))(P, D.time);
   }
+}
+// a found item held up in the showcase (main.js startShow): drawn at scale it.s, centred on (it.x, it.y), lit warm
+export function drawShowItem(D, ctx, ectx, it) {
+  const P = new Pen(D, ctx, ectx, { x: it.x, y: it.y, flip: 1, s: it.s });
+  P.glow(0, 0, 0.55, `rgba(255,214,160,${(it.kind === "skein" ? 0.08 : 0.16) * it.a})`);
+  if (it.kind === 'skein') {
+    // a ball of her red yarn: wound turns, a loose end, the red of the thread in its light
+    const X = P.X(0), Y = P.Y(0), r = 0.2 * P.k;
+    ctx.fillStyle = g(0.4); ctx.strokeStyle = g(0.03); ctx.lineWidth = P.w(0.02);
+    ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = g(0.1); ctx.lineWidth = P.w(0.01);
+    for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.ellipse(X, Y, r * 0.96, r * (0.14 + i * 0.13), i * 0.55 + D.time * 0.05, 0, TAU); ctx.stroke(); }
+    ectx.strokeStyle = `rgba(255,50,40,${0.6 * it.a})`; ectx.lineWidth = Math.max(1.5, P.k * 0.012);
+    ectx.beginPath(); ectx.arc(X, Y, r, 0, TAU); ectx.stroke();
+    ectx.beginPath(); ectx.moveTo(X + r * 0.7, Y + r * 0.7); ectx.quadraticCurveTo(X + r * 1.6, Y + r * 1.25, X + r * 2.3, Y + r * 1.05); ectx.stroke();
+    return;
+  }
+  // keepsakes are drawn standing on y = 0 and about 0.3 m tall: lift them so their middle sits on the anchor
+  const Q = new Pen(D, ctx, ectx, { x: it.x, y: it.y - 0.15 * it.s, flip: 1, s: it.s });
+  (KEEP[it.kind] || (() => {}))(Q, D.time);
 }
 const KEEP = {
   // a wooden spool, a few turns of red still on it

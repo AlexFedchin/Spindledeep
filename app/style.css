@@ -91,3 +91,23 @@ body.nocursor, body.nocursor * { cursor: none !important; }
 /* overlay text that changes while it is up fades out, swaps, and fades back in (see swapText in main.js) */
 .swapping { opacity: 0 !important; transition-duration: 0.3s !important; }
 
+/* a found keepsake or skein: the world darkens around the thing she holds up (the item itself is drawn by the game,
+   engraved like everything else, at the bright centre of this vignette); the words come in one after another */
+#show { position: fixed; inset: 0; z-index: 15; pointer-events: none; transition: opacity 1s ease-in-out;
+  background: radial-gradient(ellipse 34% 30% at 50% 36%, rgba(8,7,12,0) 0%, rgba(8,7,12,0.5) 55%, rgba(8,7,12,0.84) 100%),
+    linear-gradient(180deg, rgba(8,7,12,0.35) 0%, rgba(8,7,12,0) 30%, rgba(8,7,12,0.55) 58%, rgba(8,7,12,0.92) 100%); }
+#show .stext { position: absolute; left: 50%; top: 59vh; transform: translateX(-50%); width: min(1040px, 86vw); text-align: center; }
+#show .sname { font-family: 'FellSC'; font-size: clamp(34px, 3.4vw, 60px); letter-spacing: 0.14em; color: var(--paper); text-shadow: 0 2px 18px #000, 0 0 2px #000; }
+#show .srule { width: min(380px, 42vw); height: 1px; margin: 14px auto 20px; background: linear-gradient(90deg, transparent, var(--red), transparent); box-shadow: 0 0 8px var(--red); }
+#show .sdesc { font-style: italic; font-size: clamp(24px, 2.2vw, 38px); line-height: 1.42; color: var(--paper); text-shadow: 0 2px 16px #000, 0 0 2px #000; }
+#show .scount { margin-top: 24px; font-family: 'FellSC'; font-size: clamp(15px, 1.2vw, 20px); letter-spacing: 0.22em; color: var(--paper-dim); text-shadow: 0 1px 8px #000; }
+#show .sany { position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center; font-style: italic; font-size: clamp(15px, 1.1vw, 18px); color: var(--paper-dim); }
+#show .sname, #show .srule, #show .sdesc, #show .scount, #show .sany { opacity: 0; translate: 0 12px; transition: opacity 1.1s ease-out, translate 1.4s ease-out; }
+#show .srule { scale: 0.2 1; transition: opacity 1.1s ease-out, translate 1.4s ease-out, scale 1.6s ease-out; }
+#show.s1 .sname, #show.s1 .srule { opacity: 1; translate: 0 0; scale: 1 1; }
+#show.s2 .sdesc { opacity: 1; translate: 0 0; }
+#show.s3 .scount { opacity: 1; translate: 0 0; }
+#show.s4 .sany { opacity: 1; translate: 0 0; animation: sbreathe 2.8s ease-in-out 1.2s infinite; }
+#show.sout .sname, #show.sout .srule, #show.sout .sdesc, #show.sout .scount, #show.sout .sany { opacity: 0; translate: 0 -8px; transition: opacity 0.55s ease-in, translate 0.7s ease-in; animation: none; }
+@keyframes sbreathe { 50% { opacity: 0.45; } }
+

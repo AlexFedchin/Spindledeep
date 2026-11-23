@@ -3,7 +3,7 @@
 import { clamp, mulberry, lerp, TAU } from './util.js';
 import * as L from './level.js';
 import { SNAG_R } from './player.js';
-import { drawLore, drawKeepsakes, drawHusks } from './props.js';
+import { drawLore, drawKeepsakes, drawHusks, drawShowItem } from './props.js';
 import { drawDeep } from './drawdeep.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
@@ -72,6 +72,7 @@ export class Drawer {
     this.drawFx(ctx, ectx, dt, false);
     for (const m of w.moths) if (this.vis(m.x, m.y)) this.drawMoth(ctx, ectx, m);
     this.drawDoll(ctx, ectx, dt);
+    if (w.showcase && w.showcase.item) drawShowItem(this, ctx, ectx, w.showcase.item);
     this.drawFx(ctx, ectx, dt, true);
     this.drawFog(ctx, true);
     this.drawForeground(ctx);

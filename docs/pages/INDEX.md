@@ -25,6 +25,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 17. The cave breathes: zoom by room size, look up/down (`camera/`) | https://claude.ai/artifact/AzfFSJ6SAUkTvQczMzuRap |
 | 18. Out into the storm: prologue → game handover, walk out of the cottage, hidden pointer (`walkout/`) | https://claude.ai/artifact/3D4qdQVi67pjES3hUbNQeu |
 | 19. No hard cuts: passages between screens, pause/respawn/hidden-room/text easing (`passages/`) | https://claude.ai/artifact/Mva3aPJTUhkcPfYoeYTJVS |
+| 20. Held up to the light: keepsakes and skeins shown full screen, game paused (`keepsakes/`, keepsake words sealed) | https://claude.ai/artifact/JcxvsDdLF2tCXTsmfmFfvP |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -90,3 +91,9 @@ leaves the veil for a film to lift once playing. Pause eases `timeScale` and fad
 Respawn: fade to full black by deadT 1.6, `camSnap` + `respawnT` fade-up. Hidden rooms: `T.revealPair` + `revealStep`
 morph the SDF patch over 1.5 s. Overlay text via `setText`. Test pitfalls: injected shot JS runs in global scope
 (wrap `const` in a block); don't test fullscreen in smoke mode (it would show the window).
+
+## Showcase (2026-11-23)
+`startShow`/`showUpdate` in main.js (SHOW, W.showcase): timeScale → 0 (rate 5), camera on the item at view 2.7 m using
+real dt, item drawn by `props.drawShowItem` (Pen has a scale `s`), `#show` overlay with staged classes s1–s4/sout.
+Dismiss = fresh I.pressed or mousedown after 1.6 s. Item light 0.55 (1.1 washed the skein out). Keepsake words are
+story: keep them sealed on pages.

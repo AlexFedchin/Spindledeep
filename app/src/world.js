@@ -334,7 +334,7 @@ export class World {
       if (!s.seen && ((p.x - cx) / rx) ** 2 + ((p.y - cy) / ry) ** 2 < 1.0) { s.seen = true; this.emit('secret', { name: s.name, hide: s.hide, x: p.x, y: p.y }); }
       if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9) {
         s.taken = true;
-        this.emit('keepsake', { x: s.x, y: s.y, what: s.what, text: s.text, n: this.secrets.filter((q) => q.taken).length, of: this.secrets.length });
+        this.emit('keepsake', { x: s.x, y: s.y, kind: s.kind, what: s.what, text: s.text, n: this.secrets.filter((q) => q.taken).length, of: this.secrets.length });
       }
     }
   }
@@ -403,6 +403,8 @@ export class World {
     for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     if (this.extraLights) out.push(...this.extraLights);
+    // a found item held up in the showcase: a warm light on it (and on her face below it)
+    if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.55 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
     // the cottage doorway while she walks out: warm room light spilling onto the snow
     if (this.intro && this.intro.door > 0.01) out.push({ x: L.COTTAGE.x + 5.975, y: L.COTTAGE.y + 0.15, r: 3.2, i: 0.28 * this.intro.door, c: [1.0, 0.62, 0.3], soft: 10 });   // low, on the step: a lamp at her height washes her out
     return out;

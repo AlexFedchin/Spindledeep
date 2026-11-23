@@ -166,7 +166,7 @@ function navInput(nav) {
 function enterTitle() {
   state = 'title';
   // back from the credits (or the pause menu) the title shows a fresh world, not the last run's red thread and lamps
-  END = null; CUT = null;
+  END = null; CUT = null; clearShow();
   W = new World(T); D = new Drawer(W); SD.W = W;
   R.setSDF(T.visualHalf(W.secrets.map((k) => k.hide)));
   const has = !!loadSave(true);
@@ -204,7 +204,9 @@ function toggleFullscreenNow() {
   window.host?.setFullscreen?.(settings.fullscreen);
   window.host?.setSettings?.(settings);
 }
+function clearShow() { if (SHOW) { SHOW = null; show($('show'), false); } }
 function startGame(cont, walkOut = false) {
+  clearShow();
   show($('title'), false);
   W = new World(T);
   D = new Drawer(W);
@@ -318,7 +320,7 @@ function updateUI(dt) {
   if (subTimer > 0) { subTimer -= dt; if (subTimer <= 0) show($('sub'), false); }
   if (cardTimer > 0) { cardTimer -= dt; if (cardTimer <= 0) show($('card'), false); }
   if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) show($('toast'), false); }
-  const playing = state === 'play' && !paused;
+  const playing = state === 'play' && !paused && !SHOW;
   const h = playing && W.hint && subTimer <= 0 ? W.hint : null;
   const hs = h ? keysHTML(h.keys) + ' <span>' + h.text + '</span>' : '';
   if (hs !== lastHint) { lastHint = hs; if (hs) setText($('hint'), hs, true); show($('hint'), !!hs); }
@@ -377,13 +379,15 @@ function handleEvents() {
       case 'respawn': snapOpen(); camSnap = true; respawnT = time; log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
       case 'skein':
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
-        toast(`a skein of her red yarn · ${e.n} of ${W.skeins.length}`, 3);
+        startShow({ kind: 'skein', x: e.x, y: e.y + 0.22, name: 'A skein of her red yarn', desc: 'Wound tight, the colour of the thread. It will reach further now.',
+          count: e.n >= W.skeins.length ? `the last skein · all ${W.skeins.length} found` : `skein ${e.n} of ${W.skeins.length}` });
         break;
       case 'secret': startReveal(e); card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
       case 'keepsake':
         A.play('skein', { vol: 0.6, rate: 1.25, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 1.6, x: e.x, y: e.y });
         D.spawn('pale', e.x, e.y + 0.2, 1, { speed: 0, life: 1.6 }); D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
-        toast(`${e.what} · ${e.text} · keepsake ${e.n} of ${e.of}`, 6);
+        startShow({ kind: e.kind, x: e.x, y: e.y + 0.15, name: e.what.charAt(0).toUpperCase() + e.what.slice(1), desc: e.text,
+          count: e.n >= e.of ? `keepsake ${e.n} of ${e.of} · the last of them` : `keepsake ${e.n} of ${e.of}` });
         save();
         break;
       case 'memory': playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 }); save(); break;
@@ -674,6 +678,62 @@ function revealStep(dt) {
   if (r.t >= 1.5) reveal = null;
 }
 
+// ── a found thing, held up ───────────────────────────────────────────────
+// Picking up a keepsake or a skein stops the world: time runs down over half a second, the screen darkens around
+// her, and the thing rises from where it lay, growing, into a warm light above her head while she looks up at it.
+// Its name, its words and the count come in one by one in large type. Any fresh key, button or click (after a
+// moment, so a held run key can't skip it) and the words fade, the thing shrinks into her chest, time picks up.
+const SHOWV = 2.7;                     // view height while showing (m); the item is ~0.75 m tall on screen at scale 2.4
+let SHOW = null;
+function startShow(o) {
+  const p = W.player, el = $('show');
+  SHOW = { ...o, t: 0, o: 0, phase: 'in', from: { x: o.x, y: o.y }, at: { x: p.x, y: p.y + 1.35 }, item: null, click: false };
+  W.showcase = SHOW;
+  log(`showcase · ${o.name}`);
+  el.querySelector('.sname').textContent = o.name;
+  el.querySelector('.sdesc').textContent = o.desc;
+  el.querySelector('.scount').textContent = o.count;
+  el.querySelector('.sany').textContent = I.usingPad ? 'press any button' : 'press any key';
+  el.classList.remove('s1', 's2', 's3', 's4', 'sout');
+  show(el, true);
+  show($('card'), false); cardTimer = 0; show($('toast'), false); toastTimer = 0;
+  A.play('bowl', { vol: 0.35, rate: 0.5, verb: 1.4 });
+  A.play('harp', { rate: 0.5, vol: 0.4, verb: 1.3, delay: 0.5 });
+}
+function showUpdate(dt) {
+  const S = SHOW; if (!S) return;
+  const el = $('show'), p = W.player;
+  const bob = Math.sin(time * 1.3) * 0.035;
+  if (S.phase === 'in') {
+    S.t += dt;
+    const k = smooth(0, 1.15, S.t);
+    // rise along a soft arc from where it lay to above her head, growing as it comes
+    const ax = S.from.x + (S.at.x - S.from.x) * k, ay = S.from.y + (S.at.y - S.from.y) * k + Math.sin(k * Math.PI) * 0.25;
+    S.item = { kind: S.kind, x: ax, y: ay + bob * k, s: 1 + 1.4 * k, a: 0.4 + 0.6 * k };
+    if (S.t > 0.7) el.classList.add('s1');
+    if (S.t > 1.15) el.classList.add('s2');
+    if (S.t > 1.7) el.classList.add('s3');
+    if (S.t > 2.6) el.classList.add('s4');
+    const any = Object.values(I.pressed).some(Boolean) || S.click;
+    S.click = false;
+    if (S.t > 1.6 && any) { S.phase = 'out'; el.classList.add('sout'); A.play('release', { vol: 0.3, rate: 0.7 }); log('showcase dismissed'); }
+  } else {
+    S.o += dt;
+    // the words go first; then it shrinks and drops into her chest (the red heart), and the dark lifts
+    const k = smooth(0.25, 1.0, S.o);
+    const hx = p.x + p.facing * 0.06, hy = p.y + 0.12;
+    S.item = { kind: S.kind, x: S.at.x + (hx - S.at.x) * k, y: S.at.y + bob * (1 - k) + (hy - S.at.y) * k, s: 2.4 * (1 - k) + 0.15 * k, a: 1 - 0.6 * k };
+    if (S.o > 0.35 && !S.hid) { S.hid = true; show(el, false); }
+    if (S.o > 1.0 && !S.done) {
+      S.done = true; S.item = null;
+      D.spawn('spark', hx, hy, 22, { speed: 2.2, life: 1.1 });
+      A.play('tie', { vol: 0.45, rate: 1.3, x: hx, y: hy }); A.play('chime', { vol: 0.25, rate: 1.5, x: hx, y: hy });
+    }
+    if (S.o > 1.25) { SHOW = null; W.showcase = null; }
+  }
+}
+addEventListener('mousedown', () => { if (SHOW) SHOW.click = true; });
+
 let camSnap = false;                   // the next camera update jumps straight to its target (behind black)
 let respawnT = -99;                    // time of the last respawn: the picture comes back from black
 
@@ -709,7 +769,7 @@ function updateCamera(dt) {
   const canLook = state === 'play' && !(W.intro && !W.intro.done) && !p.dead && p.grounded && !p.climb && !W.thread.locked && !SD.viewLock;
   const ay = canLook ? I.axisY : 0;
   lookT = ay ? lookT + dt : 0;
-  p.look = damp(p.look || 0, W.intro && !W.intro.done ? W.intro.look : ay, W.intro && !W.intro.done ? 3 : 9, dt);                                   // her head turns at once
+  p.look = damp(p.look || 0, SHOW ? (SHOW.phase === 'in' ? 0.85 : 0) : W.intro && !W.intro.done ? W.intro.look : ay, W.intro && !W.intro.done ? 3 : 9, dt);                                   // her head turns at once
   lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
   if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
@@ -724,13 +784,17 @@ function updateCamera(dt) {
     const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
     vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
     if (a.id === 'loom' && p.y > -452) vh = 12.5;          // at the top of the Loom: close on her
+    if (SHOW) {
+      const k = SHOW.phase === 'in' ? smooth(0, 1.2, SHOW.t) : 1 - smooth(0.2, 1.25, SHOW.o);
+      tx = lerp(tx, SHOW.at.x, k); ty = lerp(ty, SHOW.at.y - 0.14 * SHOWV, k); vh = lerp(vh, SHOWV, k);
+    }
     if (W.intro && !W.intro.done) { const k = smooth(WALK.step, WALK.out + 0.5, W.intro.t); vh = WALK.closeVh + (vh - WALK.closeVh) * k; tx = lerp(DOOR.x + 0.6, tx, k); ty = lerp(DOOR.y + 1.3, ty, k); }
     ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
   }
   if (camSnap) { camSnap = false; cam.x = tx; cam.y = ty; cam.viewH = vh; ambient = a.amb.slice(); moon = a.moon; }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
-  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 1.2, dt);
+  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, SHOW ? 5 : W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 1.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
   cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
@@ -801,9 +865,10 @@ function tick(now) {
   if (busy) { /* a passage is taking the screen: no menus, no pause */ }
   else if (state === 'title') navInput($('menu'));
   else if (paused) { navInput($('pmenu')); if (I.pressed.pause) setPaused(false); }
-  else if (state === 'play' && I.pressed.pause) setPaused(true);
+  else if (state === 'play' && I.pressed.pause && !SHOW) setPaused(true);
+  showUpdate(dt);
   // pausing doesn't freeze the world mid-frame: time runs down to a stop in ~0.2 s and picks up again the same way
-  timeScale = damp(timeScale, paused ? 0 : 1, 16, dt);
+  timeScale = damp(timeScale, paused || (SHOW && SHOW.phase === 'in') ? 0 : 1, SHOW ? 5 : 16, dt);
   if (paused && timeScale < 0.01) timeScale = 0;
   const gdt = dt * timeScale;
   if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
@@ -811,12 +876,12 @@ function tick(now) {
   if (state === 'coda' && !busy && (I.pressed.pause || I.pressed.act)) passage(() => enterTitle(), { out: 1.4, back: 1.6 });
 
   if (state === 'coda') { W.time += dt; }
-  if (timeScale > 0 && state !== 'credits' && state !== 'cine' && state !== 'coda') {
+  if ((timeScale > 0 || SHOW) && state !== 'credits' && state !== 'cine' && state !== 'coda') {
     acc += gdt;
     let steps = 0;
     while (acc >= FIXED && steps < 10) {
       const walking = W.intro && !W.intro.done;
-      W.update(FIXED, walking ? walkInput : paused || busy ? walkInput0 : I, state === 'play');
+      W.update(FIXED, walking ? walkInput : paused || busy || SHOW ? walkInput0 : I, state === 'play');
       if (walking) walkStep(FIXED);
       if (steps === 0) for (const k in I.pressed) I.pressed[k] = false;
       handleEvents();
@@ -825,7 +890,7 @@ function tick(now) {
     if (steps >= 10) acc = 0;
     if (state === 'play' && !finAPlayed && Math.hypot(W.player.x - W.finale.x, W.player.y - W.finale.y) < 7) { finAPlayed = true; playLine('fin_a', L.FINALE.text); }
     if (state === 'ending') { if (CUT && !CUT.coda) cutUpdate(gdt); else endingUpdate(gdt); }
-    updateCamera(gdt);
+    updateCamera(SHOW ? dt : gdt);
     revealStep(gdt);
   }
   updateUI(dt);
@@ -836,7 +901,7 @@ function tick(now) {
     const p = W.player, th = W.thread;
     const swing = th.locked && !p.grounded ? clamp(Math.hypot(p.vx, p.vy) / 9, 0, 1) * 0.5 : 0;
     let md = 99; for (const m of W.moths) md = Math.min(md, Math.hypot(m.x - cam.x, m.y - cam.y));
-    A.update(dt, { cam: [cam.x, cam.y], swing: paused ? 0 : swing, moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0, out: state === 'title' ? 1 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
+    A.update(dt, { cam: [cam.x, cam.y], swing: paused ? 0 : swing, moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
   }
 
   // render
