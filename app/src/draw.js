@@ -198,7 +198,10 @@ export class Drawer {
       ctx.beginPath(); ctx.arc(ex + side * 0.02 * u, ey - 0.03 * u, 0.017 * u, 0, TAU); ctx.fillStyle = g(0.55); ctx.fill(); stroke(0.03, fine);   // thumb
     }
 
-    // ── head ──
+    // ── head ── (turns on the neck to look up or down: W/S while standing)
+    const look = p.look || 0;
+    ctx.save();
+    if (Math.abs(look) > 0.01) { ctx.translate(0.02 * u, -0.27 * u); ctx.rotate(-look * (look > 0 ? 0.42 : 0.36)); ctx.translate(-0.02 * u, 0.27 * u); }
     const hy = -0.47 * u, hr = 0.22 * u;
     const head = () => { ctx.beginPath(); ctx.ellipse(0.01 * u, hy, hr * 1.04, hr, 0, 0, TAU); };
     head(); ctx.fillStyle = g(0.86); ctx.fill();
@@ -250,6 +253,7 @@ export class Drawer {
       ctx.bezierCurveTo((ox + 0.04 * sp + ta * 0.4) * u, hy - hr - len * 0.7 * u, (ox - 0.1 * sp + ta) * u, hy - hr - len * u, (ox - 0.06 * sp + ta * 1.3) * u, hy - hr - len * 0.35 * u);
       stroke(0.04, 0.045 * u); stroke(v, 0.024 * u);
     }
+    ctx.restore();
     ctx.restore();
     // a red cross-stitch heart that glows a little (the only colour the doll owns)
     const hx = X + f * 0.06 * u * sxk, hyy = Y - 0.12 * u * syk;

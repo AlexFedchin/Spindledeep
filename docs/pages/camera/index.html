@@ -1,0 +1,208 @@
+<title>Spindledeep · The Cave Breathes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the camera</div>
+    <h1>The Cave Breathes</h1>
+    <p class="tag">Close in the cracks<span></span>wide in the halls</p>
+  </header>
+
+  <div class="col summary">
+    <p>The camera now reads the cave around the doll. In a tight crack it closes in, and in the great halls it eases out until the whole space shows. Standing still, W or S (or the arrow keys) turns her head up or down, and a moment later the view follows her gaze.</p>
+  </div>
+
+  <h2>The view follows the room</h2>
+  <p class="ask">Make the camera a bit more dynamic and interesting in the game, the scale should change depending on the size of the room around. For huge rooms the camera should smoothly zoom out, for narrow corridors the camera should zoom in to feel more claustrophobic.</p>
+  <div class="col">
+    <p>Every frame the game sends 24 rays out from the doll through the cave walls and averages how far they get. It uses a geometric mean, so a low ceiling or a wall at her shoulder counts for more than one long sightline down a shaft. I measured this at every place in the game you can stand. It runs from about 1&nbsp;m in the tightest crawls to 12&nbsp;m and more in the Ink Mere and the Loom, with a typical room near 5.7&nbsp;m. Each area keeps its own base view, and the camera scales it by how this spot compares with that typical room: down to two-thirds in a crack, up to about 1.4&times; in a hall.</p>
+    <div class="reveal">
+      <img src="img/narrow_before.jpg" alt="Before: a narrow chasm in the Root Gardens at the usual distance">
+      <img class="after" src="img/narrow_after.jpg" alt="After: the camera has closed in on the chasm">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-narrow" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>A crack in the Root Gardens: the view closes from 16&nbsp;m tall to 12&nbsp;m, and the walls press in.</p>
+    <div class="reveal">
+      <img src="img/medium_before.jpg" alt="Before: a room in the Throat">
+      <img class="after" src="img/medium_after.jpg" alt="After: nearly the same, slightly closer">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-medium" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>An ordinary room in the Throat hardly changes (19&nbsp;m to 18&nbsp;m). Typical rooms keep the framing you are used to.</p>
+    <div class="reveal">
+      <img src="img/mere_before.jpg" alt="Before: the Ink Mere at the usual distance">
+      <img class="after" src="img/mere_after.jpg" alt="After: the camera has drawn back over the Mere">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-mere" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>Over the Ink Mere the view draws back from 19&nbsp;m to 27&nbsp;m. More of the islands and the drips ahead are in sight before you swing for them.</p>
+    <div class="reveal">
+      <img src="img/loom_before.jpg" alt="Before: the Loom at the usual distance">
+      <img class="after" src="img/loom_after.jpg" alt="After: the camera has drawn far back in the Loom">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-loom" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>The Loom is the widest place in the game, so it opens furthest (23&nbsp;m to 31&nbsp;m, the cap). The close shot on her at the very top of the Loom is unchanged.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Where</th><th>Open space around her</th><th>View height before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>A crack in the Root Gardens</td><td>3.2 m</td><td>16 m</td><td>12 m</td></tr>
+          <tr><td>A room in the Throat</td><td>5.1 m</td><td>19 m</td><td>18 m</td></tr>
+          <tr><td>The Bell Gallery pillars</td><td>10.3 m</td><td>19 m</td><td>25 m</td></tr>
+          <tr><td>The Ink Mere</td><td>12.2 m</td><td>19 m</td><td>27 m</td></tr>
+          <tr><td>The Loom</td><td>16.4 m</td><td>23 m</td><td>31 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="what" style="margin-top:16px">
+      <li><b>It is slow on purpose.</b> The measurement is smoothed over about a second, and the zoom itself takes a few more, so running past a pillar or under an arch doesn't make the view pump. It drifts in as you enter a passage and opens as you come out into a hall.</li>
+      <li><b>Hidden rooms count as rock.</b> A room you haven't found yet would otherwise make the view widen beside it and give it away.</li>
+      <li><b>Swinging still adds its extra margin</b> on top, as before. After a respawn or a load the view takes the new room's measure at once, with no slow drift from where you were.</li>
+    </ul>
+  </div>
+
+  <h2>Looking up and down</h2>
+  <p class="ask">Also pressing s (or arrow down) should make the doll look down and pan the camera a bit down. Same for w/arrow up.</p>
+  <div class="col">
+    <figure class="solo" style="max-width:680px"><img src="img/heads.jpg" alt="Three close-ups of the doll: head tipped back looking up, level, and chin down looking down"><figcaption>Looking up, level, looking down</figcaption></figure>
+    <p>Her head turns on the neck at once. If you keep holding the key for a fifth of a second, the view glides a third of the screen down (or a quarter up) and stays there while you hold it. When you let go, both settle back. The short delay means a quick tap doesn't jerk the camera.</p>
+    <div class="reveal">
+      <img src="img/look_down0.jpg" alt="The Bell Gallery pillars, standing level">
+      <img class="after" src="img/look_down.jpg" alt="Holding S: the view has panned down below the pillar tops">
+      <span class="lbl l">Level</span><span class="lbl r">Holding S</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-down" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare level and holding s">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <div class="reveal">
+      <img src="img/look_up0.jpg" alt="The Ink Mere, standing level">
+      <img class="after" src="img/look_up.jpg" alt="Holding W: the view has panned up toward the roof">
+      <span class="lbl l">Level</span><span class="lbl r">Holding W</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-up" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare level and holding w">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>You can look only while standing free. W and S already reel the thread when you grip it, climb ropes, and lower you over a lip, and all of that works as before. Gamepad stick and d-pad up/down look too.</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/main.js</code></b><span><code>openness()</code> and the <code>OPEN</code> settings (rays, typical room, zoom limits); the look timer and pan in <code>updateCamera</code>.</span></div>
+      <div><b><code>app/src/draw.js</code></b><span>The doll's head turns on her neck with <code>player.look</code>.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc">four small mends</a> &middot; <a href="https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt">her, at last</a> &middot; <a href="https://claude.ai/artifact/9FAgaVuMKJjeRyNrvpxfRS">much deeper</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

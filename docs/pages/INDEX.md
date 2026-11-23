@@ -22,6 +22,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 14. Four small mends (`mends/`) | https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc |
 | 15. Her, at last: the old-lady model (`oldlady/`) | https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt |
 | 16. Much deeper: four new areas, the Loom, a second ending (`deep/`, plot sealed) | https://claude.ai/artifact/9FAgaVuMKJjeRyNrvpxfRS |
+| 17. The cave breathes: zoom by room size, look up/down (`camera/`) | https://claude.ai/artifact/AzfFSJ6SAUkTvQczMzuRap |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -67,3 +68,9 @@ scratchpad `mere.js` chains all six gaps from pole 7 with drips on). END cleared
 route2.js segments all pass: Hall→H1 9 s; Hush with plucking (lingering 3 s unplucked kills); Quiet Room both ways;
 Treadles rings (per-gap windows at most phases, gaps.js); rope + timed heddles; the two-stage well; Loom cloth→beam
 with the cloth rising (~55 s; also from peg 26). Loom ring: 12/20 phases. Both endings run to credits in smoke tests.
+
+## Camera (2026-11-23)
+`openness()` in main.js: 24 rays through the collision SDF (unseen secret `hide` rects count as rock), geometric mean.
+Over all standing spots: ~1 m crawls → 12+ m Mere/Loom, median 5.7 m (`OPEN.mid`). View = area viewH × (open/5.7)^0.45,
+clamped 0.66–1.42, max 31 m. Look up/down only when grounded, not climbing, thread not gripped; pan after 0.2 s hold.
+Teleport tests in the Treadles/Hush/Gallery x=90 kill the parked doll (hazards) and respawn at peg 0: pick safe spots.

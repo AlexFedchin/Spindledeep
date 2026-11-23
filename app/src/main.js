@@ -91,7 +91,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
   requestAnimationFrame(tick);
 }
 
@@ -159,7 +159,7 @@ function startGame(cont) {
   state = 'play';
   A.setMusic(null, 4);
   A.endMusic = false;
-  cam.x = W.player.x; cam.y = W.player.y + 1;
+  cam.x = W.player.x; cam.y = W.player.y + 1; snapOpen();
   SD.W = W;
   save();            // a new run replaces the old save at once; a continued one is re-written as is
 }
@@ -312,7 +312,7 @@ function handleEvents() {
         D.spawn('fiber', e.x, e.y, 40, { speed: 3, life: 2 });
         cam.shake = 0.4;
         break;
-      case 'respawn': log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
+      case 'respawn': snapOpen(); log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
       case 'skein':
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
         toast(`a skein of her red yarn · ${e.n} of ${W.skeins.length}`, 3);
@@ -518,9 +518,39 @@ function cineUpdate(dt) {
 }
 
 // ── camera ───────────────────────────────────────────────────────────────
+// How open the cave is around the doll: 24 rays marched through the collision SDF (rooms nobody has found
+// yet count as rock, so the zoom never gives them away), averaged geometrically so a low ceiling or a tight
+// wall pulls harder than one long sightline. Measured over every standing spot in the world this runs from
+// ~1 m (crawls) to ~12 m (the Mere, the Loom), median 5.7 m; the camera scales each area's base view by it.
+const OPEN = { rays: 24, max: 40, mid: 5.7, pow: 0.45, lo: 0.66, hi: 1.42, vhMax: 31 };
+function openness(x, y) {
+  const T = W.T;
+  let s = 0;
+  for (let i = 0; i < OPEN.rays; i++) {
+    const ang = (i + 0.5) / OPEN.rays * Math.PI * 2, dx = Math.cos(ang), dy = Math.sin(ang);
+    let t = 0;
+    for (let k = 0; k < 80 && t < OPEN.max; k++) {
+      const qx = x + dx * t, qy = y + dy * t;
+      const d = T.d(qx, qy);
+      if (d < 0.02 || W.hiddenAt(qx, qy)) break;
+      t += Math.max(d, 0.08);
+    }
+    s += Math.log(clamp(t, 0.5, OPEN.max));
+  }
+  return s / OPEN.rays;                 // log of the geometric-mean distance
+}
+let camOpen = Math.log(OPEN.mid);      // smoothed log openness
+function snapOpen() { camOpen = openness(W.player.x, W.player.y + 1.2); }   // after a teleport/respawn: no slow drift from the old room
+let lookT = 0, lookCam = 0;            // look up/down: how long it's been held, and the eased camera pan (-1..1)
 function updateCamera(dt) {
   const p = W.player, a = W.area();
   let tx, ty, vh;
+  // look up / down (W/S, arrows, stick): only standing free, since the same keys reel the thread and climb ropes
+  const canLook = state === 'play' && !p.dead && p.grounded && !p.climb && !W.thread.locked && !SD.viewLock;
+  const ay = canLook ? I.axisY : 0;
+  lookT = ay ? lookT + dt : 0;
+  p.look = damp(p.look || 0, ay, 9, dt);                                   // her head turns at once
+  lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
   if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
   } else if (state === 'ending' && CUT && !CUT.coda) {
@@ -530,12 +560,15 @@ function updateCamera(dt) {
   } else {
     tx = p.x + clamp(p.vx * 0.35, -3, 3);
     ty = p.y + 1.2 + clamp(p.vy * 0.12, -2.5, 1);
-    vh = a.viewH + (W.thread.locked && !p.grounded ? 2.5 : 0);
+    camOpen = damp(camOpen, openness(p.x, p.y + 1.2), 0.8, dt);
+    const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
+    vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
     if (a.id === 'loom' && p.y > -452) vh = 12.5;          // at the top of the Loom: close on her
+    ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
   }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
-  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, 1.2, dt);
+  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, state === 'play' ? 0.9 : 1.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
   cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
