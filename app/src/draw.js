@@ -692,7 +692,7 @@ export class Drawer {
     const f = this.w.finale, k = this.k;
     if (!this.vis(f.x, f.y, 8)) return;
     // her rocking chair, her shawl, the needles, the end of her grey thread
-    const X = this.sx(f.x + 1.6), Y = this.sy(f.y - 0.1);
+    const X = this.sx(f.x + 1.6), Y = this.sy(f.chairY - 0.05);
     const rock = Math.sin(this.time * 0.7) * 0.03;
     ctx.save(); ctx.translate(X, Y); ctx.rotate(rock);
     ctx.strokeStyle = g(0.05); ctx.lineWidth = Math.max(1.5, 0.07 * k);
@@ -712,12 +712,12 @@ export class Drawer {
     for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(-0.45 * k + i * 0.2 * k, -0.4 * k + i * 0.02 * k); ctx.lineTo(-0.4 * k + i * 0.2 * k, -0.25 * k + Math.sin(i) * 0.04 * k); ctx.stroke(); }
     ctx.restore();
     // the spool on the floor where her thread ends
-    const SX = this.sx(f.x), SY = this.sy(f.y);
+    const SX = this.sx(f.x), SY = this.sy(f.spoolY);
     ctx.fillStyle = g(0.45); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, 0.025 * k);
     ctx.fillRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k); ctx.strokeRect(SX - 0.16 * k, SY - 0.32 * k, 0.32 * k, 0.32 * k);
     ctx.fillStyle = g(0.7); ctx.fillRect(SX - 0.11 * k, SY - 0.28 * k, 0.22 * k, 0.24 * k);
     // her candle on the floor beside the chair (snuffed the moment the threads are tied: a last thread of smoke)
-    const CX = this.sx(33), CY = this.sy(f.y + 0.05);
+    const CX = this.sx(33), CY = this.sy(f.candleY);
     ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.45 * k, 0.12 * k, 0.45 * k);
     if (this.w.candleOut !== undefined) {
       const a = Math.max(0, 1 - (this.w.time - this.w.candleOut) / 6);

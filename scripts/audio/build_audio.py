@@ -184,8 +184,10 @@ def _():
 # ── music (Kevin MacLeod, CC BY 4.0) ─────────────────────────────────────────
 MUSIC = {
     'mus_title': 'Ossuary 6 - Air', 'mus_gardens': 'Ossuary 1 - A Beginning', 'mus_gallery': 'Ossuary 2 - Turn',
-    'mus_mere': 'Ossuary 5 - Rest', 'mus_loom': 'Peaceful Desolation', 'mus_end': 'Heartbreaking',
+    'mus_mere': 'Ossuary 5 - Rest', 'mus_loom': 'Peaceful Desolation',
 }
+# mus_end used to be 'Heartbreaking': a swelling, heroic orchestral cue that played over the tie, the credits and the
+# epilogue film. The user found it completely unsuitable. It is now the dirge below, built from the game's own sounds.
 
 
 @recipe('music')
@@ -193,6 +195,63 @@ def _():
     for name, title in MUSIC.items():
         run(['-i', km(title), '-af', 'loudnorm=I=-20:TP=-1.5:LRA=11', '-ar', str(SR), '-c:a', 'libvorbis', '-q:a', '3', os.path.join(OUT, name + '.ogg')])
         print('  ', name, '<-', title)
+
+
+def _resample(x, rate):
+    """play x at `rate` (0.5 = an octave down, twice as long)"""
+    n = int(len(x) / rate)
+    t = np.arange(n) * rate
+    return np.stack([np.interp(t, np.arange(len(x)), x[:, c]) for c in range(x.shape[1])], 1).astype(np.float32)
+
+
+@recipe('mus_end')
+def _():
+    """The dirge for the tie, the credits and the epilogue: no melody to lift it, nothing that resolves.
+    A low drone a semitone against itself (it beats, slowly, like breathing through cloth), deep gong strokes from the
+    singing bowl two octaves down, a harp that picks a falling line and stops before the last note, and the broken
+    music box far off, slowed until it drags. 96 s, loops."""
+    rng = np.random.default_rng(7)
+    D = 96.0
+    n = int(D * SR)
+    t = np.arange(n) / SR
+    y = np.zeros((n, 2), np.float32)
+    # drone: A1 against B-flat1, an octave above that faint, each swelling on its own slow cycle (loop-safe periods)
+    sw = lambda per, ph: 0.55 + 0.45 * np.sin(2 * np.pi * t / per + ph)
+    for f, a, per, ph, pan in ((55.0, 0.30, 24, 0.0, -0.2), (58.27, 0.22, 32, 1.7, 0.25), (110.0, 0.06, 48, 0.6, 0.0), (164.8, 0.025, 19.2, 2.2, -0.4)):
+        v = a * sw(per, ph) * np.sin(2 * np.pi * f * t + 0.3 * np.sin(2 * np.pi * t / 7.5))
+        y[:, 0] += v * (1 - pan) * 0.7; y[:, 1] += v * (1 + pan) * 0.7
+    # a cold breath: band-limited noise under it all
+    nz = rng.standard_normal((n, 2)).astype(np.float32)
+    for k in (300, 120, 60):
+        nz = np.stack([np.convolve(nz[:, c], np.ones(k) / k, mode='same') for c in range(2)], 1)
+    y += nz / (np.abs(nz).max() + 1e-6) * 0.05 * sw(16, 0.4)[:, None]
+    def put(x, at, g, pan=0.0):
+        i = int(at * SR) % n
+        m = min(len(x), n - i)
+        y[i:i + m, 0] += x[:m, 0] * g * (1 - pan); y[i:i + m, 1] += x[:m, -1] * g * (1 + pan)
+        if m < len(x):  # wrap the tail round so the loop point is seamless
+            r = min(len(x) - m, n)
+            y[:r, 0] += x[m:m + r, 0] * g * (1 - pan); y[:r, 1] += x[m:m + r, -1] * g * (1 + pan)
+    A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
+    bowl, harp, box, bell = A('bowl'), A('harp'), A('skein'), A('bell')
+    gong = _resample(bowl, 0.25)                      # two octaves down
+    for k, at in enumerate((0.5, 22.0, 41.0, 64.0, 80.0)):
+        put(gong, at, 0.55 if k % 2 == 0 else 0.4, pan=(-0.3, 0.3)[k % 2])
+    # the harp: a falling line in A minor that never reaches home (A G F E D# ... and stops)
+    line = [(0, 6.0), (-2, 9.0), (-4, 12.0), (-5, 15.5), (-6, 20.5),
+            (0, 30.0), (-2, 33.0), (-4, 36.0), (-5, 39.5),
+            (-12, 50.0), (-13, 54.0), (-17, 58.5),
+            (0, 70.0), (-2, 73.0), (-4, 76.0), (-5, 79.5), (-6, 84.5)]
+    for semis, at in line:
+        x = _resample(harp, 2 ** ((semis - 12) / 12))
+        put(x, at, 0.32, pan=float(rng.uniform(-0.4, 0.4)))
+    # the broken music box, far away and dragging
+    far = _resample(box, 0.62)[::-1].copy()           # backwards: it winds down instead of up
+    for at in (26.0, 66.0):
+        put(far * np.linspace(0, 1, len(far))[:, None] ** 2, at, 0.10, pan=0.5)
+    put(_resample(bell, 0.35), 47.0, 0.18, pan=-0.5)    # one dead bell
+    y = np.tanh(y * 1.2) / 1.2
+    write('mus_end', y, 'lowpass=f=5200,highpass=f=28', lufs=-21, q=4)
 
 
 def credits():

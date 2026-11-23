@@ -80,7 +80,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), cont: () => startGame(true), end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; }, state: () => state });
   requestAnimationFrame(tick);
 }
 
@@ -114,7 +114,10 @@ function navInput(nav) {
 
 function enterTitle() {
   state = 'title';
-  W.reset();
+  // back from the credits (or the pause menu) the title shows a fresh world, not the last run's red thread and lamps
+  END = null;
+  W = new World(T); D = new Drawer(W); SD.W = W;
+  R.setSDF(T.visualHalf(W.secrets.map((k) => k.hide)));
   const has = !!loadSave(true);
   log(`title screen · save ${has ? 'present' : 'none'}`);
   const items = [];
@@ -141,6 +144,7 @@ function startGame(cont) {
   log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
   finAPlayed = false;
+  END = null;        // the last ending's red pulse lived here: left set, it kept her grey thread red in the next run
   state = 'play';
   A.setMusic(null, 4);
   A.endMusic = false;

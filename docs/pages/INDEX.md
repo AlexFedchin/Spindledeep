@@ -19,6 +19,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 11. The ghost on the title screen (`restart/`) | https://claude.ai/artifact/WB3XZc4gqW8iqyPkNFtitx |
 | 12. Her own two hands (`knitter/`) | https://claude.ai/artifact/MswAJ32Cd7SY1zfuP2jvV1 |
 | 13. Seventy winters in her voice (`oldvoice/`) | https://claude.ai/artifact/KQdLD1viJRnYPpcjy6WBMh |
+| 14. Four small mends (`mends/`) | https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -54,3 +55,8 @@ I2 I3 I4 I6 I7 E2; I5 keeps only fingertip/thumb contact with the doll while lif
 cast.py → ref cand_2_3 (161 Hz); 108 takes; pick.py keeps 5 design + 4 clone takes, ageing fx in numpy (ffmpeg vibrato +
 loudnorm intermittently produced full-scale noise), final files re-transcribed. Age score avg 1.6 → 2.8; pitch 119–218 → 136–166 Hz.
 Young set kept in app/assets/voice_young (switch: VOICE_SET in audio.js).
+
+## Four mends (2026-11-23)
+Ink drips no longer cut the thread (they cut it lying on the islands under them: 1/10 Mere crossings survived, now 15/16;
+scratchpad `mere.js` chains all six gaps from pole 7 with drips on). END cleared on new run/title; chair/spool/candle on
+`T.ground`; `mus_end` is a generated dirge (build_audio.py recipe), outro re-cut.

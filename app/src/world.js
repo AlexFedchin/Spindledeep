@@ -44,6 +44,9 @@ export class World {
     this.grey = buildGrey(T);
     this.memories = L.MEMORIES.map((m) => ({ ...m, ...nearestOn(this.grey, m.x, m.y), heard: false }));
     this.finale = { ...L.FINALE, ...nearestOn(this.grey, L.FINALE.x, L.FINALE.y) };
+    // her chair and candle stand on the Loom's floor (they were drawn at the thread's height and floated)
+    const fl = (x) => T.ground(x, this.finale.y + 2, 8) ?? this.finale.y;
+    Object.assign(this.finale, { chairY: Math.min(fl(this.finale.x + 1.0), fl(this.finale.x + 2.2)), spoolY: fl(this.finale.x), candleY: fl(33) });
     this.lamps = L.LIGHTS;
     this.lore = buildLore(T);
     this.nests = L.NESTS.map((n) => ({ ...n, spawned: 0 }));
@@ -281,7 +284,10 @@ export class World {
         const d = dr.drop;
         d.vy -= 24 * dt; d.y += d.vy * dt;
         if (Math.hypot(d.x - p.x, d.y - p.y) < 0.42) { dr.drop = null; this._die('ink'); return; }
-        for (let i = th.liveStart; i < th.n; i++) if (Math.abs(th.x[i] - d.x) < 0.2 && Math.abs(th.y[i] - d.y) < 0.3) { th.cut(i); this.emit('dissolve', { x: d.x, y: d.y }); dr.drop = null; break; }
+        // a drop only threatens the doll. It used to cut the thread too, and the thread lies on the islands right under
+        // the drips, so a drop fell on it every few seconds and the next swing broke: the player could not avoid it.
+        // Now it splashes off the yarn harmlessly.
+        if (!d.hitThread) for (let i = th.liveStart; i < th.n; i++) if (Math.abs(th.x[i] - d.x) < 0.2 && Math.abs(th.y[i] - d.y) < 0.3) { d.hitThread = true; this.emit('splash', { x: d.x, y: d.y }); break; }
         if (dr.drop && (this.T.d(d.x, d.y) < 0 || this.ink.some((k) => d.y < k.y && d.x > k.x0 && d.x < k.x1))) { this.emit('splash', { x: d.x, y: d.y }); dr.drop = null; }
       }
     }

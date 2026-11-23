@@ -224,7 +224,7 @@ export const GREY = [
   [31, -99], [28.5, -106], [24, -117.6], [26.5, -118], [32.5, -115.3], [42, -122.2], [48.3, -119.9], [56.5, -120.2],
   [62.2, -119.4], [69, -123.2], [75.8, -121.9], [83, -122.6], [88.8, -120.3], [93, -121.8], [96.8, -118.8], [101, -121.4], [109, -125], [110, -136], [108.6, -148], [109.6, -160],
   [104, -193.9], [99, -194], [93.4, -191.0], [88, -192.8], [82.5, -191], [76, -191.8], [71.2, -189.2], [63.5, -190.2],
-  [57.5, -187.9], [50, -191.8], [44.5, -189.5], [37, -192.8], [31, -191.5], [26, -193.2], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -244.6],
+  [57.5, -187.9], [50, -191.8], [44.5, -189.5], [37, -192.8], [31, -191.5], [26, -193.2], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -246.2],
 ];
 
 // Her memories, knotted into the grey thread. `line` keys the voice file (assets/voice/<id>.ogg).
@@ -239,7 +239,7 @@ export const MEMORIES = [
   { id: 'm6', x: 17, y: -218, text: "She's so tired, little one. Her yarn's run grey. She can't climb back up. ...Come down. Come and sit with us. It's warm in the Loom." },
 ];
 export const FINALE = {
-  x: 31, y: -244.6,
+  x: 31, y: -246.2,
   text: "There you are. I came all this way too, once, and tied my thread to an old woman's. Tie yours to mine, little one... someone has to go home.",
   after: 'There. Next winter, it will call your name. Start knitting early, little one... it takes a few.',
 };
@@ -248,5 +248,5 @@ export const LIGHTS = [
   { x: 13.2, y: 2.2, r: 7, i: 1.3, c: [1.0, 0.62, 0.28], flicker: 1 },   // cottage window
   { x: 22, y: -49.6, r: 6, i: 0.7, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G1
   { x: 30, y: -72.4, r: 6, i: 0.8, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G2 (moths gather)
-  { x: 33, y: -243.6, r: 9, i: 1.25, c: [1.0, 0.6, 0.27], flicker: 1 },  // her candle
+  { x: 33, y: -245.4, r: 9, i: 1.25, c: [1.0, 0.6, 0.27], flicker: 1 },  // her candle
 ];
