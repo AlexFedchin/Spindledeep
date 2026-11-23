@@ -21,6 +21,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 13. Seventy winters in her voice (`oldvoice/`) | https://claude.ai/artifact/KQdLD1viJRnYPpcjy6WBMh |
 | 14. Four small mends (`mends/`) | https://claude.ai/artifact/WvqLyGh8TYMumLFxf7kzcc |
 | 15. Her, at last: the old-lady model (`oldlady/`) | https://claude.ai/artifact/7RuHZ4rS7YwJKUTTZ9ZKDt |
+| 16. Much deeper: four new areas, the Loom, a second ending (`deep/`, plot sealed) | https://claude.ai/artifact/9FAgaVuMKJjeRyNrvpxfRS |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -61,3 +62,8 @@ Young set kept in app/assets/voice_young (switch: VOICE_SET in audio.js).
 Ink drips no longer cut the thread (they cut it lying on the islands under them: 1/10 Mere crossings survived, now 15/16;
 scratchpad `mere.js` chains all six gaps from pole 7 with drips on). END cleared on new run/title; chair/spool/candle on
 `T.ground`; `mus_end` is a generated dirge (build_audio.py recipe), outro re-cut.
+
+## The deep (2026-11-23)
+route2.js segments all pass: Hall→H1 9 s; Hush with plucking (lingering 3 s unplucked kills); Quiet Room both ways;
+Treadles rings (per-gap windows at most phases, gaps.js); rope + timed heddles; the two-stage well; Loom cloth→beam
+with the cloth rising (~55 s; also from peg 26). Loom ring: 12/20 phases. Both endings run to credits in smoke tests.
