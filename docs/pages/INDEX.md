@@ -24,6 +24,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 16. Much deeper: four new areas, the Loom, a second ending (`deep/`, plot sealed) | https://claude.ai/artifact/9FAgaVuMKJjeRyNrvpxfRS |
 | 17. The cave breathes: zoom by room size, look up/down (`camera/`) | https://claude.ai/artifact/AzfFSJ6SAUkTvQczMzuRap |
 | 18. Out into the storm: prologue → game handover, walk out of the cottage, hidden pointer (`walkout/`) | https://claude.ai/artifact/3D4qdQVi67pjES3hUbNQeu |
+| 19. No hard cuts: passages between screens, pause/respawn/hidden-room/text easing (`passages/`) | https://claude.ai/artifact/Mva3aPJTUhkcPfYoeYTJVS |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -81,3 +82,11 @@ After the intro film only (`startGame(false, true)`; `__SD.walkOut()` for tests,
 door/doll/hints; scripted input `walkInput`. Audio bridge `A.storm()` starts at film end − 4.2 s (verified at 8× playback;
 seeking the film throws an AAC decode error → endCine, a test artifact). A light at the doll's height washes her out on the
 bright Brink: keep doorway lights low and the room dark. Cursor: `body.nocursor` unless title/loading/paused.
+
+## Passages (2026-11-23)
+Every screen change goes through `passage(work, {caption, out, hold, back, sound})` in main.js (#veil over everything,
+z 55; caption delayed to 0.9 × fade so it only shows on black; `busy` blocks menus/pause/skip). Work returning 'keep'
+leaves the veil for a film to lift once playing. Pause eases `timeScale` and fades the master before suspending.
+Respawn: fade to full black by deadT 1.6, `camSnap` + `respawnT` fade-up. Hidden rooms: `T.revealPair` + `revealStep`
+morph the SDF patch over 1.5 s. Overlay text via `setText`. Test pitfalls: injected shot JS runs in global scope
+(wrap `const` in a block); don't test fullscreen in smoke mode (it would show the window).

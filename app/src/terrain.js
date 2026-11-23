@@ -215,6 +215,20 @@ export class Terrain {
     if (!hidden.length) return this.halfData();
     return toHalf(sdfFromMask(this.W, this.H, this._mask(0, 0, this.W, this.H, hidden)));
   }
+  // a hidden room was found: the drawn field around it before (still rock) and after (open), as float patches of the
+  // same window, so the renderer can morph from one to the other instead of popping
+  revealPair(rect, stillHidden) {
+    const [i0, j0, i1, j1] = this._win(rect, 8), w = i1 - i0, h = j1 - j0;
+    const fa = sdfFromMask(w, h, this._mask(i0, j0, i1, j1, [...stillHidden, rect]));
+    const fb = sdfFromMask(w, h, this._mask(i0, j0, i1, j1, stillHidden));
+    const [p0, q0, p1, q1] = this._win(rect, 2.5), pw = p1 - p0, ph = q1 - q0, a = new Float32Array(pw * ph), b = new Float32Array(pw * ph);
+    for (let j = 0; j < ph; j++) {
+      const o = (j + q0 - j0) * w + p0 - i0;
+      a.set(fa.subarray(o, o + pw), j * pw); b.set(fb.subarray(o, o + pw), j * pw);
+    }
+    return { x: p0, y: q0, w: pw, h: ph, a, b };
+  }
+  half(arr) { return toHalf(arr); }
   // a hidden room was found: recompute the drawn field in a window around it (cheap) and hand back the patch
   revealPatch(rect, stillHidden) {
     const [i0, j0, i1, j1] = this._win(rect, 8);

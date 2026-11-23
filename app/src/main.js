@@ -25,6 +25,46 @@ const show = (el, on) => {
   el.inert = !on;
   if (!on && el.contains(document.activeElement)) document.activeElement.blur();
 };
+// ── passages: no screen change is ever a hard cut ────────────────────────
+// Every change of screen (title, films, the game, credits, leaving) goes out to black through the #veil, sound
+// down with it, does its work in the dark, holds a caption with a running thread while anything loads, and comes
+// back in. In-game moments that used to pop (respawn, a hidden room opening, overlay text changing) ease too.
+let busy = false;                    // a passage is running: menus, pause and skip ignore input
+const wait = (secs) => new Promise((r) => setTimeout(r, secs * 1000));
+function veil(on, secs = 0.9, caption = '') {
+  const el = $('veil');
+  el.style.transitionDuration = secs + 's';
+  // the caption and thread come up only once the screen is black, never over the screen that is leaving
+  for (const c of el.children) c.style.transitionDelay = on ? (secs * 0.9).toFixed(2) + 's' : '0s';
+  if (on) { el.querySelector('.vmsg').textContent = caption; el.classList.toggle('cap', !!caption); } else el.classList.remove('cap');
+  show(el, on);
+  return wait(secs);
+}
+const veiled = () => !$('veil').classList.contains('hidden');
+async function passage(work, { caption = '', out = 0.9, hold = 0, back = 1.2, sound = true } = {}) {
+  if (busy) return;
+  busy = true;
+  log(`passage${caption ? ' · ' + caption : ''}`);
+  try {
+    if (sound && A) A.fadeMaster(0, out / 3);
+    await veil(true, out, caption);
+    const t0 = performance.now();
+    const r = await work();
+    const left = hold - (performance.now() - t0) / 1000;
+    if (left > 0) await wait(left);
+    if (r !== 'keep') veil(false, back);          // 'keep': the work lifts the veil itself (a film, once it plays)
+  } catch (e) { log('passage error ' + (e.stack || e)); veil(false, 0.6); } finally { busy = false; }
+}
+// overlay text that changes while it is on screen fades out, swaps, and fades back in instead of jumping
+function setText(el, val, html = false) {
+  const cur = html ? el.innerHTML : el.textContent;
+  if (cur === val && !el._sw) return;
+  const put = () => { if (html) el.innerHTML = val; else el.textContent = val; };
+  clearTimeout(el._sw); el._sw = 0;
+  if (!cur || +getComputedStyle(el).opacity < 0.05) { el.classList.remove('swapping'); put(); return; }
+  el.classList.add('swapping');
+  el._sw = setTimeout(() => { put(); el.classList.remove('swapping'); el._sw = 0; }, 300);
+}
 const SAVE_KEY = 'spindledeep.save.v1';
 const FIXED = 1 / 120;
 
@@ -112,7 +152,7 @@ function menu(nav, items) {
   selectItem(nav, 0);
 }
 // a menu only acts while its own screen is up: the title menu on the title, the pause menu while paused
-function menuLive(nav) { return nav.id === 'menu' ? state === 'title' : paused; }
+function menuLive(nav) { return !busy && (nav.id === 'menu' ? state === 'title' : paused); }
 function selectItem(nav, i) {
   nav._sel = (i + nav._items.length) % nav._items.length;
   [...nav.children].forEach((b, k) => b.classList.toggle('sel', k === nav._sel));
@@ -132,18 +172,34 @@ function enterTitle() {
   const has = !!loadSave(true);
   log(`title screen · save ${has ? 'present' : 'none'}`);
   const items = [];
-  if (has) items.push({ label: 'Continue', fn: () => startGame(true) });
-  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => playCine('intro', () => startGame(false, true)) });
+  if (has) items.push({ label: 'Continue', fn: () => passage(() => startGame(true), { caption: `back down to ${saveArea()}…`, hold: 1.6, back: 1.6 }) });
+  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => passage(async () => { await wait(1.1); playCine('intro', () => startGame(false, true)); return 'keep'; }, { caption: 'the snow is coming…', out: 1.3 }) });
   items.push({ label: 'Fullscreen', fn: toggleFullscreen });
-  items.push({ label: 'Leave', fn: () => window.host?.quit?.() ?? window.close() });
+  items.push({ label: 'Leave', fn: leave });
   menu($('menu'), items);
   show($('title'), true);
-  A.stormStop(); A.fadeMaster(A.volume, 0.3);
+  A.stormStop(); A.fadeMaster(A.volume, 0.6);
+  ambient = L.AREAS[0].amb.slice(); moon = L.AREAS[0].moon;
   A.setArea('brink');
   A.setMusic('mus_title', 3);
   cam.x = 27; cam.y = 5.5; cam.viewH = 15.5;
 }
+// where a saved run stands, for the Continue caption ("back down to the Bell Gallery…")
+function saveArea() {
+  const s = loadSave(true), pg = s && L.PEGS[s.cp];
+  const inA = (a) => pg.y <= a.y1 && pg.y > a.y0;
+  const a = pg && (L.AREAS.find((a) => inA(a) && (a.x0 === undefined || pg.x >= a.x0) && (a.x1 === undefined || pg.x <= a.x1)) || L.AREAS.find(inA));
+  return a ? a.name.replace(/^The /, 'the ') : 'the thread';
+}
+// leaving fades the picture and the sound out before the window closes
+function leave() {
+  passage(async () => { save(); await wait(0.25); if (window.host?.quit) window.host.quit(); else window.close(); return 'keep'; }, { out: 1.3 });
+}
 function toggleFullscreen() {
+  // the window changes size: blink through black so the layout jump is never seen
+  passage(() => { toggleFullscreenNow(); return wait(0.35); }, { out: 0.3, back: 0.6, sound: false });
+}
+function toggleFullscreenNow() {
   settings.fullscreen = !document.fullscreenElement && !(window.innerHeight === screen.height);
   window.host?.setFullscreen?.(settings.fullscreen);
   window.host?.setSettings?.(settings);
@@ -162,7 +218,7 @@ function startGame(cont, walkOut = false) {
   A.endMusic = false;
   cam.x = W.player.x; cam.y = W.player.y + 1; snapOpen();
   SD.W = W;
-  if (walkOut) beginWalkOut(); else A.fadeMaster(A.volume, 0.05);
+  if (walkOut) beginWalkOut(); else { A.fadeMaster(A.volume, 0.6); camSnap = true; }
   save();            // a new run replaces the old save at once; a continued one is re-written as is
 }
 function setPaused(on) {
@@ -174,12 +230,16 @@ function setPaused(on) {
       { label: 'Resume', fn: () => setPaused(false) },
       { label: 'Fullscreen', fn: toggleFullscreen },
       { label: `Volume · ${Math.round((settings.volume ?? 1) * 100)}%`, fn: () => { const v = [1, 0.7, 0.45, 0.2, 0][([1, 0.7, 0.45, 0.2, 0].indexOf(settings.volume ?? 1) + 1) % 5]; settings.volume = v; A.setVolume(v); window.host?.setSettings?.(settings); setPaused(true); } },
-      { label: 'Return to the cottage', fn: () => { save(); setPaused(false); enterTitle(); } },
-      { label: 'Leave', fn: () => { save(); window.host?.quit?.(); } },
+      { label: 'Return to the cottage', fn: () => passage(() => { save(); unpauseQuiet(); enterTitle(); }, { caption: 'back up to the cottage…', hold: 1.2, back: 1.6 }) },
+      { label: 'Leave', fn: leave },
     ]);
-    A.ctx.suspend();
-  } else A.resume();
+    // the sound breathes out over a fifth of a second before the audio clock stops (suspending at once clicked)
+    A.fadeMaster(0, 0.06);
+    clearTimeout(setPaused._t); setPaused._t = setTimeout(() => { if (paused) A.ctx.suspend(); }, 320);
+  } else { clearTimeout(setPaused._t); A.resume(); A.fadeMaster(A.volume, 0.12); }
 }
+// leave the pause menu without bringing the sound back (a passage is taking the screen away)
+function unpauseQuiet() { paused = false; show($('pause'), false); clearTimeout(setPaused._t); A.resume(); }
 
 // ── saves ────────────────────────────────────────────────────────────────
 // The run is saved at every peg (the checkpoint you respawn and continue from), at bells, memories and keepsakes,
@@ -241,17 +301,17 @@ function applySave(s) {
 // ── UI bits ──────────────────────────────────────────────────────────────
 function subtitle(text, secs) {
   const el = $('sub');
-  el.textContent = text;
+  setText(el, text);
   show(el, true);
   subTimer = secs;
 }
 function card(name) {
   const el = $('card');
-  el.querySelector('.name').textContent = name;
+  setText(el.querySelector('.name'), name);
   show(el, true);
   cardTimer = 4.2;
 }
-function toast(text, secs = 2.6) { if (state !== 'play') return; const el = $('toast'); el.textContent = text; show(el, true); toastTimer = secs; }
+function toast(text, secs = 2.6) { if (state !== 'play') return; const el = $('toast'); setText(el, text); show(el, true); toastTimer = secs; }
 function keysHTML(keys) { return (keys || []).map((k) => `<kbd>${I.label(k)}</kbd>`).join(' '); }
 let lastHint = '', lastPrompt = '';
 function updateUI(dt) {
@@ -261,11 +321,11 @@ function updateUI(dt) {
   const playing = state === 'play' && !paused;
   const h = playing && W.hint && subTimer <= 0 ? W.hint : null;
   const hs = h ? keysHTML(h.keys) + ' <span>' + h.text + '</span>' : '';
-  if (hs !== lastHint) { lastHint = hs; if (hs) $('hint').innerHTML = hs; show($('hint'), !!hs); }
+  if (hs !== lastHint) { lastHint = hs; if (hs) setText($('hint'), hs, true); show($('hint'), !!hs); }
   const p = playing && W.prompt ? W.prompt : null;
   const p2 = playing && p && W.prompt2 ? W.prompt2 : null;
   const ps = (p ? keysHTML([p.a]) + ' <span>' + p.t + '</span>' : '') + (p2 ? ' &nbsp;&nbsp;·&nbsp;&nbsp; ' + keysHTML([p2.a]) + ' <span>' + p2.t + '</span>' : '');
-  if (ps !== lastPrompt) { lastPrompt = ps; if (ps) $('prompt').innerHTML = ps; show($('prompt'), !!ps); }
+  if (ps !== lastPrompt) { lastPrompt = ps; if (ps) setText($('prompt'), ps, true); show($('prompt'), !!ps); }
 }
 
 // ── events from the world ────────────────────────────────────────────────
@@ -314,12 +374,12 @@ function handleEvents() {
         D.spawn('fiber', e.x, e.y, 40, { speed: 3, life: 2 });
         cam.shake = 0.4;
         break;
-      case 'respawn': snapOpen(); log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
+      case 'respawn': snapOpen(); camSnap = true; respawnT = time; log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
       case 'skein':
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
         toast(`a skein of her red yarn · ${e.n} of ${W.skeins.length}`, 3);
         break;
-      case 'secret': R.patchSDF(T.revealPatch(e.hide, W.secrets.filter((k) => !k.seen).map((k) => k.hide))); card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
+      case 'secret': startReveal(e); card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
       case 'keepsake':
         A.play('skein', { vol: 0.6, rate: 1.25, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 1.6, x: e.x, y: e.y });
         D.spawn('pale', e.x, e.y + 0.2, 1, { speed: 0, life: 1.6 }); D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
@@ -398,7 +458,7 @@ function endingUpdate(dt) {
   if (e.said && e.t > 2.5 + e.dur + 9 && !e.done) {
     e.done = true;
     clearSave();
-    playCine('outro', rollCredits);
+    passage(() => { playCine('outro', () => rollCredits(false, true)); return 'keep'; }, { out: 2.4 });
   }
 }
 
@@ -450,8 +510,10 @@ function endCards(lines, done) {
   next();
 }
 
-function rollCredits(cut) {
+function rollCredits(cut, instant) {
   log('credits');
+  // after the epilogue film the credits must already be there as the film fades, or the game shows through
+  if (instant) { const c = $('credits'); c.style.transition = 'none'; show(c, true); void c.offsetWidth; c.style.transition = ''; }
   $('credits').classList.toggle('cut', !!cut);
   state = 'credits';
   const ks = W.secrets.filter((k) => k.taken);
@@ -475,7 +537,7 @@ function coda() {
     if (state !== 'coda') return;
     A.play('snag', { vol: 0.12, rate: 2.6 + Math.random() * 0.3, x: cam.x, y: cam.y });
     if (++n < 40) setTimeout(tick, 380 + Math.random() * 160);
-    else setTimeout(() => { if (state === 'coda') enterTitle(); }, 3000);
+    else setTimeout(() => { if (state === 'coda') passage(() => enterTitle(), { out: 2.2, back: 1.6 }); }, 3000);
   };
   setTimeout(tick, 2500);
 }
@@ -494,7 +556,7 @@ function playCine(name, onEnd) {
   v.src = 'assets/cine/' + name + '.mp4';
   v.volume = Math.min(1, settings.volume ?? 1);
   v.onended = endCine; v.onerror = () => { log(`film ${name} failed to play: ${v.error?.message || v.error?.code}`); endCine(); };
-  v.play().then(() => show(v, true)).catch(endCine);
+  v.play().then(() => { show(v, true); if (veiled()) veil(false, 1.4); }).catch(endCine);
 }
 function endCine() {
   if (!cine || cine.done) return;
@@ -502,6 +564,7 @@ function endCine() {
   log(`film ${cine.name} end (${cine.hold > 0.9 ? 'skipped' : 'finished'})`);
   const v = $('cine'), f = cine.onEnd;
   show(v, false); show($('skip'), false);
+  if (veiled() && !busy && !cine.skipping) veil(false, 1.0);    // a film that failed to start under the veil
   setTimeout(() => { v.pause(); v.removeAttribute('src'); v.load(); }, 900);
   if (cine.name === 'intro') A.storm(0.6); else A.setVolume(A.volume);
   cine = null;
@@ -513,12 +576,20 @@ function cineUpdate(dt) {
   if (cine.name === 'intro' && vid.duration && vid.currentTime > vid.duration - 4.2) A.storm(2.4);
   const anyHeld = I.held.act || I.held.jump || I.held.pause || I.held.grip;
   const anyPressed = Object.values(I.pressed).some(Boolean);
+  if (cine.skipping) return;
   if (anyPressed) cine.hint = 2.5;
   cine.hint = Math.max(0, cine.hint - dt);
   cine.hold = anyHeld ? cine.hold + dt : Math.max(0, cine.hold - dt * 2);
   show($('skip'), cine.hint > 0 || cine.hold > 0);
   $('skip').querySelector('i').style.width = Math.min(100, cine.hold / 0.9 * 100) + '%';
-  if (cine.hold > 0.9) endCine();
+  if (cine.hold > 0.9 && !cine.skipping) {
+    // skipped: the film's sound runs down and the picture goes through black rather than being cut off
+    cine.skipping = true; log(`film ${cine.name} skipping`);
+    const v0 = vid.volume, t0 = performance.now();
+    const fade = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / 700); vid.volume = v0 * (1 - k); if (k >= 1) clearInterval(fade); }, 30);
+    show($('skip'), false);
+    veil(true, 0.7).then(() => { endCine(); veil(false, 1.0); });
+  }
 }
 
 // ── out of the cottage ──────────────────────────────────────────────────
@@ -573,6 +644,39 @@ function walkStep(dt) {
   if (t >= WALK.out && p.x >= WALK.stopX - 0.3) { w.done = true; walkInput.axisX = 0; log('walk out done'); }
 }
 
+// ── a hidden room opens ─────────────────────────────────────────────────
+// The rock over a found room used to vanish in one frame. Now the drawn field morphs from "still hidden" to
+// "found" over ~1.5 s, starting where she stands and crumbling outward with a little noise, with a low rumble.
+let reveal = null;
+function startReveal(e) {
+  const P = T.revealPair(e.hide, W.secrets.filter((k) => !k.seen).map((k) => k.hide));
+  const ppm = L.WORLD.ppm, top = L.WORLD.y0 + L.WORLD.h, n = P.w * P.h, order = new Float32Array(n);
+  let far = 0;
+  for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) {
+    const x = L.WORLD.x0 + (P.x + i + 0.5) / ppm, y = top - (P.y + j + 0.5) / ppm;
+    const d = Math.hypot(x - e.x, y - e.y); far = Math.max(far, d);
+    const h = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
+    order[j * P.w + i] = d + (h - Math.floor(h)) * 1.6 + Math.sin(i * 0.7) * Math.cos(j * 0.9) * 0.6;
+  }
+  for (let k = 0; k < n; k++) order[k] /= far + 2.2;
+  reveal = { P, order, t: 0, out: new Float32Array(n) };
+  A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y, verb: 1 });
+  A.play('creak', { vol: 0.25, rate: 0.45, x: e.x, y: e.y, verb: 1 });
+  D.spawn('puff', e.x, e.y, 14, { speed: 1.6, life: 1.2, r: 1.2 });
+}
+function revealStep(dt) {
+  if (!reveal) return;
+  const r = reveal, P = r.P;
+  r.t += dt;
+  const k = smooth(0, 1.5, r.t) * 1.35;
+  for (let i = 0; i < r.out.length; i++) { const u = clamp((k - r.order[i]) / 0.35, 0, 1); r.out[i] = P.a[i] + (P.b[i] - P.a[i]) * u * u * (3 - 2 * u); }
+  R.patchSDF({ x: P.x, y: P.y, w: P.w, h: P.h, data: T.half(r.t >= 1.5 ? P.b : r.out) });
+  if (r.t >= 1.5) reveal = null;
+}
+
+let camSnap = false;                   // the next camera update jumps straight to its target (behind black)
+let respawnT = -99;                    // time of the last respawn: the picture comes back from black
+
 // ── camera ───────────────────────────────────────────────────────────────
 // How open the cave is around the doll: 24 rays marched through the collision SDF (rooms nobody has found
 // yet count as rock, so the zoom never gives them away), averaged geometrically so a low ceiling or a tight
@@ -623,6 +727,7 @@ function updateCamera(dt) {
     if (W.intro && !W.intro.done) { const k = smooth(WALK.step, WALK.out + 0.5, W.intro.t); vh = WALK.closeVh + (vh - WALK.closeVh) * k; tx = lerp(DOOR.x + 0.6, tx, k); ty = lerp(DOOR.y + 1.3, ty, k); }
     ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
   }
+  if (camSnap) { camSnap = false; cam.x = tx; cam.y = ty; cam.viewH = vh; ambient = a.amb.slice(); moon = a.moon; }
   const rate = state === 'ending' ? 2.2 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
   cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 1.2, dt);
@@ -687,24 +792,31 @@ function buildPts(viewW, viewH, k) {
 
 // ── loop ─────────────────────────────────────────────────────────────────
 let last = performance.now(), acc = 0;
+let timeScale = 1;
+const walkInput0 = { axisX: 0, axisY: 0, held: {}, pressed: {} };     // no input (paused, or behind a passage)
 function tick(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   time += dt;
   I.poll();
-  if (state === 'title') navInput($('menu'));
+  if (busy) { /* a passage is taking the screen: no menus, no pause */ }
+  else if (state === 'title') navInput($('menu'));
   else if (paused) { navInput($('pmenu')); if (I.pressed.pause) setPaused(false); }
   else if (state === 'play' && I.pressed.pause) setPaused(true);
+  // pausing doesn't freeze the world mid-frame: time runs down to a stop in ~0.2 s and picks up again the same way
+  timeScale = damp(timeScale, paused ? 0 : 1, 16, dt);
+  if (paused && timeScale < 0.01) timeScale = 0;
+  const gdt = dt * timeScale;
   if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
-  if (state === 'credits' && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
-  if (state === 'coda' && (I.pressed.pause || I.pressed.act)) enterTitle();
+  if (state === 'credits' && !busy && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
+  if (state === 'coda' && !busy && (I.pressed.pause || I.pressed.act)) passage(() => enterTitle(), { out: 1.4, back: 1.6 });
 
   if (state === 'coda') { W.time += dt; }
-  if (!paused && state !== 'credits' && state !== 'cine' && state !== 'coda') {
-    acc += dt;
+  if (timeScale > 0 && state !== 'credits' && state !== 'cine' && state !== 'coda') {
+    acc += gdt;
     let steps = 0;
     while (acc >= FIXED && steps < 10) {
       const walking = W.intro && !W.intro.done;
-      W.update(FIXED, walking ? walkInput : I, state === 'play');
+      W.update(FIXED, walking ? walkInput : paused || busy ? walkInput0 : I, state === 'play');
       if (walking) walkStep(FIXED);
       if (steps === 0) for (const k in I.pressed) I.pressed[k] = false;
       handleEvents();
@@ -712,8 +824,9 @@ function tick(now) {
     }
     if (steps >= 10) acc = 0;
     if (state === 'play' && !finAPlayed && Math.hypot(W.player.x - W.finale.x, W.player.y - W.finale.y) < 7) { finAPlayed = true; playLine('fin_a', L.FINALE.text); }
-    if (state === 'ending') { if (CUT && !CUT.coda) cutUpdate(dt); else endingUpdate(dt); }
-    updateCamera(dt);
+    if (state === 'ending') { if (CUT && !CUT.coda) cutUpdate(gdt); else endingUpdate(gdt); }
+    updateCamera(gdt);
+    revealStep(gdt);
   }
   updateUI(dt);
   document.body.classList.toggle('nocursor', !(state === 'title' || state === 'loading' || paused));
@@ -731,7 +844,7 @@ function tick(now) {
   const cx = cam.x + (Math.random() - 0.5) * shake, cy = cam.y + (Math.random() - 0.5) * shake;
   const viewW = cam.viewH * R.w / R.h;
   D.setView([cx, cy], cam.viewH, R.w, R.h);
-  D.draw(R.sctx, R.ectx, paused ? 0 : dt, time);
+  D.draw(R.sctx, R.ectx, gdt, time);
   const k = R.h / cam.viewH;
   const nPts = buildPts(viewW, cam.viewH, k);
   const bg = [];
@@ -741,8 +854,9 @@ function tick(now) {
   });
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;
-  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.6, 1.5, W.player.deadT) * 0.85 : 0, CUT ? (CUT.dark || 0) : 0);
-  const respawnFade = W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0;      // the walk-out fades up from black
+  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.5, 1.6, W.player.deadT) : 0, CUT ? (CUT.dark || 0) : 0);
+  const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
+    1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon,
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),

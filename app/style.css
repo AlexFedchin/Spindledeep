@@ -76,3 +76,18 @@ kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(-
   font-size: clamp(22px, 2vw, 34px); color: var(--paper); text-shadow: 0 2px 16px #000; transition: opacity 2s; pointer-events: none; z-index: 25; }
 /* no pointer over the game: shown only while a menu (title, pause) is up */
 body.nocursor, body.nocursor * { cursor: none !important; }
+
+/* the passage between screens: a black veil over everything (even the films), with a caption and a thread that
+   runs while something loads; captions fade in late, so a quick passage is just black */
+#veil { position: fixed; inset: 0; z-index: 55; background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  transition: opacity 0.9s ease-in-out; pointer-events: none; }
+#veil:not(.hidden) { pointer-events: all; }
+#veil .vmsg { font-style: italic; font-size: clamp(18px, 1.5vw, 24px); color: var(--paper-dim); letter-spacing: 0.04em; opacity: 0; transition: opacity 0.7s 0.35s; min-height: 1.4em; }
+#veil .vthread { width: 200px; height: 1px; background: rgba(232, 220, 196, 0.1); overflow: hidden; opacity: 0; transition: opacity 0.7s 0.35s; }
+#veil .vthread i { display: block; width: 36%; height: 1px; background: linear-gradient(90deg, transparent, var(--red), transparent); box-shadow: 0 0 8px var(--red); animation: vrun 1.6s ease-in-out infinite; }
+#veil.cap .vmsg, #veil.cap .vthread { opacity: 1; }
+#veil.hidden .vmsg, #veil.hidden .vthread { transition-delay: 0s; transition-duration: 0.3s; }
+@keyframes vrun { from { transform: translateX(-110%); } to { transform: translateX(290%); } }
+/* overlay text that changes while it is up fades out, swaps, and fades back in (see swapText in main.js) */
+.swapping { opacity: 0 !important; transition-duration: 0.3s !important; }
+
