@@ -8,7 +8,6 @@ Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution
 - "Ossuary 1 - A Beginning"
 - "Ossuary 2 - Turn"
 - "Ossuary 5 - Rest"
-- "Peaceful Desolation"
 
 ## Sounds (Freesound.org, CC0 1.0)
 
@@ -17,6 +16,7 @@ Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution
 - "Music Box" by jmggs@hotmail.com — https://freesound.org/people/jmggs@hotmail.com/sounds/195355/
 - "Howling Wind" by Kodack — https://freesound.org/people/Kodack/sounds/256862/
 - "viscious liquid gurgling.aiff" by bevibeldesign — https://freesound.org/people/bevibeldesign/sounds/315915/
+- "Shovelling Dirt.mp3" by Yin_Yang_Jake007 — https://freesound.org/people/Yin_Yang_Jake007/sounds/415303/
 - "Footsteps_Snow_09.wav" by MarcMatthewsMusic — https://freesound.org/people/MarcMatthewsMusic/sounds/420555/
 - "Cloth Rustle 3.wav" by zazz.sound.design — https://freesound.org/people/zazz.sound.design/sounds/435289/
 - "Cloth Rustle 1.wav" by zazz.sound.design — https://freesound.org/people/zazz.sound.design/sounds/435291/
@@ -27,6 +27,11 @@ Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution
 - "Howling winter storm ambient sounds" by DBlover — https://freesound.org/people/DBlover/sounds/505999/
 - "Dark Dungeon Ambience" by Kinoton — https://freesound.org/people/Kinoton/sounds/516566/
 - "Small Bell" by NachtmahrTV — https://freesound.org/people/NachtmahrTV/sounds/553214/
+- "Stones Falling" by iwanPlays — https://freesound.org/people/iwanPlays/sounds/567251/
+- "Gravel Stone Dirt Debris Falling Small 1 12" by Sheyvan — https://freesound.org/people/Sheyvan/sounds/569745/
+- "Bone Breaks (celery snaps)" by ericnorcross81 — https://freesound.org/people/ericnorcross81/sounds/574752/
+- "Dragging a body across a concrete floor 2" by PostProdDog — https://freesound.org/people/PostProdDog/sounds/578493/
+- "Splitting Wood" by TheLittleCrow — https://freesound.org/people/TheLittleCrow/sounds/589868/
 - "Rope Tightening.wav" by EugeneEverett — https://freesound.org/people/EugeneEverett/sounds/596513/
 - "broken music box 2" by f-r-a-g-i-l-e — https://freesound.org/people/f-r-a-g-i-l-e/sounds/613091/
 - "Snow Footsteps Crunch 1 Mono.wav" by JRWEntertainment — https://freesound.org/people/JRWEntertainment/sounds/614137/
@@ -41,7 +46,9 @@ Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution
 - "Ripping a cloth" by greenlinker — https://freesound.org/people/greenlinker/sounds/757519/
 - "Dark ambience/atmosphere - cave, dungeon echo" by Darklitstudio — https://freesound.org/people/Darklitstudio/sounds/816416/
 - "Rag Doll Footsteps" by IENBA — https://freesound.org/people/IENBA/sounds/826669/
+- "frightened inhale breathing" by serbanel73 — https://freesound.org/people/serbanel73/sounds/835484/
 - "Sing bowl ring" by Tpkmusic — https://freesound.org/people/Tpkmusic/sounds/841989/
 - "StuffedCreatureFur6" by Huglex — https://freesound.org/people/Huglex/sounds/843665/
+- "Hand thumps on wall" by lreeve — https://freesound.org/people/lreeve/sounds/862895/
 - "26.07.04- Creaky Playground Swing - Rope Friction 1" by Valerie-Vivegnis — https://freesound.org/people/Valerie-Vivegnis/sounds/862995/
 - "26.07.04- Creaky Playground Swing - Rope Friction 2" by Valerie-Vivegnis — https://freesound.org/people/Valerie-Vivegnis/sounds/862996/

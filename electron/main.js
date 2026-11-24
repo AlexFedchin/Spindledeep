@@ -85,6 +85,7 @@ function createWindow() {
   const q = new URLSearchParams();
   if (SMOKE) q.set('smoke', '1');
   if (DEV) q.set('dev', '1');
+  if (arg('from')) q.set('from', String(arg('from')));       // a pole to start from: adds a line to the title menu
   win.loadURL('app://game/index.html' + (q.toString() ? '?' + q : ''));
   win.webContents.on('console-message', (_e, level, msg) => { if (SMOKE || DEV) console.log('[renderer]', msg); });
   if (SMOKE) runSmoke(win);

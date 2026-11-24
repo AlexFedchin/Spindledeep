@@ -7,61 +7,48 @@ changes pages; put it only behind a sealed spoiler block. The epilogue film's co
 Not straightforward from beginning to end; much darker, ominous and unexpected; the further the game goes, the
 darker it gets. The plot was rewritten against that brief.
 
-## The truth, in order of discovery
+## The truth, in order of discovery (rewritten 2026-11-24: the user found the old ending cringe and ambiguous)
+Rule for the end: **the thing is never explained, everything else is.** What it wants, why it calls names, what each choice
+does, and what became of the knitter and the doll are all said in plain words, in the game.
 
-**Premise (what it seems).** A grandmother who knits has gone down the pit under her cottage "after the light".
-She leaves a note telling her yarn doll not to follow, and her grey thread with her voice knotted into it.
-The doll follows on its own red thread to bring her home.
+- **The first (the Shoe; knot m9).** A child fell down the well, before the cottage was built. She called for her mother for
+  three days. Something down there listened; it had never heard a voice. It says everything she says. On the fourth day it
+  was the one calling. *It learned that when you call a name, someone comes down.*
+- **How it gets the names (m5, m7).** Whoever comes down is sat in a chair, gently, and asked who they miss. They tell it.
+  Then it calls them, too. Forty-one chairs. It called her husband; he said her name aloud in the dark; that is how it had hers.
+- **The knitter (m0–m5, m10).** A real old woman, called last winter. She had made dolls before and sent them down ("the
+  others") after the ones it took. She died the first night. m0: "Don't follow me" was hers; "keep hold of the thread, never
+  let go of the thread" was it, finishing her sentence. From m6 on, any voice that coaxes is it (m6, m8, all of the finale).
+- **The doll.** Never named, mouth sewn shut, on purpose (the Cellar's spool NEVER NAME THEM; the Quiet Room's pattern):
+  it can't be asked, and it can't be called.
+- **What it wants (m10, her own last words).** It can't climb. It needs one thread running from the bottom to the top, and the
+  doll has just laid one. "When it begs you with my voice, bite your thread in two."
 
-**What is really going on.**
-- The pit was the village well. Every long winter the dark at the bottom calls one name up the shaft, and whoever
-  is called goes down to the Loom and is woven in. The village tried everything: the windlass and bucket, miners
-  digging down to kill it (their coats came back up, folded), a chapel of bells rung for everyone it took (the
-  ringer rang until his hands bled, then they rang for him), a ferry across the ink. The village is gone. There has
-  been no spring on the Brink for seventy years.
-- **Turn 1 — you are not the first.** The knitter has been making dolls and sending them down. Eight lie along the
-  route, grimmer the deeper you go (a lone button eye, bodies face down, one eaten hollow by moths, one hung from a
-  stake by its own thread, one blackened by the ink). "You're stronger than the others were." "They were only
-  practice." Your own deaths leave bodies too, and they stay.
-- **Turn 2 — she was made, too.** At the Ink Mere she confesses that the ink made her forget, for seventy winters,
-  that she is a doll herself. Seventy winters ago the old woman who lived in the cottage was called; she made a doll;
-  the doll followed her down, tied the threads, and went home to sit in her chair. That doll is the knitter.
-  (Keepsakes: her first spool scratched I WAS MADE; a thimble dented by the woman who knitted her.)
-- **Turn 3 — the voice is not hers any more.** The last knot before the Loom speaks with her voice and the wrong
-  words ("She's so tired... Come and sit with us. It's warm in the Loom"), with a second, lower voice under it.
-  Her chair at the bottom is empty. Her candle is still burning beside it.
-- **The end — the trap is the rescue.** "I came all this way too, once... someone has to go home." Tying the
-  threads is the thing the player came to do, and it is the ritual: her candle goes out, the red runs up the grey
-  thread all the way to the cottage window, and her last line lands: "There. Next winter, it will call your name.
-  Start knitting early, little one... it takes a few." The doll goes home to become the next knitter, who will make
-  dolls and send them down to die. The epilogue film plays after this (its content is not described here).
+## The Loom
+- **The floor: the called.** Twenty-one people in nightclothes with their backs turned. Whoever the doll is not looking at turns
+  round (no eyes, mouth stretched open) and comes a little nearer. She can only walk among them.
+- **The dark.** When she leaves the peg (and m10 has been heard out) every mouth calls at once and a dark full of arms rises.
+  Something on all fours comes up the far wall after her, in jerks.
+- **The top.** A high dark place. Her candle, what is left of her under the shawl, her spectacles. What look like pale pillars
+  are the legs and arms of the thing, standing over the place. Her voice begs from the dark (fin_a; if she lingers fin_love,
+  fin_mama in the child's voice, fin_tieit). The choice is shown as two columns that say what each does; the key is held.
 
-## The deep (added 2026-11-23, to the user's brief: much longer, a better ending, something terrifying in the Loom)
-The old bottom chamber is no longer the end. Below the Ink Mere the way goes much deeper, through four new areas.
-- **The Hall of Chairs** (the old Loom chamber). Rows of rocking chairs, dozens, each with a cold candle and the same
-  grey shawl. One candle still burns: hers. She is not in her chair; her grey thread goes on, down a hole in the floor.
-  Knot m7, her own voice, sad and sane: there are forty-one chairs; every one of them has her shawl. *Every knitter was
-  the same woman: each doll is made in the image of the one who made it.*
-- **The Hush.** Dark caverns whose walls are packed grey cloth. Knitted grey hands reach out of them toward anything
-  that is quiet; a pluck drives them back, lit bells keep them still. Knot m8 is the wrong voice (her voice with the
-  low double, as m6): "Hush now, little one. Don't pluck... they don't like the noise." *The voice is trying to kill you.*
-- **The Treadles.** The Loom's undercroft: treadles and lams, heddle frames slamming down to the beat of the Loom,
-  rings swinging on chains. Knot m9 is on a different thread: faded red, very old, a doll's thread from seventy winters
-  ago, and the voice in it is not hers: an older woman, the knitter before her, saying the exact words the knitter will
-  say at the end ("There you are. I came all this way too, once..."). *The ending is a script; it has been said
-  forty-one times.*
-- **The Loom.** A cavern 130 m high strung with warp threads. Its floor is woven cloth and the cloth is faces: all the
-  same face, hers. Knot m10 is the chorus (many of her voices at once): forty-one winters, forty-one of us, sit down and
-  be still. When the doll steps onto the cloth, the Weaver wakes: the cloth heaves up into one vast figure with her face
-  and starts to rise after the doll. The doll climbs the warp threads to the breast beam at the top, past needles that
-  stab out of the cloth. At the top the knitter sits woven in to the waist, her candle beside her, and the grey thread
-  ends in her hands.
-- **Two endings.** Tie (act): the old ending as before (fin_a, fin_b, the red pulse home, the epilogue film); the cycle
-  goes on. Bite through her thread (pluck): fin_cut, "Oh... oh, little one. It's so quiet." The Weaver stops; the faces
-  close their eyes; her candle goes out. Something below takes hold of the red thread, the last line to the surface;
-  the doll bites through its own thread too, and the light goes out. Cards: that winter no name was called up the well;
-  in the spring the snow on the Brink began to melt. After the credits: the doll in her chair in the dark, and the
-  sound of needles.
+## The two endings (`app/src/ending.js`)
+- **Tie.** Silence; the candle goes; "Mama?". Light comes up on the thing, standing over her; its head comes down on a neck that
+  keeps lengthening, turns, thanks her with every voice it has, waits, and calls. Then five places she came through, seen from a
+  camera that doesn't move, as it comes hand over hand up the thread and everything goes out behind it; the last is the
+  cottage. Film (`plates.py`). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
+  the doll sits in her window, still holding the thread.
+- **Bite.** The red goes out of the thread. "What have you done?", twice, the second time not in her voice. It breathes the candle
+  out. Hands on the floor in the dark, looking. "That isn't a name. What is your name?" Half a second of light without a sound:
+  the face beside the doll, listening. Cards: it can never climb out, no one will be called again; she had been dead since the
+  first night; the snow melted; the doll is still down there, nameless, so it cannot call her; it is trying every name there is.
+  After the credits: black, and the names, whispered, in alphabetical order.
+
+## The deep
+- **The Hall of Chairs.** Forty-one rocking chairs with shawls; her candle by an empty one. m7.
+- **The Hush.** Arms that break out of the earth after anything that passes. m8 is the thing: it tells you not to pluck.
+- **The Treadles.** m9, the child, on a faded red thread.
 
 ## Escalation map (deeper = darker)
 | Area | Knot | What it adds | Remains |
@@ -70,17 +57,17 @@ The old bottom chamber is no longer the end. Below the Ink Mere the way goes muc
 | The Throat | m1 | the dark calls one name a winter; this winter, hers | button eye · one face down |
 | Root Gardens | m2, m3 | "the others"; "only practice" | one slumped · one eaten hollow |
 | Bell Gallery | m4 | the bells rang for everyone it took, then for the ringer | one hung · one fell short |
-| Ink Mere | m5 | she was made too | one on the first island · one in the ink |
-| Down to the Loom | m6 | something speaking with her voice (pitch-shifted double, `WRONG` in `scripts/voice/lines.py`) | — |
-| Hall of Chairs | m7 | forty-one chairs, one woman | dolls in the chairs' laps |
-| The Hush | m8 | the voice tells you to stop plucking, to kill you | dolls held in the wall hands |
-| The Treadles | m9 | the end is a script: an older voice says her last words | dolls crushed in the heddles |
-| The Loom | m10, fin_a/b, fin_cut | the faces, the chorus, the Weaver, the choice | your own, if you died |
+| Ink Mere | m5 | her husband said her name, and it heard | one on the first island · one in the ink |
+| Down to the Loom | m6 | something speaking with her voice | — |
+| Hall of Chairs | m7 | how it has the names | dolls in the chairs' laps |
+| The Hush | m8 | the voice wants you dead; the arms | dolls held in the walls |
+| The Treadles | m9 | the child: "it says everything I say" | dolls crushed in the heddles |
+| The Loom | m10, fin_*, cut*, names | what it wants, what to do, and the choice | the called; her |
 
 ## Where it lives
 - Lines: `app/src/level.js` (`MEMORIES`, `FINALE`, `SECRETS[].text`), voice script `scripts/voice/lines.py`
   (record.py → pick.py; `WRONG` lines get the double).
 - Remains: `app/src/props.js` (`LORE` husk entries, `huskBody`, `drawHusks`); your deaths: `World._die` → `world.husks`,
   saved as `husks` in `main.js`.
-- Ending: `main.js` `startEnding` (candle out), `draw.js` `drawFinale` (snuffed candle smoke).
-- Epilogue edit: `scripts/cine/edit.py` (`CODA`).
+- Ending: `app/src/ending.js` (timelines, cards), `drawend.js` (the called, the dark, the thing, the climb), `deep.js` (the called,
+  the rising dark, the crawler). Film: `scripts/cine/plates.py`, cut in `edit.py` (`outro`).

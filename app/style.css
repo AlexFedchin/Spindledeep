@@ -71,7 +71,19 @@ kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(-
 #skip .bar { width: 70px; height: 1px; background: rgba(232, 220, 196, 0.2); }
 #skip .bar i { display: block; height: 1px; width: 0; background: var(--red); box-shadow: 0 0 6px var(--red); }
 
-/* the cards at the end of the second ending */
+/* the choice at the end */
+#choice { position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%); width: min(1240px, 90vw); z-index: 7; pointer-events: none; text-align: center; transition: opacity 1.4s; }
+body.choosing #sub { bottom: auto; top: 15vh; }
+#choice .cq { font-style: italic; font-size: clamp(17px, 1.35vw, 23px); color: var(--paper-dim); margin-bottom: 22px; text-shadow: 0 0 2px #000, 0 2px 14px #000; }
+#choice .cols { display: flex; gap: 7vw; justify-content: center; }
+#choice .cols > div { flex: 1; max-width: 520px; }
+#choice .ck { font-style: italic; font-size: 16px; color: var(--paper-dim); margin-bottom: 8px; }
+#choice .ct { font-family: 'FellSC'; font-size: clamp(24px, 2.2vw, 40px); letter-spacing: 0.06em; color: var(--paper); text-shadow: 0 2px 14px #000, 0 0 2px #000; }
+#choice .cd { font-style: italic; font-size: clamp(18px, 1.5vw, 27px); line-height: 1.4; color: var(--paper-dim); margin: 8px 0 12px; text-shadow: 0 0 2px #000, 0 2px 12px #000; }
+#choice .cbar { height: 1px; background: rgba(232, 220, 196, 0.18); }
+#choice .cbar i { display: block; height: 1px; width: 0; margin: 0 auto; background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+/* the cards at the end */
 #endcard { position: fixed; left: 50%; top: 42vh; transform: translateX(-50%); width: min(900px, 80vw); text-align: center; font-style: italic;
   font-size: clamp(22px, 2vw, 34px); color: var(--paper); text-shadow: 0 2px 16px #000; transition: opacity 2s; pointer-events: none; z-index: 25; }
 /* no pointer over the game: shown only while a menu (title, pause) is up */

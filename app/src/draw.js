@@ -81,7 +81,7 @@ export class Drawer {
   // ── the doll ──────────────────────────────────────────────────────────
   drawDoll(ctx, ectx, dt) {
     const p = this.w.player, th = this.w.thread;
-    if (p.dead && p.deadT > 0.9) return;
+    if ((p.dead && p.deadT > 0.9) || this.w.hideDoll) return;
     const wi = this.w.intro && !this.w.intro.done ? this.w.intro : null;     // walking out of the cottage
     if (wi && wi.hide) return;
     const k = this.k;
@@ -383,7 +383,8 @@ export class Drawer {
 
     // ── window: shutters, mullions, a frosted flower box, her spinning wheel against the warm glass ──
     const wx = gx + 1.3, wy = base + 1.2, ww = 1.5, wh = 1.35;
-    ctx.fillStyle = g(0.97); ctx.fillRect(X(wx), Y(wy + wh), ww * k, wh * k);
+    const dark = this.w.windowOut;            // the end: somebody has put the light out
+    ctx.fillStyle = g(dark ? 0.02 : 0.97); ctx.fillRect(X(wx), Y(wy + wh), ww * k, wh * k);
     ctx.strokeStyle = g(0.2); ctx.lineWidth = lw(0.03);
     ctx.beginPath(); ctx.arc(X(wx + 0.95), Y(wy + 0.55), 0.42 * k, 0, TAU); ctx.stroke();
     for (let a = 0; a < 6; a++) line(wx + 0.95, wy + 0.55, wx + 0.95 + Math.cos(a + this.time * 0.05) * 0.42, wy + 0.55 + Math.sin(a + this.time * 0.05) * 0.42, 0.25, 0.012);
@@ -400,7 +401,7 @@ export class Drawer {
     poly([[wx - 0.15, wy - 0.02], [wx + ww + 0.15, wy - 0.02], [wx + ww + 0.05, wy - 0.3], [wx - 0.05, wy - 0.3]], 0.3, 0.03);
     for (let i = 0; i < 7; i++) line(wx + 0.05 + i * 0.22, wy - 0.02, wx + 0.1 + i * 0.22 + Math.sin(i * 3) * 0.06, wy + 0.25 + (i % 3) * 0.06, 0.08, 0.016);
     poly([[wx - 0.18, wy + 0.02], [wx + ww + 0.18, wy + 0.02], [wx + ww + 0.1, wy + 0.1], [wx - 0.1, wy + 0.1]], 0.96, null);
-    const fl = 0.85 + Math.sin(this.time * 11) * 0.05 + Math.sin(this.time * 6.3) * 0.06;
+    const fl = dark ? 0 : 0.85 + Math.sin(this.time * 11) * 0.05 + Math.sin(this.time * 6.3) * 0.06;
     const grd = ectx.createRadialGradient(X(wx + 0.7), Y(wy + 0.65), 0, X(wx + 0.7), Y(wy + 0.65), 2.4 * k);
     grd.addColorStop(0, `rgba(255,170,80,${0.5 * fl})`); grd.addColorStop(0.3, `rgba(255,130,50,${0.16 * fl})`); grd.addColorStop(1, 'rgba(0,0,0,0)');
     ectx.fillStyle = grd; ectx.fillRect(X(wx + 0.7) - 2.4 * k, Y(wy + 0.65) - 2.4 * k, 4.8 * k, 4.8 * k);
@@ -747,7 +748,7 @@ export class Drawer {
     const vw = this.viewW, vh = this.viewH;
     // the storm: how "outside" the camera is (full on the Brink, gone a few metres into the Throat),
     // and a wind that never stops but comes in gusts
-    const out = area.id === 'brink' || area.id === 'throat' ? clamp((c[1] + 7) / 9, 0, 1) : 0;
+    const out = this.w.stillAir ? 0 : area.id === 'brink' || area.id === 'throat' ? clamp((c[1] + 7) / 9, 0, 1) : 0;
     this.out = out;
     const gn = Math.sin(t * 0.21) * 0.5 + Math.sin(t * 0.57 + 1.3) * 0.32 + Math.sin(t * 1.43 + 0.4) * 0.18;
     this.gust = clamp(gn * 0.75 + 0.45, 0, 1);

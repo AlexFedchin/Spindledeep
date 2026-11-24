@@ -1,59 +1,38 @@
-// Drawing for the deep (deep.js): ropes and warp threads, the hands in the Hush, heddles and needles, the Hall of
-// Chairs, the old red thread, the cloth and its faces, the Weaver, and the knitter at the top of the Loom.
+// Drawing for the deep (deep.js): ropes and warp threads, heddles and needles, the Hall of Chairs, the old red thread.
+// The hands, the called, the dark and the thing at the bottom are in drawend.js.
 // Grey tone on the sprite canvas like everything else (the engraving shader lights it); glows on the additive one.
-// Pictures of her (sprites/*.png) are rendered from the old-lady model by scripts/cine/sprites.py.
 import * as L from './level.js';
 import { clamp, mulberry, TAU } from './util.js';
+import { SPRITES, drawHands, drawCalled, drawDark, drawCrawler, drawRemains, drawThing, drawClimber } from './drawend.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
-export const SPRITES = ['knitter', 'knitter_bow', 'knitter_still', 'face', 'face_shut', 'weaver_l', 'weaver_c', 'weaver_r', 'weaver_scream', 'weaver_shut'];
-
 export function loadSprites() {
   const out = {};
   return Promise.all(SPRITES.map((n) => new Promise((res) => {
     const im = new Image();
-    im.onload = () => { out[n] = im; res(); };
+    // decoded up front and kept as a bitmap: the first draw of a big picture must not hitch in the middle of a scare
+    im.onload = () => createImageBitmap(im).then((b) => { out[n] = b; res(); }, () => { out[n] = im; res(); });
     im.onerror = () => res();
     im.src = 'assets/art/sprites/' + n + '.png';
   }))).then(() => out);
 }
 
-// a picture of her standing on (x, y) with its foot at the bottom edge, h metres tall; dark multiplies it down
-function sprite(D, ctx, im, x, y, h, flip = 1, dark = 1, alpha = 1) {
-  if (!im) return false;
-  const k = D.k, H = h * k, W = H * im.width / im.height;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(D.sx(x), D.sy(y)); ctx.scale(flip, 1);
-  if (dark !== 1) ctx.filter = `brightness(${dark})`;
-  ctx.drawImage(im, -W / 2, -H, W, H);
-  ctx.restore();
-  return true;
-}
-
-// the same picture added faintly to the glow layer: the cloth and the faces in it give off a little light of their own
-function glow(D, ectx, im, x, y, h, a, flip = 1) {
-  if (!im || a <= 0) return;
-  const k = D.k, H = h * k, W = H * im.width / im.height;
-  ectx.save(); ectx.globalAlpha = a;
-  ectx.translate(D.sx(x), D.sy(y)); ectx.scale(flip, 1);
-  ectx.drawImage(im, -W / 2, -H, W, H);
-  ectx.restore();
-}
-
 export function drawDeep(D, ctx, ectx) {
   const w = D.w;
+  if (w.climber) drawClimber(D, ctx, ectx);
   if (D.cam[1] > -200) return;
   D._ectx = ectx;
   drawChairs(D, ctx, ectx);
   drawOldThread(D, ctx, ectx);
   drawWarpBack(D, ctx);
-  drawWeaver(D, ctx, ectx);
-  drawCloth(D, ctx, ectx);
+  drawCrawler(D, ctx, ectx);
+  drawCalled(D, ctx, ectx);
   drawRopes(D, ctx, ectx);
   drawStampers(D, ctx, ectx);
+  drawDark(D, ctx, ectx);
+  drawThing(D, ctx, ectx);
+  drawRemains(D, ctx, ectx);
   drawHands(D, ctx, ectx);
-  drawKnitter(D, ctx, ectx);
 }
 
 // ── the Hall of Chairs ───────────────────────────────────────────────────
@@ -104,12 +83,14 @@ function drawChairs(D, ctx, ectx) {
     }
     D.chairRows = rows.sort((a, b) => b.row - a.row);
   }
-  for (const c of D.chairRows) if (D.vis(c.x, c.y, 3)) chair(D, ctx, c.x, c.y, c.s, c.tone, Math.sin(t * 0.5 + c.ph) * 0.02 * (c.row + 1) * 0.6, true, c.doll);
-  // hers, in front: empty, the candle beside it still burning
+  const out = w.hallOut !== undefined, stir = out ? Math.exp(-(w.time - w.hallOut) * 0.25) : 0;       // every chair rocking after it
+  for (const c of D.chairRows) if (D.vis(c.x, c.y, 3)) chair(D, ctx, c.x, c.y, c.s, c.tone, Math.sin(t * (0.5 + stir * 2) + c.ph) * 0.02 * (c.row + 1) * (0.6 + stir * 5), true, c.doll);
+  // hers, in front: empty, the candle beside it still burning (until something goes past it on the way up)
   const ch = w.chair;
   chair(D, ctx, ch.x, ch.y - 0.05, 1.0, 0.62, Math.sin(t * 0.7) * 0.03, true, false);
   const CX = D.sx(34.2), CY = D.sy(ch.candleY), k = D.k;
   ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.45 * k, 0.12 * k, 0.45 * k);
+  if (out) return;
   const fl = 1 + Math.sin(D.time * 15) * 0.1;
   const gr = ectx.createRadialGradient(CX, CY - 0.55 * k, 0, CX, CY - 0.55 * k, 1.5 * k);
   gr.addColorStop(0, `rgba(255,200,120,${0.85 * fl})`); gr.addColorStop(0.15, `rgba(255,140,60,${0.3 * fl})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
@@ -177,57 +158,6 @@ function drawRopes(D, ctx, ectx) {
   }
 }
 
-// ── the hands ────────────────────────────────────────────────────────────
-function drawHands(D, ctx, ectx) {
-  const k = D.k, t = D.time;
-  for (const h of D.w.deep.hands) {
-    if (!D.vis(h.ax, h.ay, h.reach + 2)) continue;
-    const L = h.ext, X0 = D.sx(h.ax), Y0 = D.sy(h.ay);
-    // where it waits: a puckered seam in the cloth of the wall, faintly stirring
-    ctx.fillStyle = g(0.32); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, k * 0.02);
-    const stir = 0.03 * Math.sin(t * 1.3 + h.i);
-    ctx.beginPath(); ctx.ellipse(X0, Y0, (0.32 + stir) * k, 0.16 * k, Math.atan2(-h.ny, h.nx) + Math.PI / 2, 0, TAU); ctx.fill(); ctx.stroke();
-    if (L < 0.08) continue;
-    const ux = (h.tx - h.ax) / L, uy = (h.ty - h.ay) / L, nx = -uy, ny = ux;
-    // the sleeve: a long knitted tube that sags a little, thinner toward the wrist
-    const pts = [];
-    for (let i = 0; i <= 14; i++) {
-      const s = i / 14, sag = Math.sin(s * Math.PI) * Math.min(0.5, L * 0.06) + Math.sin(t * 3 + s * 6 + h.i) * 0.03;
-      pts.push([h.ax + ux * L * s + nx * sag, h.ay + uy * L * s + ny * sag - Math.sin(s * Math.PI) * Math.min(0.3, L * 0.03)]);
-    }
-    const wd = (s) => (0.24 - s * 0.1) * k;
-    ctx.beginPath();
-    pts.forEach(([x, y], i) => { const s = i / 14; const X = D.sx(x + nx * wd(s) / k), Y = D.sy(y + ny * wd(s) / k); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
-    for (let i = 14; i >= 0; i--) { const s = i / 14, [x, y] = pts[i]; ctx.lineTo(D.sx(x - nx * wd(s) / k), D.sy(y - ny * wd(s) / k)); }
-    ctx.closePath(); ctx.fillStyle = g(0.5); ctx.fill(); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, k * 0.025); ctx.stroke();
-    // a cold rim along the sleeve so a reaching arm reads in the dark (like the brambles' glints)
-    ectx.strokeStyle = `rgba(190,198,225,${0.16 * Math.min(1, L / 2)})`; ectx.lineWidth = Math.max(1.5, k * 0.05);
-    ectx.beginPath(); pts.forEach(([x, y], i) => (i ? ectx.lineTo(D.sx(x), D.sy(y)) : ectx.moveTo(D.sx(x), D.sy(y)))); ectx.stroke();
-    ctx.strokeStyle = g(0.3); ctx.lineWidth = Math.max(0.6, k * 0.01);
-    for (let i = 1; i < 14; i++) {
-      const s = i / 14, [x, y] = pts[i];
-      ctx.beginPath(); ctx.moveTo(D.sx(x + nx * wd(s) / k * 0.9), D.sy(y + ny * wd(s) / k * 0.9)); ctx.lineTo(D.sx(x - nx * wd(s) / k * 0.9), D.sy(y - ny * wd(s) / k * 0.9)); ctx.stroke();
-    }
-    // the hand: a mitten of grey wool with long fingers, open while it reaches, shut when it has her
-    const [hx, hy] = pts[14], HX = D.sx(hx), HY = D.sy(hy), a = Math.atan2(-uy, ux);
-    ctx.save(); ctx.translate(HX, HY); ctx.rotate(a);
-    ctx.fillStyle = g(0.55); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.02);
-    ctx.beginPath(); ctx.ellipse(0.12 * k, 0, 0.16 * k, 0.13 * k, 0, 0, TAU); ctx.fill(); ctx.stroke();
-    const open = h.grab ? 0.1 : 0.55 + 0.2 * Math.sin(t * 7 + h.i);
-    for (let f = 0; f < 4; f++) {
-      const fa = (f - 1.5) * 0.28 * open;
-      const l = (0.34 + (f === 1 || f === 2 ? 0.08 : 0)) * k;
-      ctx.beginPath(); ctx.moveTo(0.2 * k, (f - 1.5) * 0.06 * k);
-      ctx.quadraticCurveTo(0.2 * k + Math.cos(fa) * l * 0.6, (f - 1.5) * 0.06 * k + Math.sin(fa) * l * 0.6 + 0.05 * k * (1 - open),
-        0.2 * k + Math.cos(fa) * l * (h.grab ? 0.5 : 1), (f - 1.5) * 0.06 * k + Math.sin(fa) * l + (h.grab ? 0.12 * k : 0));
-      ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1.5, k * 0.06); ctx.stroke();
-      ctx.strokeStyle = g(0.58); ctx.lineWidth = Math.max(0.8, k * 0.035); ctx.stroke();
-    }
-    ctx.restore();
-    ectx.fillStyle = `rgba(190,195,215,${0.08 * Math.min(1, L)})`; ectx.beginPath(); ectx.arc(HX, HY, 0.5 * k, 0, TAU); ectx.fill();
-  }
-}
-
 // ── heddles and needles ──────────────────────────────────────────────────
 function drawStampers(D, ctx, ectx) {
   const k = D.k, w = D.w;
@@ -265,96 +195,4 @@ function drawStampers(D, ctx, ectx) {
       }
     }
   }
-}
-
-// ── the cloth, its faces, the Weaver ─────────────────────────────────────
-function face(D, ctx, x, y, h, shut, tone) {
-  const im = D.img?.[shut ? 'face_shut' : 'face'];
-  if (sprite(D, ctx, im, x, y - h * 0.35, h, 1, tone)) { glow(D, D._ectx, im, x, y - h * 0.35, h, shut ? 0.02 : 0.05); return; }
-  const k = D.k, X = D.sx(x), Y = D.sy(y), r = h * 0.45 * k;
-  ctx.fillStyle = g(0.5 * tone); ctx.beginPath(); ctx.ellipse(X, Y, r * 0.8, r, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = g(0.04);
-  for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(X + s * r * 0.32, Y - r * 0.1, r * 0.13, shut ? r * 0.03 : r * 0.1, 0, 0, TAU); ctx.fill(); }
-  ctx.beginPath(); ctx.ellipse(X, Y + r * 0.45, r * 0.18, shut ? r * 0.03 : r * 0.12, 0, 0, TAU); ctx.fill();
-}
-function drawCloth(D, ctx, ectx) {
-  const w = D.w, r = w.deep.rise;
-  if (!D.vis(60, r.level, 30) || D.cam[1] > -420) return;
-  const k = D.k, top = r.level, shut = !!w.ending?.cut;
-  const xa = Math.max(r.x0, D.cam[0] - D.viewW / 2 - 2), xb = Math.min(r.x1, D.cam[0] + D.viewW / 2 + 2);
-  const surf = (x) => top + 0.25 * Math.sin(x * 0.7 + D.time * 0.9) + 0.12 * Math.sin(x * 2.1 - D.time * 1.7) * (r.on ? 1 : 0.3);
-  if (top > r.y0 + 0.05) {
-    // the risen cloth: a heaving mass of weave down to the floor
-    ctx.beginPath(); ctx.moveTo(D.sx(xa), D.sy(r.y0 - 1));
-    for (let x = xa; x <= xb; x += 0.5) ctx.lineTo(D.sx(x), D.sy(surf(x)));
-    ctx.lineTo(D.sx(xb), D.sy(r.y0 - 1)); ctx.closePath();
-    ctx.fillStyle = g(0.32); ctx.fill();
-    ctx.strokeStyle = g(0.2); ctx.lineWidth = Math.max(0.6, k * 0.012);
-    for (let y = top - 0.3; y > Math.max(r.y0, D.cam[1] - D.viewH / 2 - 1); y -= 0.32) {
-      ctx.beginPath(); ctx.moveTo(D.sx(xa), D.sy(y));
-      for (let x = xa; x <= xb; x += 1) ctx.lineTo(D.sx(x), D.sy(y + 0.06 * Math.sin(x * 3 + y * 7)));
-      ctx.stroke();
-    }
-    ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1.5, k * 0.04);
-    ctx.beginPath(); for (let x = xa; x <= xb; x += 0.5) (x === xa ? ctx.moveTo(D.sx(x), D.sy(surf(x))) : ctx.lineTo(D.sx(x), D.sy(surf(x)))); ctx.stroke();
-  }
-  // faces in the weave, along its surface: all the same face
-  for (let x = Math.ceil(xa / 3.4) * 3.4; x < xb; x += 3.4) {
-    const j = Math.round(x / 3.4), y = surf(x) - 0.55 - (j % 2) * 0.5;
-    face(D, ctx, x + Math.sin(j * 1.7) * 0.6, y, 1.2 - (j % 3) * 0.15, shut || (j % 5 === 0 && !r.on), 0.85);
-  }
-}
-function drawWeaver(D, ctx, ectx) {
-  const w = D.w, r = w.deep.rise;
-  if (!r.woke || D.cam[1] > -420) return;
-  const p = w.player, t = D.time;
-  // she rises out of the cloth on the far side of the Loom, as high as the cloth has come
-  const x = 74, y = r.level - 8, h = 40;
-  const ending = w.ending, shut = !!ending?.cut;
-  const look = p.x < x - 25 ? 'weaver_l' : p.x > x + 6 ? 'weaver_r' : 'weaver_c';
-  const scream = r.on && (r.t < 3.0 || (r.t % 11) < 1.2);
-  const im = D.img?.[shut ? 'weaver_shut' : scream ? 'weaver_scream' : look];
-  const sink = shut ? Math.min(1, (ending.t - 4) / 10) : 0;
-  glow(D, ectx, im, x, y - sink * h * 0.7, h, (0.045 + 0.02 * Math.sin(t * 0.7)) * (1 - Math.max(0, sink)));
-  if (!sprite(D, ctx, im, x, y - sink * h * 0.7, h, 1, 0.9, 1 - Math.max(0, sink) * 0.8)) {
-    // stand-in: a vast pale head
-    const k = D.k;
-    ctx.fillStyle = g(0.35); ctx.beginPath(); ctx.ellipse(D.sx(x), D.sy(y + h * 0.55), h * 0.3 * k, h * 0.4 * k, 0, 0, TAU); ctx.fill();
-  }
-}
-
-// ── her, at the top ──────────────────────────────────────────────────────
-function drawKnitter(D, ctx, ectx) {
-  const w = D.w, f = w.finale;
-  if (!D.vis(f.x, f.y, 6)) return;
-  const k = D.k, e = w.ending;
-  const name = e && !e.cut && e.t > 3 ? 'knitter_bow' : e && e.cut && e.t > 6 ? 'knitter_still' : 'knitter';
-  // woven in to the waist: the picture stands in the cloth hanging off the beam, the lower half lost in the weave
-  const x = f.x - 1.5, y = f.y - 0.9;
-  glow(D, ectx, D.img?.[name], x, y, 2.6, w.candleOut !== undefined ? 0.03 : 0.08);
-  if (!sprite(D, ctx, D.img?.[name], x, y, 2.6, 1, 1.15)) {
-    ctx.fillStyle = g(0.45); ctx.beginPath(); ctx.ellipse(D.sx(x), D.sy(y + 1.3), 0.35 * k, 0.6 * k, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(D.sx(x), D.sy(y + 2.0), 0.2 * k, 0, TAU); ctx.fill();
-  }
-  // the cloth she is woven into, hanging down the face of the beam
-  ctx.fillStyle = g(0.36); ctx.strokeStyle = g(0.04); ctx.lineWidth = Math.max(1, k * 0.02);
-  ctx.beginPath(); ctx.moveTo(D.sx(x - 1.0), D.sy(y + 0.95));
-  ctx.quadraticCurveTo(D.sx(x), D.sy(y + 1.15), D.sx(x + 1.0), D.sy(y + 0.95));
-  ctx.lineTo(D.sx(x + 1.4), D.sy(y - 6.5)); ctx.lineTo(D.sx(x - 1.6), D.sy(y - 6.5)); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = g(0.22); ctx.lineWidth = Math.max(0.6, k * 0.01);
-  for (let yy = y + 0.8; yy > y - 6.4; yy -= 0.25) { ctx.beginPath(); ctx.moveTo(D.sx(x - 1.1), D.sy(yy)); ctx.lineTo(D.sx(x + 1.1), D.sy(yy - 0.04)); ctx.stroke(); }
-  // her candle on the beam
-  const CX = D.sx(19), CY = D.sy(f.candleY);
-  ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.45 * k, 0.12 * k, 0.45 * k);
-  if (w.candleOut !== undefined) {
-    const a = Math.max(0, 1 - (w.time - w.candleOut) / 6);
-    if (a > 0) { ctx.strokeStyle = g(0.6, a * 0.6); ctx.lineWidth = Math.max(1, 0.02 * k); ctx.beginPath(); ctx.moveTo(CX, CY - 0.47 * k);
-      for (let i = 1; i < 8; i++) ctx.lineTo(CX + Math.sin(w.time * 1.3 + i * 0.9) * 0.05 * i * k, CY - (0.47 + i * 0.16) * k); ctx.stroke(); }
-    return;
-  }
-  const fl = 1 + Math.sin(D.time * 15) * 0.1;
-  const gr = ectx.createRadialGradient(CX, CY - 0.55 * k, 0, CX, CY - 0.55 * k, 1.5 * k);
-  gr.addColorStop(0, `rgba(255,200,120,${0.85 * fl})`); gr.addColorStop(0.15, `rgba(255,140,60,${0.3 * fl})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  ectx.fillStyle = gr; ectx.fillRect(CX - 1.5 * k, CY - 2.05 * k, 3 * k, 3 * k);
-  ectx.fillStyle = `rgba(255,220,150,${fl})`; ectx.beginPath(); ectx.ellipse(CX, CY - 0.55 * k, 0.04 * k, 0.1 * k * fl, 0, 0, TAU); ectx.fill();
 }

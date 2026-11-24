@@ -117,13 +117,13 @@ export const OPS = [
 
   // ── the Loom ──────────────────────────────────────────────────────────────
   ['carve', E(60, -492, 56, 62)],
-  ['fill', B(0, -562, 120, -540, 0.5)],        // the cloth floor
+  ['fill', B(0, -562, 120, -540, 0.5)],        // the floor, where the called stand
   ['fill', B(96, -470, 120, -462, 0.8)],       // where you come in
   ['fill', B(46, -506, 56, -503.6, 0.5)],      // a ledge at the top of the first warp
   ['fill', B(30, -505.6, 39.6, -503.2, 0.5)],     // and one past the swinging ring (level with the first: a swing can't climb)
   ['fill', B(33.5, -472.4, 42, -470, 0.5)],
-  ['fill', B(0, -450.4, 40, -444, 0.8)],       // the breast beam, where she sits
-  ['carve', B(3, -444.1, 44, -436.5, 1.6)],    // and the dark gallery above it
+  ['fill', B(0, -450.4, 40, -444, 0.8)],       // the breast beam
+  ['carve', B(3, -444.1, 44, -424.5, 2.4)],    // and the high dark place above it
 
   // ── hidden rooms ───────────────────────────────────────────────────────────
   // Each is a narrow crack off the beaten way into a small room with a keepsake. The cracks are real rock
@@ -158,6 +158,7 @@ export const OPS = [
 
 // erosion stays calm in these rects [x0, y0, x1, y1] so the narrow cracks keep their shape
 export const QUIET = [
+  [1, -446, 46, -436],
   [0.5, -5.2, 12.8, 3.0], [74, -17.2, 89.6, -12.3], [0.4, -86.8, 12.6, -79.2], [1.2, -118.2, 13.2, -113.8],
   [109.8, -157.6, 119.6, -152.6], [57.6, -244.8, 73.8, -240.0],
   [0.4, -327.2, 18.6, -322.0], [0.4, -367.2, 14.6, -362.0],
@@ -262,21 +263,21 @@ export const GATES = [
 // `hide` is drawn as solid rock until the room is first entered, so only the crack's mouth shows (physics never sees it).
 export const SECRETS = [
   { name: 'The Cellar', hide: [0.3, -5.2, 13.0, -0.6], r: [9.6, -3.2, 2.6, 1.3], x: 10.8, y: -4.4, kind: 'spool', what: 'a wooden spool',
-    text: 'Her first spool. Scratched into the end, over and over, in clumsy letters: I WAS MADE.' },
+    text: 'Her first spool. Scratched into the end, small and careful, the one rule she kept: NEVER NAME THEM.' },
   { name: "The Diggers' Cache", hide: [76.5, -17.2, 89.6, -12.4], r: [85.8, -14.7, 3.2, 1.85], x: 86.6, y: -16.4, kind: 'button', what: 'a brass coat button',
     text: "From a miner's coat. They dug down to kill the thing that calls. The coats came back up the well, folded. The men didn't." },
   { name: 'The Seed Hollow', hide: [0.3, -86.8, 10.4, -81.4], r: [3.6, -84.6, 2.9, 1.7], x: 3.5, y: -86.2, kind: 'seeds', what: 'a packet of seeds',
     text: "Sweet peas. 'For the spring,' it says. There has not been a spring on the Brink in seventy years." },
   { name: "The Ringer's Cell", hide: [0.3, -118.0, 10.6, -113.6], r: [4.0, -116.0, 2.5, 1.6], x: 3.4, y: -117.4, kind: 'thimble', what: 'a silver thimble',
-    text: 'Not hers. Older. Dented in the same place, by the same needle, by the woman who knitted her.' },
+    text: "Her mother's thimble. There was a name inside it once. Someone has filed it away, all the way through the silver." },
   { name: 'The Sill', hide: [112.6, -157.0, 119.8, -152.8], r: [116.4, -154.7, 2.7, 1.6], x: 116.0, y: -156.1, kind: 'eye', what: 'a spare button eye',
     text: 'A button eye, not yours. You have been passing them all the way down.' },
   { name: 'The Last Basket', hide: [62.4, -244.6, 74.0, -240.0], r: [70, -242.4, 3.2, 1.8], x: 69.4, y: -244.0, kind: 'mitten', what: 'a half-knitted mitten',
     text: "Half-knitted, needles still in it, sized for a hand with no fingers. It isn't for you. It's for the next one." },
   { name: 'The Quiet Room', hide: [0.3, -327.0, 11.6, -321.8], r: [5.4, -324.4, 3.0, 1.6], x: 4.6, y: -325.8, kind: 'pattern', what: 'a knitting pattern',
-    text: 'A pattern for a doll, in her hand. Under it the same pattern in an older hand, and under that an older one still. One pattern, many hands.' },
+    text: "A pattern for a doll, in her hand. At the bottom, underlined twice: 'Sew the mouth shut, so it can tell it nothing. No name, so it can't be called.'" },
   { name: 'The Shoe', hide: [0.3, -367.0, 8.6, -361.8], r: [3.9, -364.4, 2.6, 1.55], x: 3.4, y: -365.8, kind: 'shoe', what: "a child's shoe",
-    text: "Very small and very old, the leather gone hard as wood. The first name the well ever called was a child's." },
+    text: "Very small and very old. A child fell down the well, before the cottage was built. She called for her mother for three days. On the fourth day, something else began to call." },
 ];
 
 export const SKEINS = [
@@ -331,20 +332,27 @@ export const MEMORIES = [
   { id: 'm2', x: 26, y: -61, text: "I made you from the scraps of everything I loved. A sleeve of his coat. The ribbon from my wedding. You're stronger than the others were." },
   { id: 'm3', x: 30, y: -81.6, text: "The moths found the others first. Don't grieve for them, little one. They were only practice." },
   { id: 'm4', x: 56.5, y: -120.2, text: 'Pluck your thread, and the bells will answer. They rang for everyone it took. The ringer rang until his hands bled... and then they rang for him.' },
-  { id: 'm5', x: 64.5, y: -190.2, text: "Don't let the ink touch you. It makes things forget what they are. I forgot for seventy winters... I forgot that I was made, too." },
+  { id: 'm5', x: 64.5, y: -190.2, text: "Don't let the ink touch you. It makes things forget. When it called my husband, he forgot his own face down here... but he remembered my name. He said it out loud. And it heard." },
   { id: 'm6', x: 17, y: -218, text: "She's so tired, little one. Her yarn's run grey. She can't climb back up. ...Come down. Come and sit with us. It's warm in the Loom." },
-  { id: 'm7', x: 36, y: -246.2, text: "So many chairs. I counted them on my way down... forty-one. Every one of them has my shawl over it. Every one of them is mine." },
+  { id: 'm7', x: 36, y: -246.2, text: "Forty-one chairs. It sits you down, little one. It's so gentle. It asks you who you miss... and you tell it. Then it calls them, too. That is how it has our names." },
   { id: 'm8', x: 66, y: -282.4, text: "Hush now, little one. Hush. Don't pluck your thread down here... they don't like the noise. Be quiet, and they'll let you by." },
-  { id: 'm9', x: 61.4, y: -365.8, line: 'm9', thread: 'old', text: "There you are. I came all this way too, once, and tied my thread to an old woman's. Tie yours to mine, little one... someone has to go home." },
-  { id: 'm10', x: 82, y: -539.8, text: "Forty-one winters. Forty-one of us. Every one of us came down for the one before. Sit down, little one. Sit down, and be still." },
+  { id: 'm9', x: 61.4, y: -365.8, line: 'm9', thread: 'old', text: "Mama? I fell down the well. It's dark. Mama, there's something down here with me. It says everything I say." },
+  { id: 'm10', x: 67.6, y: -539.8, text: "This is the last of me, little one. I told you, don't follow. 'Never let go of the thread...' that part was not my voice. It can't climb. It needs one thread, from here to the top, and you have brought it one. When it begs you with my voice, bite your thread in two. I never gave you a name. So it can never call you." },
 ];
 // her chair in the Hall of Chairs: empty, her candle still burning beside it
 export const CHAIR = { x: 32.6, y: -246.2 };
+// what is left of her, at the top of the Loom: a shawl with nothing much in it, her glasses, the candle she carried down
+export const REMAINS = { x: 28.4, candle: 26.4 };
 export const FINALE = {
   x: 16, y: -443.8,
-  text: "There you are. I came all this way too, once, and tied my thread to an old woman's. Tie yours to mine, little one... someone has to go home.",
-  after: 'There. Next winter, it will call your name. Start knitting early, little one... it takes a few.',
-  cut: "Oh... oh, little one. It's so quiet.",
+  text: "There you are. Oh, little one, you came all this way. I'm so cold. I can't see the light. Tie your thread to mine, and pull me up. Please. Please.",
+  love: "Don't you love me? I made you. Don't you love me?",
+  mama: 'Mama?',
+  tieit: 'Tie it. Tie it. Tie it. Tie it. Tie it.',
+  after: 'Thank you, little one. Now we can all come up.',
+  cut: 'What have you done?',
+  cut3: "Little one? Little one? That isn't a name. What is your name?",
+  names: ['Ada?', 'Agnes?', 'Alice?', 'Anna?', 'Beatrice?', 'Bertha?', 'Catherine?', 'Clara?', 'Dora?', 'Edith?', 'Eleanor?', 'Ellen?', 'Emma?'],
 };
 export const LIGHTS = [
   // static lamps: glow-fungus, the cottage window, her candle
@@ -352,18 +360,17 @@ export const LIGHTS = [
   { x: 22, y: -49.6, r: 6, i: 0.7, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G1
   { x: 30, y: -72.4, r: 6, i: 0.8, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G2 (moths gather)
   { x: 34.2, y: -245.4, r: 9, i: 1.25, c: [1.0, 0.6, 0.27], flicker: 1 },  // her candle by the empty chair in the Hall
-  { x: 19, y: -443.2, r: 8, i: 1.15, c: [1.0, 0.6, 0.27], flicker: 1, finale: true },  // the candle beside her at the top of the Loom
-  // the deep is not quite black: a cold breath over the Hall's chairs, lamps in the Treadles, and the Loom's cloth
-  // giving off a faint warmth of its own (as if it were alive)
+  { x: 26.4, y: -443.3, r: 6.5, i: 0.9, c: [1.0, 0.6, 0.27], flicker: 1, finale: true },  // her candle at the top of the Loom
+  // the deep is not quite black: a cold breath over the Hall's chairs, lamps in the Treadles, and a grey nothing in the Loom
   { x: 18, y: -238, r: 13, i: 0.3, c: [0.7, 0.72, 0.82], flicker: 0 },
   { x: 33, y: -236, r: 13, i: 0.28, c: [0.7, 0.72, 0.82], flicker: 0 },
   { x: 16, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 62, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 88, y: -352, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 108, y: -400, r: 7, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },
-  { x: 40, y: -528, r: 30, i: 0.32, c: [0.95, 0.72, 0.6], flicker: 0.15 },
-  { x: 85, y: -528, r: 30, i: 0.32, c: [0.95, 0.72, 0.6], flicker: 0.15 },
-  { x: 30, y: -478, r: 20, i: 0.22, c: [0.95, 0.72, 0.6], flicker: 0.15 },
+  { x: 40, y: -528, r: 26, i: 0.15, c: [0.7, 0.76, 0.9], flicker: 0 },
+  { x: 82, y: -528, r: 26, i: 0.15, c: [0.7, 0.76, 0.9], flicker: 0 },
+  { x: 30, y: -478, r: 20, i: 0.16, c: [0.7, 0.76, 0.9], flicker: 0 },
 ];
 
 // ── the deep's machinery (deep.js) ─────────────────────────────────────────
@@ -374,11 +381,13 @@ export const ROPES = [
   [31.6, -503.2, -469.4],          // the second, past the needles
   [42.4, -470, -443.0],            // the last, beside the breast beam
 ];
-// Knitted hands in the Hush's walls: they reach for anything that stays quiet. [x, y] near a wall; reach in metres.
+// Hands in the Hush's earth (deep.js HAND): [x, y] near a wall, floor or roof; reach in metres.
 export const HANDS = [
-  [36, -279, 4], [62, -279, 3.5], [72, -279, 3.5], [82, -276, 6], [100, -282, 5],
-  [102, -296, 4], [90, -315.6, 10.5], [83, -315.6, 10.5], [76, -315.6, 10.5], [68, -315.6, 10.5], [62, -315.6, 10.5], [53, -315.6, 10.5],
-  [46, -315.6, 10.5], [40, -315.6, 10.5], [35, -315.6, 10.5], [27, -315.6, 10.5], [17, -320, 5],
+  [36, -279, 4], [57, -277, 5], [62, -279, 3.5], [69, -282.4, 2.0], [72, -279, 3.5], [77.5, -283, 2.0], [82, -276, 6], [86, -285, 2.4], [100, -282, 5],
+  [102, -296, 4], [96, -303, 4], [90, -315.6, 10.8], [83, -315.6, 10.8], [76, -315.6, 10.8], [68, -315.6, 10.8], [60, -315.6, 10.8], [53, -315.6, 10.8],
+  [46, -315.6, 10.8], [40, -315.6, 10.8], [35, -315.6, 10.8], [27, -315.6, 10.8], [17, -320, 5],
+  // up out of the floor of the long gallery
+  [86, -325.6, 2.4], [78.5, -325.6, 2.4], [68, -325.6, 2.4], [57.5, -325.6, 2.4], [48.2, -324, 2.4], [40.5, -325.6, 2.4], [30, -325.6, 2.4],
 ];
 // Things that slam: heddle frames dropping in the Treadles, needles stabbing out of the Loom's cloth.
 // rect at rest (x0, y0, x1, y1), the direction it moves and how far, the cycle (s) and its phase.
@@ -391,5 +400,11 @@ export const STAMPERS = [
   { kind: 'needle', r: [4, -481.5, 5, -480.9], dir: [1, 0], dist: 28, per: 3.2, ph: 1.6 },
   { kind: 'needle', r: [4, -459.6, 5, -459.0], dir: [1, 0], dist: 40.5, per: 3.6, ph: 0.9 },
 ];
-// The cloth that rises after you in the Loom: wakes when you leave peg `peg` (24), stops at peg `stop` (28).
-export const RISE = { x0: 4, x1: 116, y0: -540, y1: -446, speed: 1.5, peg: 24, stop: 28, delay: 4.0, back: 12 };
+// The dark that rises after you in the Loom: wakes when you leave peg `peg` (24) and her last words are over (`after` s),
+// stops at peg `stop` (28). `lag`: it is never further below you than this.
+export const RISE = { x0: 4, x1: 116, y0: -540, y1: -446, speed: 1.5, peg: 24, stop: 28, delay: 4.0, back: 12, after: 31, lag: 24 };
+// the called, standing on the floor of the Loom: [x, picture, height]
+export const CALLED = [
+  [85.6, 0, 1.9], [83.9, 3, 1.75], [82.2, 2, 1.5], [80.1, 1, 1.95], [78.4, 0, 1.7], [76.0, 3, 1.9], [74.6, 2, 1.85], [69.4, 1, 1.9], [67.9, 0, 1.35], [66.0, 3, 1.8],
+  [64.2, 2, 1.9], [62.4, 1, 1.75], [59.9, 0, 1.95], [54.2, 3, 1.7], [52.0, 2, 1.9], [49.6, 0, 1.8], [46.8, 1, 1.3], [44.5, 3, 1.95], [41.2, 2, 1.8], [38.0, 0, 1.9], [34.8, 1, 1.7],
+];

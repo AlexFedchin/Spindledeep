@@ -74,7 +74,7 @@ or prop must fit the escalation map in `docs/STORY.md` (nothing at a shallower d
 
 ## Voice (scripts/voice)
 
-The knitter's lines: `lines.py` (script, delivery notes, `PERSONAS`, `WRONG` lines with a lower second voice). The user
+The knitter's lines: `lines.py` (script, delivery notes, `PERSONAS`, `WRONG` lines with a lower second voice, `OTHER`/`PLAIN` the child, `ECHO`, `CHORUS`). The user
 wants her to sound old. Pipeline (Qwen venv, see memory): `cast.py` (VoiceDesign candidates scored by `age.py`: pitch,
 jitter, breathiness, tremor; I can't listen, these stand in) → `.cache/cast/ref.wav`; `record.py` (design + clone
 takes) → `pick.py` (words, likeness to ref, age, pace; light ageing fx) → `app/assets/voice/`. The first, younger
@@ -90,7 +90,7 @@ walkable both ways (no side-view switchbacks: a hairpin always leaves a ledge ta
 ## Cinematics (scripts/cine)
 
 Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) and `outro.mp4`
-(epilogue, plays after the ending, before the credits). The user asked not to be told what the ending
+(epilogue of the 'tie' ending; since 2026-11-24 made of engraved SDXL plates by `plates.py`, not Blender shots; E2–E7 in shots.py are retired). The user asked not to be told what the ending
 film shows; keep its content out of pages and summaries.
 
 - Blender 4.2.3 portable lives in `scripts/cine/.cache/blender-4.2.3-windows-x64/` (ignored by git).
@@ -126,17 +126,30 @@ The user's rigged "Old Lady" (Auto-Rig Pro FBX) lives in `../old-lady-fbx/` (not
 `scripts/cine/.cache/old_lady/`). `lib.knitter` builds her via `oldlady.build`: the old control skeleton (empties) is built
 at her joints and each deforming bone follows a helper under its control (Copy Transforms), so `arm_to`/`hand_pose`/shot keys
 work unchanged. Her right hand is anatomical: values written for the old figure's s = -1 hand go through `lib.hand_local`.
-`USE_MODEL = False` in lib.py brings back the hand-built figure. E2 adds `oldlady.shawl` (it must turn red). `sprites.py`
-renders the in-game pictures of her (`app/assets/art/sprites/`); `clipcheck.py` splits her meshes by bone weight.
+`USE_MODEL = False` in lib.py brings back the hand-built figure. She appears only in the prologue: the user does not want the
+old-lady model anywhere in the ending. `clipcheck.py` splits her meshes by bone weight.
 
-## The deep (2026-11-23)
+## The deep and the end (2026-11-24)
 
 Below the Ink Mere: Hall of Chairs → the Hush → the Treadles → the Loom (world h 604). Rules in `app/src/deep.js` (swinging
-rings, ropes, hands, stampers, the rising cloth `RISE`), drawing in `drawdeep.js`, data in `level.js` (`ROPES`, `HANDS`,
-`STAMPERS`, `RISE`, hooks with `sway`). Two endings: tie (act) or bite (pluck) at the finale (`startCut` in main.js).
-Route checks: scratchpad `route2.js` (real-physics segment bot: walk/drop/swing/climb/stamp/ring ops) and `gaps.js`
-(per-gap release windows over the swing phase). Any change to the deep's geometry or timing must be re-run through them.
+rings, ropes, hands `HAND`, stampers, the called, the rising dark `RISE`, the crawler), drawing in `drawdeep.js` and `drawend.js`,
+data in `level.js`. The ending is `app/src/ending.js` (approach, the held choice, two timelines, `CARDS`); test with
+`__SD.end().choose('tie'|'cut')` at peg 28 and set `__SD.end().t` to jump. Sprites: `scripts/art/caller.py` (SDXL) →
+`facework.py` (the face) → `cutout.py` → `app/assets/art/sprites/`.
+Route checks run in plain node: `node --experimental-default-type=module` can import `app/src` (`buildTerrain`, `World`), far
+faster than the Electron harness; scratchpad `run.mjs` runs `route2.js`, `gaps.js`, `mere.js`; `hands.mjs` (bots crossing the Hush),
+`fuzz.mjs` (thread inside rock). Any change to the deep's geometry or timing must be re-run through them.
 Teleport tests must re-tie the thread at a nearby peg first, or the overstretched thread pulls the doll back.
+
+Rules from the user: no brass anywhere ("Peaceful Desolation" is banned); no thread/rope sound that keeps playing (never play
+`creak` whole: 28 s; use `dur`); hands sound like earth; the thread must never pass through rock.
+
+## The thread and rock
+
+`app/src/route.js`: `depthAlong`/`clearLine`, `route` (A* on the SDF + pull taut), `hug` (lay a drawn span along the rock face).
+thread.js keeps particles and spans out (spans that cross a lip go back to `lx/ly`), `grip` string-pulls the thread's own path into
+pivots, `wrap`/`snag` bend round corners via `_corners`, `tie` lays the last bit, `buildPoly` hugs what is drawn (fixed part cached
+in `_fix`). The grey thread is hugged in `buildGrey`. Check: `fuzz.mjs` (31.4 % of frames had thread >6 cm inside rock, now 0.2 %).
 
 ## Builds
 

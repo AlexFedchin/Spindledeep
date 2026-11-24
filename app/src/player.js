@@ -118,7 +118,7 @@ export class Player {
         }
         this.vx *= Math.exp(-SWING.drag * h); this.vy *= Math.exp(-SWING.drag * 0.5 * h);
       } else {
-        const target = ax * RUN, acc = g ? ACC_G : ACC_A;
+        const target = ax * RUN * (ctx.slow ?? 1), acc = g ? ACC_G : ACC_A;
         const dv = target - this.vx;
         this.vx += clamp(dv, -acc * h, acc * h);
         if (g && !ax) this.vx = damp(this.vx, 0, 16, h);

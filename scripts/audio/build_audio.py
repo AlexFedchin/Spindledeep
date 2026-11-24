@@ -184,12 +184,9 @@ def _():
 # ── music (Kevin MacLeod, CC BY 4.0) ─────────────────────────────────────────
 MUSIC = {
     'mus_title': 'Ossuary 6 - Air', 'mus_gardens': 'Ossuary 1 - A Beginning', 'mus_gallery': 'Ossuary 2 - Turn',
-    'mus_mere': 'Ossuary 5 - Rest', 'mus_loom': 'Peaceful Desolation',
+    'mus_mere': 'Ossuary 5 - Rest',
 }
-# mus_end used to be 'Heartbreaking': a swelling, heroic orchestral cue that played over the tie, the credits and the
-# epilogue film. The user found it completely unsuitable. It is now the dirge below, built from the game's own sounds.
-
-
+# 'Peaceful Desolation' (brass) used to play in the Hall of Chairs. The user asked for it never to be used again in this game.
 @recipe('music')
 def _():
     for name, title in MUSIC.items():
@@ -204,56 +201,6 @@ def _resample(x, rate):
     return np.stack([np.interp(t, np.arange(len(x)), x[:, c]) for c in range(x.shape[1])], 1).astype(np.float32)
 
 
-@recipe('mus_end')
-def _():
-    """The dirge for the tie, the credits and the epilogue: no melody to lift it, nothing that resolves.
-    A low drone a semitone against itself (it beats, slowly, like breathing through cloth), deep gong strokes from the
-    singing bowl two octaves down, a harp that picks a falling line and stops before the last note, and the broken
-    music box far off, slowed until it drags. 96 s, loops."""
-    rng = np.random.default_rng(7)
-    D = 96.0
-    n = int(D * SR)
-    t = np.arange(n) / SR
-    y = np.zeros((n, 2), np.float32)
-    # drone: A1 against B-flat1, an octave above that faint, each swelling on its own slow cycle (loop-safe periods)
-    sw = lambda per, ph: 0.55 + 0.45 * np.sin(2 * np.pi * t / per + ph)
-    for f, a, per, ph, pan in ((55.0, 0.30, 24, 0.0, -0.2), (58.27, 0.22, 32, 1.7, 0.25), (110.0, 0.06, 48, 0.6, 0.0), (164.8, 0.025, 19.2, 2.2, -0.4)):
-        v = a * sw(per, ph) * np.sin(2 * np.pi * f * t + 0.3 * np.sin(2 * np.pi * t / 7.5))
-        y[:, 0] += v * (1 - pan) * 0.7; y[:, 1] += v * (1 + pan) * 0.7
-    # a cold breath: band-limited noise under it all
-    nz = rng.standard_normal((n, 2)).astype(np.float32)
-    for k in (300, 120, 60):
-        nz = np.stack([np.convolve(nz[:, c], np.ones(k) / k, mode='same') for c in range(2)], 1)
-    y += nz / (np.abs(nz).max() + 1e-6) * 0.05 * sw(16, 0.4)[:, None]
-    def put(x, at, g, pan=0.0):
-        i = int(at * SR) % n
-        m = min(len(x), n - i)
-        y[i:i + m, 0] += x[:m, 0] * g * (1 - pan); y[i:i + m, 1] += x[:m, -1] * g * (1 + pan)
-        if m < len(x):  # wrap the tail round so the loop point is seamless
-            r = min(len(x) - m, n)
-            y[:r, 0] += x[m:m + r, 0] * g * (1 - pan); y[:r, 1] += x[m:m + r, -1] * g * (1 + pan)
-    A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
-    bowl, harp, box, bell = A('bowl'), A('harp'), A('skein'), A('bell')
-    gong = _resample(bowl, 0.25)                      # two octaves down
-    for k, at in enumerate((0.5, 22.0, 41.0, 64.0, 80.0)):
-        put(gong, at, 0.55 if k % 2 == 0 else 0.4, pan=(-0.3, 0.3)[k % 2])
-    # the harp: a falling line in A minor that never reaches home (A G F E D# ... and stops)
-    line = [(0, 6.0), (-2, 9.0), (-4, 12.0), (-5, 15.5), (-6, 20.5),
-            (0, 30.0), (-2, 33.0), (-4, 36.0), (-5, 39.5),
-            (-12, 50.0), (-13, 54.0), (-17, 58.5),
-            (0, 70.0), (-2, 73.0), (-4, 76.0), (-5, 79.5), (-6, 84.5)]
-    for semis, at in line:
-        x = _resample(harp, 2 ** ((semis - 12) / 12))
-        put(x, at, 0.32, pan=float(rng.uniform(-0.4, 0.4)))
-    # the broken music box, far away and dragging
-    far = _resample(box, 0.62)[::-1].copy()           # backwards: it winds down instead of up
-    for at in (26.0, 66.0):
-        put(far * np.linspace(0, 1, len(far))[:, None] ** 2, at, 0.10, pan=0.5)
-    put(_resample(bell, 0.35), 47.0, 0.18, pan=-0.5)    # one dead bell
-    y = np.tanh(y * 1.2) / 1.2
-    write('mus_end', y, 'lowpass=f=5200,highpass=f=28', lufs=-21, q=4)
-
-
 @recipe('amb_beat')
 def _():
     """the Loom working, somewhere below: a slow heavy wooden beat (the batten), a creak of treadles between, 12 s loop"""
@@ -261,10 +208,9 @@ def _():
     n = int(D * SR)
     y = np.zeros((n, 2), np.float32)
     A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
-    land, creak = A('land'), A('creak')
+    land = A('land')
     thud = _resample(land, 0.32)
-    k = _resample(creak, 0.6)[: int(1.6 * SR)].copy()
-    k *= np.linspace(1, 0, len(k))[:, None] ** 1.5
+    k = _resample(A('wood'), 0.7)          # a wooden treadle, not the rope creak: no thread sounds in a bed that never stops
     def put(x, at, g):
         i = int(at * SR) % n; m = min(len(x), n - i)
         y[i:i + m] += x[:m] * g
@@ -276,38 +222,130 @@ def _():
     write('amb_beat', y, 'lowpass=f=1800,highpass=f=30,aecho=0.6:0.5:180|420:0.35|0.2', lufs=-27, q=3)
 
 
-@recipe('mus_weaver')
+def mono2(x, pan=0.0):
+    x = x[:, 0] if x.ndim == 2 else x
+    return np.stack([x * (1 - max(0, pan)), x * (1 + min(0, pan))], 1).astype(np.float32)
+
+
+def put(y, x, at, g=1.0):
+    """add x (n,2) into the loop y at time `at`, wrapping the tail"""
+    n, i = len(y), int(at * SR) % len(y)
+    m = min(len(x), n - i)
+    y[i:i + m] += x[:m] * g
+    if m < len(x):
+        r = min(len(x) - m, n)
+        y[:r] += x[m:m + r] * g
+
+
+def brown(n, seed, k=(400, 160, 60)):
+    z = np.random.default_rng(seed).standard_normal((n, 2)).astype(np.float32)
+    for q in k:
+        z = np.stack([np.convolve(z[:, c], np.ones(q) / q, mode='same') for c in range(2)], 1)
+    return z / (np.abs(z).max() + 1e-6)
+
+
+@recipe('dirt')
 def _():
-    """the Loom: the dirge's drone gone wrong. A cluster of three low tones grinding against each other, a slow throb
-    like a heart under cloth (0.75 Hz), the bowl struck far down, and the music box pulled out of tune. 64 s loop."""
-    rng = np.random.default_rng(13)
-    D = 64.0
-    n = int(D * SR)
+    """a hand breaking out of packed earth: a soft low thump, a burst of soil, stones and crumbs raining off it (and the
+    crumbs alone, for the warning before it). Dug earth and falling debris recordings, no rope or thread in it."""
+    rng = np.random.default_rng(3)
+    dig, fall, rocks = read(fs(415303), 1), read(fs(569745), 1), read(fs(567251), 1)
+    do, fo, ro = onsets(dig, -20, 0.5), onsets(fall, -30, 0.3), onsets(rocks, -24, 0.3)
+    for j in range(3):
+        n = int(1.9 * SR)
+        y = np.zeros((n, 1), np.float32)
+        def lay(x, o, k, at, dur, g, rate=1.0):
+            z = x[o[k % len(o)]:][: int(dur * SR * rate)].copy()
+            z = norm(fade(_resample(z, rate), 0.002, 0.25), 0)
+            i = int(at * SR); m = min(len(z), n - i)
+            y[i:i + m] += z[:m] * g
+        t = np.arange(int(0.35 * SR)) / SR
+        y[: len(t), 0] += 0.8 * np.sin(2 * np.pi * (62 * t - 40 * t * t)) * np.exp(-t * 11)      # the ground giving way
+        lay(dig, do, j, 0.0, 0.75, 0.9, 0.8)
+        lay(dig, do, j + 3, 0.05, 0.5, 0.5, 1.15)
+        lay(rocks, ro, j + 1, 0.16, 0.8, 0.35, 0.9)
+        lay(fall, fo, j, 0.3, 1.4, 0.45)
+        y *= np.linspace(1, 0.6, n)[:, None]
+        write(f'dirt{j + 1}', norm(y, -2), 'highpass=f=35,lowpass=f=7000', mono=True)
+    for j in range(2):
+        z = fade(fall[fo[(j * 2 + 1) % len(fo)]:][: int(0.8 * SR)].copy(), 0.03, 0.4)
+        write(f'crumbs{j + 1}', norm(z, -8), 'highpass=f=200,lowpass=f=6000', mono=True)
+
+
+@recipe('wood')
+def _():
+    """dry timber: the heddles' warning and the treadles (both used the rope creak before)"""
+    x = read(fs(589868), 1)
+    z = fade(x[int(6.38 * SR): int(7.3 * SR)].copy(), 0.004, 0.4)
+    write('wood', norm(_resample(z, 0.75), -4), 'highpass=f=90,lowpass=f=4500', mono=True)
+
+
+@recipe('horror')
+def _():
+    slap = read(fs(862895), 1)
+    so = onsets(slap, -18, 0.2)
+    for j in range(3):      # bare palms on stone, close
+        write(f'palm{j + 1}', norm(fade(slap[so[(j * 3 + 2) % len(so)]:][: int(0.4 * SR)].copy(), 0.002, 0.2), -3), 'highpass=f=60,lowpass=f=4500', mono=True)
+    drag = read(fs(578493), 1)
+    write('drag', norm(fade(drag[int(4 * SR): int(8.5 * SR)].copy(), 0.2, 1.0), -4), 'highpass=f=50,lowpass=f=3800', mono=True)
+    bone = read(fs(574752), 1)
+    bo = onsets(bone, -20, 0.15)
+    for j in range(2):
+        write(f'bone{j + 1}', norm(fade(bone[bo[(j * 2) % len(bo)]:][: int(0.7 * SR)].copy(), 0.001, 0.3), -2), 'highpass=f=80', mono=True)
+    # one long inhale, slowed until it is too big to be a person
+    br = read(fs(835484), 1)[int(2.0 * SR): int(2.62 * SR)].copy()
+    z = fade(_resample(br, 0.19), 0.5, 0.8)
+    write('inhale', norm(z, -3), 'highpass=f=60,lowpass=f=2600,aecho=0.8:0.6:140|330:0.3|0.2', mono=True)
+    # a hard low impact with nothing musical in it: what the dark does when it moves
+    n = int(3.2 * SR)
     t = np.arange(n) / SR
+    y = 0.9 * np.sin(2 * np.pi * (38 * t + 14 * np.exp(-t * 9))) * np.exp(-t * 2.2)
+    y += brown(n, 9, (30, 12))[:, 0] * np.exp(-t * 7) * 0.8
+    write('thud', norm(y[:, None].astype(np.float32), -1), 'lowpass=f=900', mono=True)
+
+
+@recipe('amb_breath')
+def _():
+    """the bottom of the world breathing: two long breaths a minute's third apart, too slow, with a pause after each that is a
+    little different every time. 40 s loop. No notes."""
+    D = 40.0
+    n = int(D * SR)
     y = np.zeros((n, 2), np.float32)
-    throb = (0.5 + 0.5 * np.sin(2 * np.pi * 0.75 * t)) ** 3
-    for f, a, pan in ((41.2, 0.32, -0.2), (43.65, 0.26, 0.2), (46.25, 0.2, 0.0), (82.4, 0.06, -0.4), (87.3, 0.05, 0.4)):
-        v = a * (0.45 + 0.55 * throb) * np.sin(2 * np.pi * f * t + 0.4 * np.sin(2 * np.pi * t / 9.0))
-        y[:, 0] += v * (1 - pan) * 0.7; y[:, 1] += v * (1 + pan) * 0.7
-    nz = rng.standard_normal((n, 2)).astype(np.float32)
-    for k in (200, 80):
-        nz = np.stack([np.convolve(nz[:, c], np.ones(k) / k, mode='same') for c in range(2)], 1)
-    y += nz / (np.abs(nz).max() + 1e-6) * 0.06 * (0.6 + 0.4 * np.sin(2 * np.pi * t / 16))[:, None]
-    A = lambda name: read(os.path.join(OUT, name + '.ogg'), 2)
-    gong = _resample(A('bowl'), 0.2)
-    box = _resample(A('skein'), 0.55)
-    def put(x, at, g, pan=0.0):
-        i = int(at * SR) % n; m = min(len(x), n - i)
-        y[i:i + m, 0] += x[:m, 0] * g * (1 - pan); y[i:i + m, 1] += x[:m, -1] * g * (1 + pan)
-        if m < len(x):
-            r = len(x) - m
-            y[:r, 0] += x[m:, 0] * g * (1 - pan); y[:r, 1] += x[m:, -1] * g * (1 + pan)
-    for at in (2.0, 18.0, 34.0, 50.0):
-        put(gong, at, 0.5)
-    for at, r in ((10.0, 0.97), (42.0, 1.03)):
-        put(_resample(box, r), at, 0.09, pan=0.5 if r > 1 else -0.5)
-    y = np.tanh(y * 1.3) / 1.3
-    write('mus_weaver', y, 'lowpass=f=4200,highpass=f=25', lufs=-21, q=4)
+    inh = read(os.path.join(OUT, 'inhale.ogg'), 1)
+    for at, r, g in ((0.5, 1.0, 0.8), (12.5, 0.86, 0.9), (21.0, 0.94, 0.75), (31.5, 0.8, 1.0)):
+        z = _resample(inh, r)
+        put(y, mono2(z, -0.2), at, g)
+        put(y, mono2(_resample(z[::-1].copy(), 0.8), 0.25), at + len(z) / SR * 0.95, g * 0.5)     # and out again
+    t = np.arange(n) / SR
+    sub = np.sin(2 * np.pi * 33 * t + 0.5 * np.sin(2 * np.pi * t / 10)) * (0.5 + 0.5 * np.sin(2 * np.pi * t / 8))
+    y += (sub * 0.10)[:, None].astype(np.float32) + brown(n, 4) * 0.10
+    write('amb_breath', y, 'lowpass=f=1500,highpass=f=24', lufs=-27, q=4)
+
+
+@recipe('amb_hall')
+def _():
+    """the Hall of Chairs (2026-11-24; it had brass): no music. A room tone, wood settling now and then, and very far down,
+    under the floor, people talking one at a time, too low to make out. 60 s loop."""
+    D = 60.0
+    n = int(D * SR)
+    y = np.zeros((n, 2), np.float32)
+    y += brown(n, 21, (900, 300, 80)) * 0.22
+    rng = np.random.default_rng(41)
+    vd = os.path.join(ROOT, 'app', 'assets', 'voice')
+    k = 0
+    for at in np.arange(2, 58, 4.6):
+        for name in (('m1', 'm4', 'm2', 'm7', 'm5', 'm3')[k % 6],):
+            p = os.path.join(vd, name + '.ogg')
+            if os.path.exists(p):
+                v = read(p, 1)
+                i = int(rng.uniform(0, max(1, len(v) - 4 * SR)))
+                z = fade(_resample(v[i: i + int(3.2 * SR)].copy(), float(rng.uniform(0.5, 0.75))), 0.8, 1.2)
+                put(y, mono2(z, float(rng.uniform(-0.8, 0.8))), at + float(rng.uniform(0, 1)), 0.5)
+        k += 1
+    w = read(os.path.join(OUT, 'wood.ogg'), 1)
+    for at, r in ((9, 0.6), (27.5, 0.5), (46, 0.65)):
+        put(y, mono2(_resample(w, r), 0.4 if at > 20 else -0.5), at, 0.12)
+    write('amb_hall', y, 'lowpass=f=420,highpass=f=40,aecho=0.7:0.6:300|700:0.35|0.25', lufs=-30, q=4)
 
 
 def credits():

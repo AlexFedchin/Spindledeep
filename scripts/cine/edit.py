@@ -27,7 +27,7 @@ INK = np.array([0.045, 0.04, 0.06]); PAPER = np.array([0.91, 0.86, 0.75]); RED =
 # (shot, transition into this shot in frames: 0 = cut)
 FILMS = {
     'intro': [('I1', 0), ('I2', 16), ('I3', 0), ('I4', 0), ('I5', 10), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],
-    'outro': [('E2', 0), ('E3', 0), ('E4', 12), ('E5', 0), ('E6', 18), ('E7', 18), ('PAPER', 0)],
+    'outro': [('O1', 0), ('O2', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # plates.py; hard cuts through black
 }
 
 
@@ -120,15 +120,7 @@ def picture(film, draft):
             else:
                 seq.append(('png', p))
     if film == 'outro':
-        n = len(seq)
-        for j in range(n - 48, n):
-            k = (j - (n - 48)) / 47
-            seq[j] = ('paper', seq[j], k * k * (3 - 2 * k))
-        seq.extend(('paperhold', None) for _ in range(24))
-        # the coda (docs/STORY.md, sealed): a hard cut off the paper to the window at night, then black
-        cuts['CODA'] = len(seq)
-        seq.extend(('png', p) for p in shot_frames('I4', draft)[:70])
-        seq.extend(('black', None) for _ in range(40))
+        seq.extend(('black', None) for _ in range(60))
     return seq, cuts
 
 
@@ -256,18 +248,32 @@ def soundtrack(film, cuts, nframes):
         M.add(decode('chime', rate=0.75), at('TITLE', 30), 0.25)
         M.bed(wind, at('TITLE'), T, 0.35, fi=0.5, fo=2.5)
     else:
-        M.add(decode('mus_end'), 0.0, 0.5, fade_in=3, fade_out=5, dur=at('CODA') + 0.1)
-        cave = decode('amb_cave')
-        M.bed(cave, 0, at('E5'), 0.35, fi=2, fo=1.2)
-        M.add(crackle(at('E3', 60)), 0, 0.35, fade_out=0.3)
-        M.add(decode('mend'), at('E2', 30), 0.4)
-        M.add(decode('release', rate=0.5), at('E3', 58), 0.45)
-        M.add(decode('bell'), at('E4', 42), 0.7); M.add(decode('bowl'), at('E4', 42), 0.4)
-        M.add(decode('chime', rate=0.75), at('E4', 200), 0.4, fade_in=0.4)
-        M.bed(decode('amb_wind', af='lowpass=f=900'), at('E5'), at('CODA'), 0.12, fi=2, fo=1)
-        M.bed(wind_in, at('CODA'), at('CODA', 72), 0.8, fi=0.02, fo=0.05)
-        M.add(breath(2.6), at('CODA', 8), 1.0)
-        M.add(decode('creak', rate=0.55), at('E6', 1), 0.25, fade_in=1.5, fade_out=1.5, dur=7.5)
+        # no music. Snow falling, hands on stone, her voice, and the names
+        V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')
+        still = decode('amb_wind', af='lowpass=f=300')
+        M.bed(still, 0, at('O3'), 0.4, fi=1.5, fo=0.1)
+        M.add(decode('wood', rate=0.5), at('O1', 64), 0.5)
+        for k, (f, v) in enumerate(((25, 1.5), (41, 1.2), (50, 1.4), (62, 1.5), (68, 1.3), (74, 1.5), (79, 1.4))):
+            M.add(decode('palm%d' % (k % 3 + 1), rate=0.8), at('O2', f), v)
+        M.add(decode('drag', rate=0.7), at('O2', 50), 1.1, fade_out=0.6, dur=1.9)
+        M.add(decode('inhale', rate=0.9), at('O3', 1), 0.9, dur=2.2, fade_out=0.1)
+        for f in (54, 88):                                   # the two blinks: a board, then nothing
+            M.add(decode('wood', rate=0.62), at('O3', f), 1.3)
+        M.add(decode('bone1', rate=0.5), at('O3', 98), 1.2)
+        M.add(decode('inhale', rate=1.1), at('O4', 20), 0.8)
+        M.add(decode(V('home')), at('O4', 70), 1.0)
+        # she goes to the door and calls. It is answered.
+        M.add(decode(V('call')), at('O5', 6), 0.9)
+        M.add(decode(V('call'), rate=0.8), at('O5', 40), 0.35, pan=-0.6)
+        M.add(decode(V('call'), rate=1.12, af='lowpass=f=1400'), at('O5', 74), 0.3, pan=0.6)
+        M.add(decode(V('call'), rate=0.66, af='lowpass=f=900'), at('O5', 110), 0.4)
+        for k in range(9):
+            M.add(decode(V('call'), rate=0.7 + 0.07 * k, af='lowpass=f=1100,aecho=0.8:0.7:300|700:0.4|0.3'), at('O6', 1) + k * 0.33, 0.16, pan=((k % 3) - 1) * 0.7, fade_in=1.5, fade_out=1.0, dur=6.2 - k * 0.33)
+        step = decode('snow1', af='lowpass=f=1500')
+        rng = np.random.default_rng(3)
+        for k in range(150):                                 # a great many bare feet, in no hurry
+            M.add(step, at('O6', 1) + rng.random() * 6.4, 0.12 + 0.08 * rng.random(), pan=float(rng.uniform(-0.8, 0.8)))
+        M.add(decode('inhale', rate=0.8), at('O7', 30), 0.9)
     y = M.buf[: int((T + 0.5) * SR)]
     peak = np.abs(y).max()
     if peak > 0.98:

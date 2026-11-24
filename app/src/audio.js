@@ -9,7 +9,8 @@ const FILES = [
   'step1', 'step2', 'step3', 'step4', 'snow1', 'snow2', 'snow3',
   'jump', 'land', 'grip', 'release', 'creak', 'tie', 'harp', 'bell', 'bowl', 'chime', 'moth', 'chew',
   'tear', 'splash', 'drip', 'gate', 'skein', 'cut', 'snag', 'mend',
-  'mus_title', 'mus_gardens', 'mus_gallery', 'mus_mere', 'mus_loom', 'mus_end', 'mus_weaver', 'amb_beat',
+  'mus_title', 'mus_gardens', 'mus_gallery', 'mus_mere', 'amb_beat', 'amb_breath', 'amb_hall',
+  'dirt1', 'dirt2', 'dirt3', 'crumbs1', 'crumbs2', 'wood', 'palm1', 'palm2', 'palm3', 'bone1', 'bone2', 'drag', 'inhale', 'thud',
 ];
 const AREA_BEDS = {
   brink: { amb_cave: 0.0 },
@@ -17,12 +18,13 @@ const AREA_BEDS = {
   gardens: { amb_cave: 0.45, amb_drips: 0.4, amb_hum: 0.18 },
   gallery: { amb_cave: 0.55, amb_hum: 0.25, amb_drips: 0.15 },
   mere: { amb_cave: 0.45, amb_ink: 0.45, amb_drips: 0.3 },
-  hall: { amb_cave: 0.35, amb_hum: 0.3 },
+  hall: { amb_hall: 0.8, amb_drips: 0.05 },
   hush: { amb_hum: 0.5, amb_drips: 0.08 },
   treadles: { amb_cave: 0.35, amb_beat: 0.7 },
-  loom: { amb_hum: 0.3, amb_beat: 0.25 },
+  loom: { amb_breath: 0.4 },
 };
-const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', hall: 'mus_loom', hush: null, treadles: null, loom: 'mus_weaver' };
+const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', hall: null, hush: null, treadles: null, loom: null };
+const BEDS = ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum', 'amb_beat', 'amb_breath', 'amb_hall'];
 // a minor pentatonic over two octaves: the thread only ever sings in tune
 const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
 
@@ -125,7 +127,10 @@ export class Audio {
     const pan = c.createStereoPanner(); pan.pan.value = sp.pan;
     src.connect(gn).connect(pan).connect(this.bus[o.bus || 'sfx']);
     if (o.verb !== 0) { const s = c.createGain(); s.gain.value = o.verb ?? 0.6; pan.connect(s).connect(this.verbIn); }
-    src.start(c.currentTime + (o.delay || 0), o.offset || 0);
+    const t0 = c.currentTime + (o.delay || 0);
+    src.start(t0, o.offset || 0);
+    // `dur`: a piece of a long recording, faded out (played whole, the 28 s rope creak used to run on for a minute)
+    if (o.dur) { gn.gain.setValueAtTime(gn.gain.value, t0 + o.dur * 0.6); gn.gain.linearRampToValueAtTime(0, t0 + o.dur); src.stop(t0 + o.dur + 0.05); }
     return { src, gn };
   }
   pick(names, o) { return this.play(names[(Math.random() * names.length) | 0], o); }
@@ -158,9 +163,12 @@ export class Audio {
     }
     if (Math.abs(L.vol - vol) > 0.002) { L.vol = vol; L.gn.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.6); }
   }
+  // exactly these ambience beds, and nothing else
+  beds(b) { for (const n of BEDS) this.loop(n, b[n] || 0); }
   setArea(id) {
     const beds = AREA_BEDS[id] || {};
-    for (const n of ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum', 'amb_beat']) this.loop(n, beds[n] || 0);
+    if (this.endMusic) return;             // the ending sets its own
+    this.beds(beds);
     if (!this.endMusic) this.setMusic(AREA_MUSIC[id] ?? null);
   }
   setMusic(name, fade = 4) {
@@ -177,7 +185,6 @@ export class Audio {
   // continuous layers driven by the game each frame
   update(dt, s) {
     this.listener = s.cam;
-    this.loop('creak', s.swing, 'sfx');
     // the storm is continuous: loud and gusting on the Brink, a faint moan down the pit, silent below
     if (s.out !== undefined) {
       this.loop('amb_wind', 0.0001);
@@ -194,17 +201,20 @@ export class Audio {
     this.bus.music.gain.value = 0.42 * this.duck;
     this.bus.amb.gain.value = 0.8 * (0.55 + 0.45 * this.duck);
   }
+  stopVoices() { for (const v of this.voices || []) { try { v.gn.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08); v.src.stop(this.ctx.currentTime + 0.5); } catch { /* already over */ } } }
   // voice lines play through their own element-free buffer path
-  voice(id, onEnd) {
+  voice(id, onEnd, rate = 1) {
     const url = 'assets/' + VOICE_SET + '/' + id + '.ogg';
     const go = (b) => {
-      const c = this.ctx, src = c.createBufferSource(); src.buffer = b;
+      const c = this.ctx, src = c.createBufferSource(); src.buffer = b; src.playbackRate.value = rate;
       const gn = c.createGain(); gn.gain.value = 1.0;
       src.connect(gn).connect(this.bus.voice);
       const s = c.createGain(); s.gain.value = 0.18; gn.connect(s).connect(this.verbIn);
-      src.onended = () => onEnd?.(b.duration);
+      const v = { src, gn };
+      (this.voices = this.voices || []).push(v);
+      src.onended = () => { this.voices = this.voices.filter((q) => q !== v); onEnd?.(b.duration / rate); };
       src.start(c.currentTime + 0.3);
-      return b.duration;
+      return b.duration / rate;
     };
     if (this.buf['v_' + id]) return Promise.resolve(go(this.buf['v_' + id]));
     return fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((a) => this.ctx.decodeAudioData(a))

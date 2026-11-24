@@ -26,6 +26,8 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 18. Out into the storm: prologue → game handover, walk out of the cottage, hidden pointer (`walkout/`) | https://claude.ai/artifact/3D4qdQVi67pjES3hUbNQeu |
 | 19. No hard cuts: passages between screens, pause/respawn/hidden-room/text easing (`passages/`) | https://claude.ai/artifact/Mva3aPJTUhkcPfYoeYTJVS |
 | 20. Held up to the light: keepsakes and skeins shown full screen, game paused (`keepsakes/`, keepsake words sealed) | https://claude.ai/artifact/JcxvsDdLF2tCXTsmfmFfvP |
+| 21. Kept out of the rock: thread vs rock, harder hands, earth sounds, no rope creak, no brass (`rockthread/`) | https://claude.ai/artifact/R161kCaf6HSZvYkHuLaabt |
+| 22. What is down there: the Loom, both endings and the film remade (`ending/`, plot sealed) | https://claude.ai/artifact/J1avXLArMvcKdXb2hRBTGz |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -97,3 +99,11 @@ morph the SDF patch over 1.5 s. Overlay text via `setText`. Test pitfalls: injec
 real dt, item drawn by `props.drawShowItem` (Pen has a scale `s`), `#show` overlay with staged classes s1–s4/sout.
 Dismiss = fresh I.pressed or mousedown after 1.6 s. Item light 0.55 (1.1 washed the skein out). Keepsake words are
 story: keep them sealed on pages.
+
+## Thread, hands, the end (2026-11-24)
+Checks run in plain node (`node --experimental-default-type=module`, importing app/src): `fuzz.mjs` (random players from all 30
+pegs; thread >6 cm in rock 31.4 % -> 0-0.2 % of frames), `gal.mjs` (12 ring gaps, identical release windows to the old build),
+`hands.mjs` (no-effort walker dies every time; reacting to warnings gets through), route2 + segs1/2/5. m10 sits at x 67.6: the doll
+drops from the Loom ledge to about x 76, so anything further east on the floor can be flown past unheard. `--from=N`
+(`to-the-loom.cmd`) adds a title-menu line that starts at pole N with the thread laid. Runs keep their save after an ending.
+Test pitfall: `__SD.begin()` during end cards leaves the cards' timers running over the new run.

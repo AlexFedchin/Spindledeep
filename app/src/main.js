@@ -6,6 +6,7 @@ import { Drawer } from './draw.js';
 import { loadSprites } from './drawdeep.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
+import { Ending } from './ending.js';
 import { SWING } from './player.js';
 import * as L from './level.js';
 import { clamp, damp, lerp, smooth } from './util.js';
@@ -78,7 +79,7 @@ const pts = new Float32Array(16384 * 8);
 let voicePlaying = 0;
 let subTimer = 0, cardTimer = 0, toastTimer = 0;
 let settings = { volume: 1, fullscreen: true };
-let finAPlayed = false;
+let E = null;              // the ending (ending.js)
 
 async function boot() {
   const bar = document.querySelector('.ld-bar i');
@@ -115,6 +116,7 @@ async function boot() {
     I = new Input();
     A = new Audio();
     A.setVolume(settings.volume ?? 1);
+    makeEnding();
     await A.load((p) => { bar.style.width = (60 + p * 38).toFixed(0) + '%'; });
     await step('', 1);
   } catch (e) {
@@ -131,7 +133,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => END, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
+  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), from: (n) => startFrom(n), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => E, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
   requestAnimationFrame(tick);
 }
 
@@ -166,7 +168,7 @@ function navInput(nav) {
 function enterTitle() {
   state = 'title';
   // back from the credits (or the pause menu) the title shows a fresh world, not the last run's red thread and lamps
-  END = null; CUT = null; clearShow();
+  E.reset(); CODA = false; clearShow();
   W = new World(T); D = new Drawer(W); SD.W = W;
   R.setSDF(T.visualHalf(W.secrets.map((k) => k.hide)));
   const has = !!loadSave(true);
@@ -174,11 +176,13 @@ function enterTitle() {
   const items = [];
   if (has) items.push({ label: 'Continue', fn: () => passage(() => startGame(true), { caption: `back down to ${saveArea()}…`, hold: 1.6, back: 1.6 }) });
   items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => passage(async () => { await wait(1.1); playCine('intro', () => startGame(false, true)); return 'keep'; }, { caption: 'the snow is coming…', out: 1.3 }) });
+  const from = Q.has('from') ? L.PEGS[+Q.get('from')] : null;      // --from=N (to-the-loom.cmd): start at a pole
+  if (from) items.push({ label: 'Go to the Loom', fn: () => passage(() => startFrom(+Q.get('from')), { caption: 'down to the Loom…', hold: 1.2, back: 1.6 }) });
   items.push({ label: 'Fullscreen', fn: toggleFullscreen });
   items.push({ label: 'Leave', fn: leave });
   menu($('menu'), items);
   show($('title'), true);
-  A.stormStop(); A.fadeMaster(A.volume, 0.6);
+  A.stormStop(); A.fadeMaster(A.volume, 0.6); A.endMusic = false;
   ambient = L.AREAS[0].amb.slice(); moon = L.AREAS[0].moon;
   A.setArea('brink');
   A.setMusic('mus_title', 3);
@@ -204,6 +208,7 @@ function toggleFullscreenNow() {
   window.host?.setFullscreen?.(settings.fullscreen);
   window.host?.setSettings?.(settings);
 }
+function areaAt(x, y) { return L.AREAS.find((a) => y <= a.y1 && y > a.y0 && (a.x0 === undefined || x >= a.x0) && (a.x1 === undefined || x <= a.x1)) || L.AREAS.find((a) => y <= a.y1 && y > a.y0) || L.AREAS[0]; }
 function clearShow() { if (SHOW) { SHOW = null; show($('show'), false); } }
 function startGame(cont, walkOut = false) {
   clearShow();
@@ -213,8 +218,7 @@ function startGame(cont, walkOut = false) {
   if (cont) applySave(loadSave()); else clearSave();
   log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
-  finAPlayed = false;
-  END = null; CUT = null;        // the last ending's red pulse lived here: left set, it kept her grey thread red in the next run
+  E.reset(); CODA = false;
   state = 'play';
   A.setMusic(null, 4);
   A.endMusic = false;
@@ -222,6 +226,22 @@ function startGame(cont, walkOut = false) {
   SD.W = W;
   if (walkOut) beginWalkOut(); else { A.fadeMaster(A.volume, 0.6); camSnap = true; }
   save();            // a new run replaces the old save at once; a continued one is re-written as is
+}
+// start at pole n with the thread laid the whole way behind her (along the old woman's) and every knot above it heard
+function startFrom(n) {
+  startGame(false);
+  const th = W.thread, pg = W.pegs[n], g = W.grey;
+  let b = 0, bd = 1e9;
+  for (let i = 0; i < g.n; i++) { const d = Math.hypot(g.x[i] - pg.x, g.y[i] - pg.y); if (d < bd) { bd = d; b = i; } }
+  let lx = th.x[0], ly = th.y[0];
+  for (let i = 0; i <= b; i++) if (Math.hypot(g.x[i] - lx, g.y[i] - ly) > 0.3) { lx = g.x[i]; ly = g.y[i]; th._push(lx, ly); }
+  th.tie(pg.x, pg.y + 0.35);
+  W.checkpoint = pg; pg.tied = true;
+  for (const m of W.memories) if (m.y > pg.y + 8) m.heard = true;
+  for (const a of L.AREAS) if (a.y0 > pg.y) W.areaSeen.add(a.id);
+  W.player.reset(pg.x + 0.6, pg.y + 0.6);
+  cam.x = W.player.x; cam.y = W.player.y + 1; snapOpen(); camSnap = true;
+  save();
 }
 function setPaused(on) {
   paused = on;
@@ -344,7 +364,7 @@ function handleEvents() {
       case 'land': A.play('land', { vol: clamp(e.v / 14, 0.15, 0.7), vary: 0.1, x: p.x, y: p.y }); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
       case 'grip': A.play('grip', { vol: 0.35, vary: 0.1, x: p.x, y: p.y }); break;
       case 'release': case 'letgo': A.play('release', { vol: 0.3, vary: 0.1, x: p.x, y: p.y }); break;
-      case 'taut': A.play('tie', { vol: 0.25, rate: 0.8, x: p.x, y: p.y }); if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
+      case 'taut': if (time - (W._tautT ?? -99) > 8) { W._tautT = time; A.play('tie', { vol: 0.2, rate: 0.8, x: p.x, y: p.y }); } if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
       case 'snag': A.play('snag', { vol: 0.55, x: p.x, y: p.y + 2 }); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
       case 'tie':
         log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
@@ -395,23 +415,31 @@ function handleEvents() {
       case 'areaQuiet': A.setArea(e.id); break;
       case 'drip': A.play('drip', { vol: 0.5, vary: 0.2, x: e.x, y: e.y, verb: 1 }); break;
       case 'splash': A.play('splash', { vol: 0.35, vary: 0.2, x: e.x, y: e.y }); D.spawn('splash', e.x, e.y, 6, { speed: 2.5, vy: 2, life: 0.8 }); break;
-      case 'finale': log('finale · tied'); startEnding(); break;
-      case 'finaleCut': log('finale · bitten through'); startCut(); break;
       case 'climb': A.pick(['step1', 'step3'], { vol: 0.22, rate: 1.3, vary: 0.2, x: p.x, y: p.y, verb: 0.3 }); break;
-      case 'reach': A.play('chew', { vol: 0.3, rate: 0.55, vary: 0.2, x: e.x, y: e.y, verb: 0.8 }); A.play('creak', { vol: 0.15, rate: 0.5, x: e.x, y: e.y }); break;
-      case 'recoil': A.play('release', { vol: 0.35, rate: 0.6, vary: 0.2, x: e.x, y: e.y, verb: 0.6 }); break;
-      case 'stampWarn': A.play('creak', { vol: 0.45, rate: e.kind === 'needle' ? 1.4 : 0.55, x: e.x, y: e.y, verb: 0.5 }); break;
+      // the hands: crumbs are the warning, then the earth bursts (no thread or rope in any of it)
+      case 'stir': A.pick(['crumbs1', 'crumbs2'], { vol: 0.9, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
+      case 'reach':
+        A.pick(['dirt1', 'dirt2', 'dirt3'], { vol: 0.95, vary: 0.15, x: e.x, y: e.y, verb: 0.5 });
+        D.spawn('puff', e.x + e.nx * 0.3, e.y + e.ny * 0.3, 16, { speed: 2.4, vx: e.nx * 2.2, vy: e.ny * 2.2, life: 0.9, r: 1.0 });
+        if (Math.hypot(e.x - p.x, e.y - p.y) < 8) cam.shake = Math.max(cam.shake, 0.1);
+        break;
+      case 'seize': A.play('palm1', { vol: 0.9, rate: 0.9, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.25); if (!W._seizeSeen) { W._seizeSeen = true; toast('it has you · pluck to tear free', 2.2); } break;
+      case 'calledSeen': A.play('bone1', { vol: 0.14, rate: 0.5, x: e.x, y: e.y, verb: 1.2 }); break;
+      case 'crawl': A.pick(['palm1', 'palm2', 'palm3'], { vol: 1.2, rate: 0.6, vary: 0.2, x: e.x, y: e.y, verb: 1.3 }); break;
+      case 'recoil': A.pick(['crumbs1', 'crumbs2'], { vol: 0.6, rate: 0.8, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
+      case 'stampWarn': A.play('wood', { vol: 0.5, rate: e.kind === 'needle' ? 1.5 : 0.8, vary: 0.1, x: e.x, y: e.y, verb: 0.5 }); break;
       case 'stamp':
         A.play('land', { vol: 0.9, rate: e.kind === 'needle' ? 1.6 : 0.4, x: e.x, y: e.y, verb: 1.2 });
         if (e.kind !== 'needle') { A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
         break;
       case 'rise':
-        log('the Weaver wakes');
-        A.play('tear', { vol: 1.0, rate: 0.35, verb: 1.6 }); A.play('gate', { vol: 0.8, rate: 0.45, verb: 1.4 }); A.play('chew', { vol: 0.6, rate: 0.3, verb: 1.5 });
-        cam.shake = 0.9;
-        if (e.first) toast('the cloth is rising · climb', 4);
+        log('the dark wakes');
+        A.play('thud', { vol: 1.0, verb: 1.6 }); A.play('drag', { vol: 0.8, rate: 0.5, verb: 1.4 }); A.play('inhale', { vol: 1.0, rate: 1.6, verb: 1.5 });
+        if (e.first) A.voice('call', null, 0.8);       // every mouth in the place
+        cam.shake = 0.7;
+        if (e.first) toast('climb', 4);
         break;
-      case 'riseStop': A.play('gate', { vol: 0.6, rate: 0.6, verb: 1.4 }); break;
+      case 'riseStop': A.beds({}); A.play('thud', { vol: 0.5, rate: 0.7, verb: 1.4 }); break;
     }
   }
   W.events.length = 0;
@@ -422,86 +450,17 @@ function playLine(id, text) {
   A.voice(id, (dur) => { voicePlaying--; subTimer = 1.4; });
 }
 
-// ── the ending: a pulse of light climbs her grey thread all the way home ─────
-let END = null;
-function startEnding() {
-  state = 'ending';
-  const g = W.grey, gi = W.finale.gi;
-  const arc = new Float32Array(gi + 1);
-  for (let i = gi - 1; i >= 0; i--) arc[i] = arc[i + 1] + Math.hypot(g.x[i] - g.x[i + 1], g.y[i] - g.y[i + 1]);
-  END = { t: 0, arc, total: arc[0], gi, dur: 40, said: false, bellsRung: new Set(), done: false };
-  A.endMusic = true;
-  A.setMusic('mus_end', 3);
-  A.play('tie', { vol: 0.8 }); A.play('chime', { vol: 0.6, rate: 0.6 });
-  // her candle goes out the moment the threads are tied
-  W.candleOut = W.time;
-  W.lamps = W.lamps.filter((l) => !l.finale);
-  A.play('release', { vol: 0.5, rate: 0.45, x: 19, y: W.finale.y });
-  D.spawn('spark', W.player.x, W.player.y, 30, { speed: 3, life: 1.5 });
-  show($('prompt'), false);
-}
-function endingUpdate(dt) {
-  const e = END; e.t += dt;
-  const u = clamp((e.t - 2.5) / e.dur, 0, 1);
-  const k = u * u * (3 - 2 * u);
-  e.s = k * e.total;
-  // pulse point
-  let i = e.gi;
-  while (i > 0 && e.arc[i - 1] <= e.s) i--;
-  const g = W.grey;
-  e.px = g.x[i]; e.py = g.y[i];
-  W.extraLights = u > 0 && u < 1 ? [{ x: e.px, y: e.py, r: 9, i: 2.2, c: [1, 0.25, 0.18], soft: 8 }] : [];
-  for (const b of W.bells) if (!e.bellsRung.has(b) && Math.hypot(b.x - e.px, b.y - e.py) < 7) { e.bellsRung.add(b); W._ring(b); }
-  if (u >= 1 && !e.said) {
-    e.said = true;
-    W.lamps = W.lamps.map((l) => (l.x < 20 && l.y > 0 ? { ...l, i: 2.6, r: 11 } : l));
-    playLine('fin_b', L.FINALE.after);
-    A.play('chime', { vol: 0.7, rate: 0.5, verb: 1.4 });
-    D.spawn('spark', 13.5, 2.5, 40, { speed: 2.5, life: 2.5 });
-  }
-  if (e.said && e.t > 2.5 + e.dur + 9 && !e.done) {
-    e.done = true;
-    clearSave();
-    passage(() => { playCine('outro', () => rollCredits(false, true)); return 'keep'; }, { out: 2.4 });
-  }
-}
-
-// ── the other ending: she bites through the old woman's thread ───────────────
-let CUT = null;
-function startCut() {
-  state = 'ending';
-  CUT = { t: 0, stage: 0 };
-  A.endMusic = true;
-  A.setMusic(null, 2);
-  A.play('cut', { vol: 0.9 }); A.play('tear', { vol: 0.5, rate: 0.8 });
-  show($('prompt'), false);
-  playLine('fin_cut', L.FINALE.cut);
-  // her grey thread goes slack from her hands: everything above her goes dark grey
-  W.greyCut = W.time;
-}
-function cutUpdate(dt) {
-  const c = CUT; c.t += dt;
-  const th = W.thread, p = W.player;
-  if (c.stage === 0 && c.t > 6) {
-    c.stage = 1;
-    W.candleOut = W.time; W.lamps = W.lamps.filter((l) => !l.finale);
-    A.play('release', { vol: 0.5, rate: 0.45, x: 19, y: W.finale.y });
-  }
-  if (c.stage === 1 && c.t > 10) {
-    // something below takes hold of the red thread: it pulls taut, and the doll bites through her own
-    c.stage = 2;
-    A.play('snag', { vol: 0.9, rate: 0.5 }); A.play('creak', { vol: 0.6, rate: 0.4 }); cam.shake = 0.5;
-    th.pluck(2.5);
-  }
-  if (c.stage === 2 && c.t > 13.5) {
-    c.stage = 3;
-    for (let i = 0; i < th.n; i++) th.dead[i] = 1;
-    th.liveStart = th.n; th.anchored = false; th.locked = false; th.pivots = [];
-    A.play('cut', { vol: 1.0, rate: 0.8 }); D.spawn('fiber', p.x, p.y + 0.2, 20, { speed: 1.5, life: 1.6 });
-  }
-  if (c.stage >= 3) c.dark = clamp((c.t - 14) / 5, 0, 1);
-  if (c.stage === 3 && c.t > 21) { c.stage = 4; endCards(['That winter, no name was called up the well.', 'In the spring, the snow on the Brink began to melt.'], () => { c.stage = 5; }); }
-  if (c.stage === 5 && !c.done) { c.done = true; clearSave(); rollCredits(true); }
+// ── the ending (ending.js): its timelines; here only what it needs from the shell ─────────────────────────
+let CODA = false;
+function makeEnding() {
+  E = new Ending({
+    W: () => W, D: () => D, A, cam, I: () => I, $, show, log, playLine, voiceBusy: () => voicePlaying > 0, sub: subtitle,
+    setState: (s) => { state = s; },
+    // tied: the film, then what became of everyone, then the credits
+    // the run's save stays at its last pole, so Continue goes back to the choice
+    film: (cards) => { passage(() => { E.dark = 1; playCine('outro', () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => rollCredits(false)); }); return 'keep'; }, { out: 0.6 }); },
+    cards: (cards) => { E.mode = 'over'; E.dark = 1; endCards(cards, () => rollCredits(true)); },
+  });
 }
 function endCards(lines, done) {
   const el = $('endcard');
@@ -509,13 +468,14 @@ function endCards(lines, done) {
   const next = () => {
     if (i >= lines.length) { show(el, false); setTimeout(done, 2200); return; }
     el.textContent = lines[i++]; show(el, true);
-    setTimeout(() => { show(el, false); setTimeout(next, 2200); }, 5200);
+    setTimeout(() => { show(el, false); setTimeout(next, 2400); }, 6200);
   };
   next();
 }
 
 function rollCredits(cut, instant) {
   log('credits');
+  A.setMusic(null, 1); A.beds({ amb_breath: 0.3 });      // no music over these: only the bottom of the world, breathing
   // after the epilogue film the credits must already be there as the film fades, or the game shows through
   if (instant) { const c = $('credits'); c.style.transition = 'none'; show(c, true); void c.offsetWidth; c.style.transition = ''; }
   $('credits').classList.toggle('cut', !!cut);
@@ -526,24 +486,23 @@ function rollCredits(cut, instant) {
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
   setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); }, 76000);
 }
-// after the credits of the second ending: the doll in her chair at the top of the Loom, in the dark, and needles
+// after the credits of the second ending: nothing to see. It is going through the names.
 function coda() {
   log('coda');
   state = 'coda';
-  CUT = { t: 0, coda: true, dark: 0.82 };
-  const f = W.finale;
-  W.player.dead = false; W.player.x = f.x + 1.2; W.player.y = f.y + 0.32; W.player.vx = W.player.vy = 0; W.player.facing = -1;
-  W.coda = true;
-  cam.x = f.x + 1; cam.y = f.y + 1.2; cam.viewH = 7;
-  A.setMusic(null, 1);
-  let n = 0;
-  const tick = () => {
+  CODA = true;
+  W.hideDoll = true;
+  A.setMusic(null, 1); A.beds({ amb_breath: 0.25 });
+  show($('sub'), false);
+  const N = L.FINALE.names;
+  const over = () => setTimeout(() => { if (state === 'coda') passage(() => enterTitle(), { out: 2.2, back: 1.6 }); }, 4200);
+  setTimeout(() => {
     if (state !== 'coda') return;
-    A.play('snag', { vol: 0.12, rate: 2.6 + Math.random() * 0.3, x: cam.x, y: cam.y });
-    if (++n < 40) setTimeout(tick, 380 + Math.random() * 160);
-    else setTimeout(() => { if (state === 'coda') passage(() => enterTitle(), { out: 2.2, back: 1.6 }); }, 3000);
-  };
-  setTimeout(tick, 2500);
+    A.voice('names', () => over()).then((dur) => {
+      if (!dur) { over(); return; }
+      N.forEach((n, i) => setTimeout(() => { if (state === 'coda') subtitle(n, 1.1); }, 300 + (dur - 1) * 1000 * i / N.length));
+    });
+  }, 3000);
 }
 
 // ── cinematics ──────────────────────────────────────────────────────────
@@ -621,7 +580,7 @@ function walkStep(dt) {
   const t = w.t, once = (k, f) => { if (!w.sfx[k]) { w.sfx[k] = true; f(); } };
   // the door: swings open, later bangs shut in a gust
   if (t >= WALK.open) once('open', () => {
-    A.play('creak', { vol: 0.75, rate: 0.85, x: DOOR.x, y: DOOR.y, verb: 0.2 });
+    A.play('creak', { vol: 0.75, rate: 0.85, x: DOOR.x, y: DOOR.y, verb: 0.2, dur: 1.4 });
     A.stormOpen(); A.fadeMaster(A.volume, 0.6);
   });
   w.door = t < WALK.shut ? smooth(WALK.open, WALK.open + 0.8, t) : 1 - smooth(WALK.shut, WALK.shut + 0.22, t);
@@ -665,7 +624,7 @@ function startReveal(e) {
   for (let k = 0; k < n; k++) order[k] /= far + 2.2;
   reveal = { P, order, t: 0, out: new Float32Array(n) };
   A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y, verb: 1 });
-  A.play('creak', { vol: 0.25, rate: 0.45, x: e.x, y: e.y, verb: 1 });
+  A.pick(['crumbs1', 'crumbs2'], { vol: 0.5, rate: 0.6, x: e.x, y: e.y, verb: 1 });
   D.spawn('puff', e.x, e.y, 14, { speed: 1.6, life: 1.2, r: 1.2 });
 }
 function revealStep(dt) {
@@ -773,17 +732,17 @@ function updateCamera(dt) {
   lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
   if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
-  } else if (state === 'ending' && CUT && !CUT.coda) {
-    tx = W.finale.x + 1.5; ty = W.finale.y + 1.2 - (CUT.t > 10 ? Math.min(6, (CUT.t - 10) * 0.6) : 0); vh = 11 + Math.min(10, CUT.t * 0.5);
-  } else if (state === 'ending' && END && END.t > 2.5) {
-    tx = END.px; ty = END.py + 1; vh = END.s / END.total > 0.97 ? 15 : 22;
+  } else if (state === 'ending' && E.view) {
+    tx = E.view.x; ty = E.view.y; vh = E.view.vh;
+    if (E.takeSnap()) { cam.x = tx; cam.y = ty; cam.viewH = vh; const q = areaAt(tx, ty); ambient = q.amb.slice(); moon = q.moon; }
   } else {
     tx = p.x + clamp(p.vx * 0.35, -3, 3);
     ty = p.y + 1.2 + clamp(p.vy * 0.12, -2.5, 1);
     camOpen = damp(camOpen, openness(p.x, p.y + 1.2), 0.8, dt);
     const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
     vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
-    if (a.id === 'loom' && p.y > -452) vh = 12.5;          // at the top of the Loom: close on her
+    if (a.id === 'loom' && p.y > -452) vh = 10.5 - 1.8 * smooth(22, 16, p.x);          // at the top of the Loom: close, so little of the place is seen
+    if (a.id === 'loom' && p.y < -528 && !W.deep.rise.woke) vh = Math.min(vh, 11);     // among the called
     if (SHOW) {
       const k = SHOW.phase === 'in' ? smooth(0, 1.2, SHOW.t) : 1 - smooth(0.2, 1.25, SHOW.o);
       tx = lerp(tx, SHOW.at.x, k); ty = lerp(ty, SHOW.at.y - 0.14 * SHOWV, k); vh = lerp(vh, SHOWV, k);
@@ -792,15 +751,16 @@ function updateCamera(dt) {
     ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
   }
   if (camSnap) { camSnap = false; cam.x = tx; cam.y = ty; cam.viewH = vh; ambient = a.amb.slice(); moon = a.moon; }
-  const rate = state === 'ending' ? 2.2 : 3.2;
+  const rate = state === 'ending' ? 3.0 : 3.2;
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
-  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, SHOW ? 5 : W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 1.2, dt);
+  cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, SHOW ? 5 : W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 2.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
   cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
   cam.shake = Math.max(0, cam.shake - dt);
-  ambient = ambient.map((v, i) => damp(v, a.amb[i], 1.5, dt));
-  moon = damp(moon, a.moon, 1.5, dt);
+  const amb = state === 'ending' && E.mode ? (E.pulse ? areaAt(cam.x, cam.y).amb : a.amb) : a.amb;
+  ambient = ambient.map((v, i) => damp(v, amb[i] * (state === 'ending' ? 1 - E.black : 1), 1.5, dt));
+  moon = damp(moon, state === 'ending' && E.pulse ? areaAt(cam.x, cam.y).moon : a.moon, 1.5, dt);
 }
 
 // ── thread geometry for the GPU ──────────────────────────────────────────
@@ -814,13 +774,14 @@ function buildPts(viewW, viewH, k) {
   const wLive = Math.max(1.5, k * 0.024);
   // the knitter's grey thread
   const g = W.grey;
-  const redTo = END ? END.s : -1;
+  const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1);      // the threads go out with the picture
+  const redTo = E && E.pulse ? E.pulse.total : -1;
   for (let i = 0; i < g.n; i++) {
     const x = g.x[i], y = g.y[i];
     if (!inV(x, y)) { brk(); continue; }
     let r = 0.6, gg = 0.58, b = 0.55, a = 0.75, w = Math.max(1, k * 0.014);
-    if (END && i <= END.gi && END.arc[i] <= redTo) { r = 0.85; gg = 0.1; b = 0.1; a = 1; w = wLive * 0.85; }
-    if (W.greyCut !== undefined && i <= W.finale.gi) { r = 0.3; gg = 0.29; b = 0.28; a = 0.55; }      // bitten through: dead yarn
+    if (redTo > 0 && i <= E.pulse.gi && E.pulse.arc[i] <= redTo) { const gone = E.pulse.arc[i] < E.pulse.s; r = gone ? 0.12 : 0.85; gg = 0.1; b = 0.1; a = gone ? 0.5 : 1; w = wLive * 0.85; }
+    a *= lit;
     put(x, y, w, a, r, gg, b); open = true;
   }
   brk();
@@ -841,13 +802,16 @@ function buildPts(viewW, viewH, k) {
     const wv = th.waveAt(arc);
     if (wv && j > 0 && j < th.polyN - 1) {
       const dx = P[o + 5] - P[o - 5], dy = P[o + 6] - P[o - 4], dl = Math.hypot(dx, dy) || 1;
-      x += -dy / dl * wv; y += dx / dl * wv;
+      // the wave never throws the thread into the rock it lies on
+      const wx = x - dy / dl * wv, wy = y + dx / dl * wv, wd = T.d(wx, wy);
+      if (wd > 0.08) { x = wx; y = wy; } else { x -= dy / dl * wv * 0.25; y += dx / dl * wv * 0.25; const d1 = T.d(x, y); if (d1 < 0.08) { x = P[o]; y = P[o + 1]; } }
     }
     let r, gg, b, a = 1, w = wLive;
-    if (st === 2) { r = 0.3; gg = 0.28; b = 0.27; a = 0.8; w = wLive * 0.7; }
+    if (st === 2 || (st === 4 && W.ending && W.ending.cut)) { r = 0.3; gg = 0.28; b = 0.27; a = 0.8; w = wLive * 0.7; }
     else if (st === 0) { r = 0.72; gg = 0.07; b = 0.07; w = wLive * 0.85; }
     else { r = 0.9; gg = 0.1; b = 0.09; }
     if (wear > 0) { const q = clamp(wear, 0, 1); r = lerp(r, 0.18, q); gg = lerp(gg, 0.05, q); w *= 1 - q * 0.55; }
+    a *= lit;
     put(x, y, w, a, r, gg, b); open = true;
   }
   brk();
@@ -872,8 +836,9 @@ function tick(now) {
   if (paused && timeScale < 0.01) timeScale = 0;
   const gdt = dt * timeScale;
   if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
-  if (state === 'credits' && !busy && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
+  // (before the credits' check: the press that skips the credits must not skip this too)
   if (state === 'coda' && !busy && (I.pressed.pause || I.pressed.act)) passage(() => enterTitle(), { out: 1.4, back: 1.6 });
+  if (state === 'credits' && !busy && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
 
   if (state === 'coda') { W.time += dt; }
   if ((timeScale > 0 || SHOW) && state !== 'credits' && state !== 'cine' && state !== 'coda') {
@@ -888,8 +853,8 @@ function tick(now) {
       acc -= FIXED; steps++;
     }
     if (steps >= 10) acc = 0;
-    if (state === 'play' && !finAPlayed && Math.hypot(W.player.x - W.finale.x, W.player.y - W.finale.y) < 7) { finAPlayed = true; playLine('fin_a', L.FINALE.text); }
-    if (state === 'ending') { if (CUT && !CUT.coda) cutUpdate(gdt); else endingUpdate(gdt); }
+    if (state === 'play') E.approach(gdt, !paused && !busy && !SHOW);
+    else if (state === 'ending') E.update(gdt);
     updateCamera(SHOW ? dt : gdt);
     revealStep(gdt);
   }
@@ -898,10 +863,8 @@ function tick(now) {
 
   // audio continuous layers
   if (A) {
-    const p = W.player, th = W.thread;
-    const swing = th.locked && !p.grounded ? clamp(Math.hypot(p.vx, p.vy) / 9, 0, 1) * 0.5 : 0;
     let md = 99; for (const m of W.moths) md = Math.min(md, Math.hypot(m.x - cam.x, m.y - cam.y));
-    A.update(dt, { cam: [cam.x, cam.y], swing: paused ? 0 : swing, moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
+    A.update(dt, { cam: [cam.x, cam.y], moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : state === 'ending' || state === 'coda' || state === 'credits' ? 0 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
   }
 
   // render
@@ -919,7 +882,7 @@ function tick(now) {
   });
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;
-  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.5, 1.6, W.player.deadT) : 0, CUT ? (CUT.dark || 0) : 0);
+  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.5, 1.6, W.player.deadT) : 0, state === 'ending' || state === 'credits' || state === 'coda' ? (CODA ? 1 : E.dark) : 0);
   const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
     1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({

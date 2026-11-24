@@ -5,6 +5,7 @@ import { Player } from './player.js';
 import { clamp, rand, mulberry, lerp } from './util.js';
 import { buildLore, loreLights } from './props.js';
 import { Deep } from './deep.js';
+import { hug } from './route.js';
 
 const BASE_YARN = 92, SKEIN_YARN = 14;
 const RED = [1.0, 0.16, 0.12];
@@ -49,7 +50,9 @@ export class World {
     // her empty chair in the Hall stands on the floor (it used to be drawn at the thread's height and floated)
     const fl = (x, y) => T.ground(x, y + 2, 8) ?? y;
     this.chair = { x: L.CHAIR.x, y: Math.min(fl(L.CHAIR.x - 0.6, L.CHAIR.y), fl(L.CHAIR.x + 0.6, L.CHAIR.y)), candleY: fl(34.2, L.CHAIR.y) };
-    this.finale.candleY = fl(19, this.finale.y);
+    this.finale.candleY = fl(L.REMAINS.candle, this.finale.y);
+    this.remainsY = fl(L.REMAINS.x, this.finale.y);
+    this.finale.y = fl(this.finale.x, this.finale.y) + 0.2;
     this.lamps = L.LIGHTS;
     this.lore = buildLore(T);
     this.nests = L.NESTS.map((n) => ({ ...n, spawned: 0 }));
@@ -90,7 +93,7 @@ export class World {
     this.time += dt;
     if (this.ending) this.ending.t += dt;
     const p = this.player, th = this.thread;
-    const ctx = { budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
+    const ctx = { slow: this.slow ?? 1, budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt);
     p.update(dt, controls && !p.dead && !this.ending ? inp : blank, th, ctx);
@@ -125,24 +128,22 @@ export class World {
     const peg = this.pegs.find((g) => g !== this.checkpoint && Math.hypot(g.x - p.x, g.y + 0.3 - p.y) < 1.5);
     const mi = th.anchored ? -1 : th.mendIndex();
     const nearMend = mi >= 0 && Math.hypot(th.x[mi] - p.bx, th.y[mi] - p.by) < 1.4;
-    const nearFinale = Math.hypot(this.finale.x - p.x, this.finale.y - p.y) < 2.0;
-    this.prompt2 = nearFinale ? { a: 'pluck', t: 'Bite through her thread' } : null;
-    if (nearFinale) this.prompt = { a: 'act', t: 'Tie the two threads together' };
-    else if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
+    const nearFinale = Math.hypot(this.finale.x - p.x, this.finale.y - p.y) < 2.6;
+    this.nearFinale = nearFinale && this.deep.rise.done;       // the choice itself is ending.js
+    if (nearFinale) { this.prompt = null; return; }
+    if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
     else if (nearMend) this.prompt = { a: 'act', t: 'Mend the thread' };
     // reaching a peg ties the thread to it by itself, so a fall always sends you back to the last peg you passed
     const autoTie = peg && !nearFinale && p.grounded && !th.locked;
     if (autoTie) this.prompt = null;
     if (inp.pressed.act || autoTie) {
-      if (nearFinale) { if (inp.pressed.act) { this.ending = { t: 0 }; this.emit('finale'); } }
-      else if (peg) {
+      if (peg) {
         th.tie(peg.x, peg.y + 0.35);
         peg.tied = true; this.checkpoint = peg; this.hurt = 0;
         p.tieT = 0.6;
         this.emit('tie', { x: peg.x, y: peg.y });
       } else if (nearMend) { th.mend(); this.emit('mend', { x: p.x, y: p.y }); }
     }
-    if (nearFinale && inp.pressed.pluck) { this.ending = { t: 0, cut: true }; this.emit('finaleCut'); return; }
     if (inp.pressed.pluck && (this.pluckCD || 0) <= 0) {
       this.deep.onPluck();
       this.pluckCD = 0.55;
@@ -340,7 +341,7 @@ export class World {
   }
   _memories() {
     const p = this.player;
-    for (const m of this.memories) if (!m.heard && Math.hypot(m.x - p.x, m.y - p.y) < 2.0) { m.heard = true; this.emit('memory', { id: m.id, text: m.text, x: m.x, y: m.y }); }
+    for (const m of this.memories) if (!m.heard && Math.hypot(m.x - p.x, m.y - p.y) < 2.0) { m.heard = true; m.at = this.time; this.emit('memory', { id: m.id, text: m.text, x: m.x, y: m.y }); }
   }
   _hintsUpdate() {
     const p = this.player;
@@ -367,7 +368,7 @@ export class World {
       out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl, c: l.c, soft: 10 });
     }
     // the doll's own warmth
-    if (!p.dead) out.push({ x: p.x, y: p.y + 0.3, r: 4.6, i: 0.9 * p.scale, c: [1.0, 0.5, 0.4], soft: 12 });
+    if (!p.dead && !this.hideDoll && !(this.snuff > 0.98)) out.push({ x: p.x, y: p.y + 0.3, r: 4.6, i: 0.9 * p.scale * (1 - (this.snuff || 0)), c: [1.0, 0.5, 0.4], soft: 12 });
     // the thread: a light every ~0.9 m along the visible polyline
     const P = th.poly, n = th.polyN;
     let acc = 0, budget = 96, lx = P[0], ly = P[1];
@@ -379,7 +380,8 @@ export class World {
       if (acc < 0.95) continue;
       acc = 0;
       if (!vis(x, y)) continue;
-      const lit = st === 0 ? 0.34 : 0.6;
+      const lit = (st === 0 ? 0.34 : 0.6) * (1 - (this.snuff || 0));
+      if (lit < 0.01) continue;
       const d = this.T.d(x, y);
       let ox = x, oy = y;
       if (d < 0.18) { const [gx, gy] = this.T.grad(x, y); ox += gx * (0.18 - d); oy += gy * (0.18 - d); }
@@ -397,7 +399,6 @@ export class World {
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
-    if (this.candleOut === undefined && vis(this.finale.x, this.finale.y)) out.push({ x: this.finale.x, y: this.finale.y + 0.3, r: 3.5, i: 0.5, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
     for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
@@ -437,9 +438,12 @@ function buildGrey(T) {
       const wa = pins[i - 1] ? 0 : 0.5, wb = pins[i] ? 0 : 0.5, s = wa + wb || 1;
       x[i - 1] += dx * diff * wa / s; y[i - 1] += dy * diff * wa / s; x[i] -= dx * diff * wb / s; y[i] -= dy * diff * wb / s;
     }
-    for (let i = 0; i < n; i++) { if (pins[i]) continue; const d = T.d(x[i], y[i]); if (d < 0.05) { const [gx, gy] = T.grad(x[i], y[i]); x[i] += gx * (0.05 - d); y[i] += gy * (0.05 - d); } }
+    for (let i = 0; i < n; i++) { if (pins[i]) continue; const d = T.d(x[i], y[i]); if (d < 0.09) { const [gx, gy] = T.grad(x[i], y[i]); x[i] += gx * (0.09 - d); y[i] += gy * (0.09 - d); } }
   }
-  return { x, y, n };
+  // laid along the rock's face wherever a span between two points would still cut through it
+  const X = [x[0]], Y = [y[0]];
+  for (let i = 1; i < n; i++) { hug(T, x[i - 1], y[i - 1], x[i], y[i], (hx, hy) => { X.push(hx); Y.push(hy); }, 0.08, true, 16); X.push(x[i]); Y.push(y[i]); }
+  return { x: Float32Array.from(X), y: Float32Array.from(Y), n: X.length };
 }
 function nearestOn(g, px, py) {
   let best = 0, bd = 1e9;
@@ -455,9 +459,9 @@ function makeHints() {
     { x0: 14, x1: 40, y0: -84, y1: -68, keys: ['pluck'], text: 'pluck the thread · the moths fear its song', until: (w) => w.bells[0].lit > 0 },
     { x0: 4, x1: 30, y0: -122, y1: -104, keys: ['grip', 'jump'], text: 'grip in the air near an iron ring to swing · jump to let go', until: (w) => w.player.x > 40 },
     { x0: 98, x1: 118, y0: -124, y1: -110, when: (w) => w.gates[1].open < 1, text: 'the veil listens for every bell your thread has touched', keys: ['pluck'] },
-    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'the hands hate the thread\'s song · pluck, and keep moving', until: (w) => w.player.x > 62 },
+    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, pluck · if one has you, pluck to tear free', until: (w) => w.player.x > 62 },
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
-    { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb · the warp threads', until: (w) => w.player.y > -515 },
+    { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },
   ];
 }
