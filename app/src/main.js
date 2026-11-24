@@ -5,6 +5,7 @@ import { World } from './world.js';
 import { Drawer } from './draw.js';
 import { loadSprites } from './drawdeep.js';
 import { Audio } from './audio.js';
+import { Sound } from './sound.js';
 import { Input } from './input.js';
 import { Ending } from './ending.js';
 import { SWING } from './player.js';
@@ -80,6 +81,7 @@ let voicePlaying = 0;
 let subTimer = 0, cardTimer = 0, toastTimer = 0;
 let settings = { volume: 1, fullscreen: true };
 let E = null;              // the ending (ending.js)
+let SC = null;             // what the place sounds like (sound.js)
 
 async function boot() {
   const bar = document.querySelector('.ld-bar i');
@@ -114,7 +116,7 @@ async function boot() {
     W = new World(T);
     D = new Drawer(W);
     I = new Input();
-    A = new Audio();
+    A = new Audio(); SC = new Sound(A);
     A.setVolume(settings.volume ?? 1);
     makeEnding();
     await A.load((p) => { bar.style.width = (60 + p * 38).toFixed(0) + '%'; });
@@ -133,7 +135,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, cam, SWING, drawer: () => D, begin: () => startGame(false), from: (n) => startFrom(n), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => E, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
+  Object.assign(SD, { W, R, A, SC, cam, SWING, drawer: () => D, begin: () => startGame(false), from: (n) => startFrom(n), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => E, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
   requestAnimationFrame(tick);
 }
 
@@ -217,7 +219,7 @@ function startGame(cont, walkOut = false) {
   D = new Drawer(W);
   if (cont) applySave(loadSave()); else clearSave();
   log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
-  R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.seen).map((k) => k.hide)));
+  R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.open).map((k) => k.hide)));
   E.reset(); CODA = false;
   state = 'play';
   A.setMusic(null, 4);
@@ -287,7 +289,7 @@ function save() {
   const th = W.thread;
   const n = th.fixedN;
   const data = {
-    v: 2, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
+    v: 2, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0) + (s.open ? 4 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
     husks: W.husks.map((h) => [+h.x.toFixed(2), +h.y.toFixed(2), h.kind, h.flip, h.seed]),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
@@ -305,7 +307,7 @@ function applySave(s) {
   const th = W.thread;
   W.skeins.forEach((k, i) => (k.taken = !!s.skeins[i]));
   W.skeinCount = W.skeins.filter((k) => k.taken).length;
-  W.secrets.forEach((k, i) => { const v = (s.keeps || [])[i] || 0; k.taken = !!(v & 2); k.seen = !!(v & 1); });
+  W.secrets.forEach((k, i) => { const v = (s.keeps || [])[i] || 0; k.taken = !!(v & 2); k.seen = !!(v & 1); k.open = v > 0; });
   W.memories.forEach((m, i) => (m.heard = !!s.mem[i]));
   W.bells.forEach((b, i) => { if (s.bells[i]) b.lit = 1; });
   W.pegs.forEach((p, i) => (p.tied = !!s.pegs[i]));
@@ -355,17 +357,13 @@ function handleEvents() {
   const p = W.player;
   for (const e of W.events) {
     switch (e.k) {
-      case 'step': {
-        const snow = W.area().id === 'brink';
-        A.pick(snow ? ['snow1', 'snow2', 'snow3'] : ['step1', 'step2', 'step3', 'step4'], { vol: snow ? 0.32 : 0.42, vary: 0.15, x: p.x, y: p.y, verb: 0.35 });
-        break;
-      }
-      case 'jump': A.play('jump', { vol: 0.32, vary: 0.1, x: p.x, y: p.y, verb: 0.3 }); break;
-      case 'land': A.play('land', { vol: clamp(e.v / 14, 0.15, 0.7), vary: 0.1, x: p.x, y: p.y }); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
+      case 'step': SC.step(W); break;
+      case 'jump': SC.jump(W); break;
+      case 'land': SC.land(W, e.v); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
       case 'grip': A.play('grip', { vol: 0.35, vary: 0.1, x: p.x, y: p.y }); break;
       case 'release': case 'letgo': A.play('release', { vol: 0.3, vary: 0.1, x: p.x, y: p.y }); break;
       case 'taut': if (time - (W._tautT ?? -99) > 8) { W._tautT = time; A.play('tie', { vol: 0.2, rate: 0.8, x: p.x, y: p.y }); } if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
-      case 'snag': A.play('snag', { vol: 0.55, x: p.x, y: p.y + 2 }); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
+      case 'snag': A.play('snag', { vol: 0.5, vary: 0.12, x: p.x, y: p.y + 2 }); SC.snag(W); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
       case 'tie':
         log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
         A.play('tie', { vol: 0.7, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.75, x: e.x, y: e.y });
@@ -374,10 +372,10 @@ function handleEvents() {
         break;
       case 'mend': A.play('tie', { vol: 0.55, rate: 1.2, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { life: 0.7 }); break;
       case 'pluck':
-        A.pluck(e.tension, e.x, e.y);
+        SC.pluck(W, A.pluck(e.tension, e.x, e.y));
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
-      case 'bell': A.bellNote(e.i, e.x, e.y); D.spawn('pale', e.x + 0.3, e.y + 1.1, 1, { speed: 0, life: 1.6 }); save(); break;
+      case 'bell': A.bellNote(e.i, e.x, e.y); SC.bell(W, e); D.spawn('pale', e.x + 0.3, e.y + 1.1, 1, { speed: 0, life: 1.6 }); save(); break;
       case 'gate': A.play('gate', { vol: 0.9, x: e.x, y: e.y }); if (state === 'play') cam.shake = 0.35; toast('the veil remembers its song and parts', 3); break;
       case 'chew': A.play('chew', { vol: 0.28, vary: 0.25, x: e.x, y: e.y, verb: 0.2 }); break;
       case 'mothOn': A.play('chew', { vol: 0.4, vary: 0.2, x: e.x, y: e.y }); break;
@@ -402,10 +400,11 @@ function handleEvents() {
         startShow({ kind: 'skein', x: e.x, y: e.y + 0.22, name: 'A skein of her red yarn', desc: 'Wound tight, the colour of the thread. It will reach further now.',
           count: e.n >= W.skeins.length ? `the last skein · all ${W.skeins.length} found` : `skein ${e.n} of ${W.skeins.length}` });
         break;
-      case 'secret': startReveal(e); card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
+      case 'secretOpen': startReveal(e); break;
+      case 'secret': card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
       case 'keepsake':
         A.play('skein', { vol: 0.6, rate: 1.25, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 1.6, x: e.x, y: e.y });
-        D.spawn('pale', e.x, e.y + 0.2, 1, { speed: 0, life: 1.6 }); D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
+        D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
         startShow({ kind: e.kind, x: e.x, y: e.y + 0.15, name: e.what.charAt(0).toUpperCase() + e.what.slice(1), desc: e.text,
           count: e.n >= e.of ? `keepsake ${e.n} of ${e.of} · the last of them` : `keepsake ${e.n} of ${e.of}` });
         save();
@@ -414,23 +413,24 @@ function handleEvents() {
       case 'area': log(`entered ${e.name}`); if (state === 'play') card(e.name); else W.areaSeen.delete(e.id); A.setArea(e.id); break;
       case 'areaQuiet': A.setArea(e.id); break;
       case 'drip': A.play('drip', { vol: 0.5, vary: 0.2, x: e.x, y: e.y, verb: 1 }); break;
-      case 'splash': A.play('splash', { vol: 0.35, vary: 0.2, x: e.x, y: e.y }); D.spawn('splash', e.x, e.y, 6, { speed: 2.5, vy: 2, life: 0.8 }); break;
-      case 'climb': A.pick(['step1', 'step3'], { vol: 0.22, rate: 1.3, vary: 0.2, x: p.x, y: p.y, verb: 0.3 }); break;
+      case 'splash': SC.splash(W, e); D.spawn('splash', e.x, e.y, 6, { speed: 2.5, vy: 2, life: 0.8 }); break;
+      case 'climb': SC.climb(W); break;
       // the hands: crumbs are the warning, then the earth bursts (no thread or rope in any of it)
-      case 'stir': A.pick(['crumbs1', 'crumbs2'], { vol: 0.9, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
+      case 'stir': A.any('crumbs', { vol: 0.9, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
       case 'reach':
-        A.pick(['dirt1', 'dirt2', 'dirt3'], { vol: 0.95, vary: 0.15, x: e.x, y: e.y, verb: 0.5 });
+        A.any('dirt', { vol: 0.95, x: e.x, y: e.y, verb: 0.5 }); SC.impact(W, e, false);
         D.spawn('puff', e.x + e.nx * 0.3, e.y + e.ny * 0.3, 16, { speed: 2.4, vx: e.nx * 2.2, vy: e.ny * 2.2, life: 0.9, r: 1.0 });
         if (Math.hypot(e.x - p.x, e.y - p.y) < 8) cam.shake = Math.max(cam.shake, 0.1);
         break;
       case 'seize': A.play('palm1', { vol: 0.9, rate: 0.9, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.25); if (!W._seizeSeen) { W._seizeSeen = true; toast('it has you · pluck to tear free', 2.2); } break;
       case 'calledSeen': A.play('bone1', { vol: 0.14, rate: 0.5, x: e.x, y: e.y, verb: 1.2 }); break;
-      case 'crawl': A.pick(['palm1', 'palm2', 'palm3'], { vol: 1.2, rate: 0.6, vary: 0.2, x: e.x, y: e.y, verb: 1.3 }); break;
-      case 'recoil': A.pick(['crumbs1', 'crumbs2'], { vol: 0.6, rate: 0.8, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
+      case 'crawl': A.any('palm', { vol: 1.2, rate: 0.6, vary: 0.2, x: e.x, y: e.y, verb: 1.3 }); break;
+      case 'recoil': A.any('crumbs', { vol: 0.6, rate: 0.8, vary: 0.2, x: e.x, y: e.y, verb: 0.5 }); break;
       case 'stampWarn': A.play('wood', { vol: 0.5, rate: e.kind === 'needle' ? 1.5 : 0.8, vary: 0.1, x: e.x, y: e.y, verb: 0.5 }); break;
       case 'stamp':
         A.play('land', { vol: 0.9, rate: e.kind === 'needle' ? 1.6 : 0.4, x: e.x, y: e.y, verb: 1.2 });
-        if (e.kind !== 'needle') { A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
+        SC.impact(W, e, e.kind !== 'needle');
+        if (e.kind !== 'needle') { A.any('timber', { vol: 0.4, x: e.x, y: e.y }); A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
         break;
       case 'rise':
         log('the dark wakes');
@@ -608,33 +608,42 @@ function walkStep(dt) {
 }
 
 // ── a hidden room opens ─────────────────────────────────────────────────
-// The rock over a found room used to vanish in one frame. Now the drawn field morphs from "still hidden" to
-// "found" over ~1.5 s, starting where she stands and crumbling outward with a little noise, with a low rumble.
-let reveal = null;
+// The rock over a hidden room crumbles as she comes to the mouth of its crack, before she walks in: the drawn field morphs
+// from "still rock" to "found", starting where she stands and running ahead of her (faster than she can walk). What is in
+// the room (its thing, its props, its light) appears only once the rock over that spot is gone (`rev`, world.hiddenAt).
+const REVEAL = 0.9;                    // seconds for the whole room
+let reveals = [];
 function startReveal(e) {
-  const P = T.revealPair(e.hide, W.secrets.filter((k) => !k.seen).map((k) => k.hide));
+  const P = T.revealPair(e.hide, W.secrets.filter((k) => !k.open).map((k) => k.hide));
   const ppm = L.WORLD.ppm, top = L.WORLD.y0 + L.WORLD.h, n = P.w * P.h, order = new Float32Array(n);
   let far = 0;
   for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) {
     const x = L.WORLD.x0 + (P.x + i + 0.5) / ppm, y = top - (P.y + j + 0.5) / ppm;
     const d = Math.hypot(x - e.x, y - e.y); far = Math.max(far, d);
     const h = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
-    order[j * P.w + i] = d + (h - Math.floor(h)) * 1.6 + Math.sin(i * 0.7) * Math.cos(j * 0.9) * 0.6;
+    order[j * P.w + i] = d + (h - Math.floor(h)) * 1.2 + Math.sin(i * 0.7) * Math.cos(j * 0.9) * 0.5;
   }
-  for (let k = 0; k < n; k++) order[k] /= far + 2.2;
-  reveal = { P, order, t: 0, out: new Float32Array(n) };
-  A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y, verb: 1 });
-  A.pick(['crumbs1', 'crumbs2'], { vol: 0.5, rate: 0.6, x: e.x, y: e.y, verb: 1 });
+  far += 1.7;
+  for (let k = 0; k < n; k++) order[k] /= far;
+  const s = W.secrets[e.i];
+  s.rev = { x: e.x, y: e.y, r: 0 };
+  reveals.push({ s, far, P, order, t: 0, out: new Float32Array(n) });
+  log(`hidden room opens · ${s.name}`);
+  SC.reveal(e.x, e.y);
   D.spawn('puff', e.x, e.y, 14, { speed: 1.6, life: 1.2, r: 1.2 });
 }
 function revealStep(dt) {
-  if (!reveal) return;
-  const r = reveal, P = r.P;
-  r.t += dt;
-  const k = smooth(0, 1.5, r.t) * 1.35;
-  for (let i = 0; i < r.out.length; i++) { const u = clamp((k - r.order[i]) / 0.35, 0, 1); r.out[i] = P.a[i] + (P.b[i] - P.a[i]) * u * u * (3 - 2 * u); }
-  R.patchSDF({ x: P.x, y: P.y, w: P.w, h: P.h, data: T.half(r.t >= 1.5 ? P.b : r.out) });
-  if (r.t >= 1.5) reveal = null;
+  reveals = reveals.filter((r) => r.s === W.secrets[r.s.i]);      // (a new world was started meanwhile)
+  for (const r of reveals) {
+    const P = r.P;
+    r.t += dt;
+    const k = Math.min(1, r.t / REVEAL) * 1.16, done = r.t >= REVEAL;
+    for (let i = 0; i < r.out.length; i++) { const u = clamp((k - r.order[i]) / 0.16, 0, 1); r.out[i] = P.a[i] + (P.b[i] - P.a[i]) * u * u * (3 - 2 * u); }
+    r.s.rev = done ? null : { ...r.s.rev, r: Math.max(0, (k - 0.16) * r.far - 1.7) };
+    R.patchSDF({ x: P.x, y: P.y, w: P.w, h: P.h, data: T.half(done ? P.b : r.out) });
+    r.done = done;
+  }
+  reveals = reveals.filter((r) => !r.done);
 }
 
 // ── a found thing, held up ───────────────────────────────────────────────
@@ -656,8 +665,8 @@ function startShow(o) {
   el.classList.remove('s1', 's2', 's3', 's4', 'sout');
   show(el, true);
   show($('card'), false); cardTimer = 0; show($('toast'), false); toastTimer = 0;
-  A.play('bowl', { vol: 0.35, rate: 0.5, verb: 1.4 });
-  A.play('harp', { rate: 0.5, vol: 0.4, verb: 1.3, delay: 0.5 });
+  A.play('bowl', { vol: 0.35, rate: 0.5, verb: 1.4, bus: 'ui' });
+  A.play('harp', { rate: 0.5, vol: 0.4, verb: 1.3, delay: 0.5, bus: 'ui' });
 }
 function showUpdate(dt) {
   const S = SHOW; if (!S) return;
@@ -675,7 +684,7 @@ function showUpdate(dt) {
     if (S.t > 2.6) el.classList.add('s4');
     const any = Object.values(I.pressed).some(Boolean) || S.click;
     S.click = false;
-    if (S.t > 1.6 && any) { S.phase = 'out'; el.classList.add('sout'); A.play('release', { vol: 0.3, rate: 0.7 }); log('showcase dismissed'); }
+    if (S.t > 1.6 && any) { S.phase = 'out'; el.classList.add('sout'); A.play('release', { vol: 0.3, rate: 0.7, bus: 'ui' }); log('showcase dismissed'); }
   } else {
     S.o += dt;
     // the words go first; then it shrinks and drops into her chest (the red heart), and the dark lifts
@@ -864,7 +873,8 @@ function tick(now) {
   // audio continuous layers
   if (A) {
     let md = 99; for (const m of W.moths) md = Math.min(md, Math.hypot(m.x - cam.x, m.y - cam.y));
-    A.update(dt, { cam: [cam.x, cam.y], moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : state === 'ending' || state === 'coda' || state === 'credits' ? 0 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 });
+    const snd = { W, state, paused, show: !!SHOW, cam: [cam.x, cam.y], moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : state === 'ending' || state === 'coda' || state === 'credits' ? 0 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 };
+    SC.update(dt, snd); A.update(dt, snd);
   }
 
   // render

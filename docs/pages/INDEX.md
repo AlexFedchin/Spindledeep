@@ -28,6 +28,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 20. Held up to the light: keepsakes and skeins shown full screen, game paused (`keepsakes/`, keepsake words sealed) | https://claude.ai/artifact/JcxvsDdLF2tCXTsmfmFfvP |
 | 21. Kept out of the rock: thread vs rock, harder hands, earth sounds, no rope creak, no brass (`rockthread/`) | https://claude.ai/artifact/R161kCaf6HSZvYkHuLaabt |
 | 22. What is down there: the Loom, both endings and the film remade (`ending/`, plot sealed) | https://claude.ai/artifact/J1avXLArMvcKdXb2hRBTGz |
+| 23. Listen: two keepsakes drawn, rooms that open in time, sound that follows the cave (`listen/`) | https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7 |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -107,3 +108,12 @@ pegs; thread >6 cm in rock 31.4 % -> 0-0.2 % of frames), `gal.mjs` (12 ring gaps
 drops from the Loom ledge to about x 76, so anything further east on the floor can be flown past unheard. `--from=N`
 (`to-the-loom.cmd`) adds a title-menu line that starts at pole N with the thread laid. Runs keep their save after an ending.
 Test pitfall: `__SD.begin()` during end cards leaves the cards' timers running over the new run.
+
+## Items, rooms, sound (2026-11-24)
+Keepsakes `pattern` and `shoe` had no `KEEP` drawing and an empty fallback hid it; the fallback is gone, so a missing kind now
+throws. Hidden rooms: `open` (rock crumbling, `mouthZone` by walking distance, `at` in level.js, default 3 m) is separate from
+`seen` (title card); `world.hiddenAt` follows the crumbling front (`s.rev`). Setting `s.open` by hand in a test skips the rock
+patch: teleport to the mouth instead. Scratchpad `run8.json` runs into all eight with real keys (0 frames drawn inside rock);
+`zones.mjs` checks no pole or grey thread lies in a zone. Sound tests: record the game's output with a MediaRecorder on
+`__SD.A.out`; `rt.json` (one footstep per place, beds disconnected), `soak.json` (3 simulated minutes per area). Moths that sit
+on the doll come along when it is teleported and spoil recordings.

@@ -348,6 +348,180 @@ def _():
     write('amb_hall', y, 'lowpass=f=420,highpass=f=40,aecho=0.7:0.6:300|700:0.35|0.25', lufs=-30, q=4)
 
 
+# ── the detail pass (2026-11-24): what the doll walks on, what the place does on its own, what answers her ──
+def best_hits(sid, n, dur, thr=-28, gap=0.18, lo=0.0, hi=1e9):
+    """n distinct hits from a recording: the onsets closest in loudness to the middle of the pack (the loudest and the
+    faintest are usually scuffs or knocks), spread over the take"""
+    x = read(fs(sid), 1)
+    o = [s for s in onsets(x, thr, gap) if lo <= s / SR <= hi and s + int(dur * SR) < len(x)]
+    pk = np.array([np.abs(x[s: s + int(dur * SR)]).max() for s in o])
+    med = np.median(pk)
+    order = sorted(range(len(o)), key=lambda i: abs(np.log(pk[i] / med)))[: max(n, int(len(o) * 0.7))]
+    order = sorted(order)
+    n = min(n, len(order))
+    take = [order[int(round(i * (len(order) - 1) / max(1, n - 1)))] for i in range(n)]
+    return [fade(x[o[i]: o[i] + int(dur * SR)].copy(), 0.002, dur * 0.45) for i in take]
+
+
+def filtered(x, filt):
+    """x through an ffmpeg filter chain, back as an array"""
+    with tempfile.TemporaryDirectory() as td:
+        w = os.path.join(td, 'a.f32')
+        x.astype(np.float32).tofile(w)
+        raw = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'f32le', '-ar', str(SR), '-ac', str(x.shape[1]), '-i', w, '-af', filt, '-f', 'f32le', '-'], capture_output=True).stdout
+        return np.frombuffer(raw, np.float32).reshape(-1, x.shape[1]).copy()
+
+
+def group(name, hits, db=-6, filt=None, rate=1.0):
+    """a set of variants, levelled after filtering by their loudest 60 ms (so none of a set jumps out), peaks under -2 dB"""
+    k = int(0.06 * SR)
+    for i, h in enumerate(hits):
+        x = _resample(h, rate) if rate != 1.0 else h
+        if filt:
+            x = filtered(x, filt)
+        e = np.sqrt(np.convolve((x[:, 0] ** 2), np.ones(k) / k, 'valid').max()) if len(x) > k else np.sqrt((x ** 2).mean())
+        g = 10 ** ((db - 12) / 20) / (e + 1e-9)
+        x = x * min(g, 10 ** (-2 / 20) / (np.abs(x).max() + 1e-9))
+        write(f'{name}{i + 1}', x, None, mono=True)
+    print('  ', name, len(hits))
+
+
+def band(n, seed, lo, hi):
+    """noise between lo and hi Hz, n samples"""
+    z = np.random.default_rng(seed).standard_normal(n)
+    f = np.fft.rfft(z)
+    fr = np.fft.rfftfreq(n, 1 / SR)
+    f *= 1 / (1 + (lo / np.maximum(fr, 1e-3)) ** 4) / (1 + (fr / hi) ** 4)
+    z = np.fft.irfft(f, n)
+    return (z / (np.abs(z).max() + 1e-9)).astype(np.float32)
+
+
+@recipe('detail_steps')
+def _():
+    group('st_wood', best_hits(369641, 6, 0.36, -26), -6, 'highpass=f=70,lowpass=f=6500')
+    group('st_board', best_hits(459970, 3, 0.4, -24), -7, 'highpass=f=60,lowpass=f=3500')         # hollow, under the boards
+    group('st_earth', best_hits(389454, 5, 0.34, -24), -6, 'highpass=f=60,lowpass=f=4200')
+    group('st_leaf', best_hits(683958, 4, 0.4, -22, 0.3), -9, 'highpass=f=300,lowpass=f=9000')
+    group('st_wet', best_hits(338106, 5, 0.34, -26), -7, 'highpass=f=120')
+    group('st_soft', best_hits(234855, 5, 0.34, -24), -7, 'highpass=f=50,lowpass=f=1800')         # felt on wool
+    group('st_grit', best_hits(257468, 4, 0.16, -24, 0.1), -10, 'highpass=f=700')
+    group('cloth', best_hits(435289, 2, 0.4, -24, 0.4) + best_hits(435291, 3, 0.4, -24, 0.4), -9, 'highpass=f=220')
+    # a heavier landing for each kind of ground: the footfall an octave down with a thump under it
+    t = np.arange(int(0.5 * SR)) / SR
+    for nm, sid, g in (('earth', 389454, 0.7), ('wood', 459970, 0.5), ('wet', 338106, 0.5), ('soft', 234855, 0.7)):
+        h = best_hits(sid, 1, 0.4, -24)[0]
+        z = np.zeros((int(0.6 * SR), 1), np.float32)
+        a = norm(_resample(h, 0.62), -2)[: len(z)]
+        z[: len(a)] += a
+        z[: len(t), 0] += (g * np.sin(2 * np.pi * (78 * t - 45 * t * t)) * np.exp(-t * 16)).astype(np.float32)
+        write(f'ld_{nm}', norm(z, -3), 'highpass=f=35,lowpass=f=5000', mono=True)
+
+
+@recipe('detail_rock')
+def _():
+    x = read(fs(381547), 1)
+    o = onsets(x, -26, 1.2)
+    group('stones', [fade(x[s: s + int(1.7 * SR)].copy(), 0.004, 0.8) for s in o[:4]], -6, 'highpass=f=140')
+    y = read(fs(668606), 1)
+    oy = [s for s in onsets(y, -40, 0.35) if s / SR > 9.5]
+    group('tick', [fade(y[s: s + int(0.35 * SR)].copy(), 0.001, 0.2) for s in oy[:4]], -6, 'highpass=f=200')   # one small stone
+    d = read(fs(675728), 1)
+    group('trickle', [fade(d[int(a * SR): int((a + 1.9) * SR)].copy(), 0.1, 1.0) for a in (9.0, 14.0, 18.2)], -8, 'highpass=f=160')
+    g = read(fs(844329), 1)
+    write('grind', norm(fade(g[int(5.2 * SR): int(9.6 * SR)].copy(), 0.15, 1.6), -4), 'highpass=f=40,lowpass=f=3500', mono=True)
+    for i, (sid, a, b, r) in enumerate(((737428, 0, 7.5, 0.8), (574385, 1, 13.5, 0.8), (879260, 0, 7, 0.75))):
+        write(f'rumble{i + 1}', norm(fade(_resample(read(fs(sid), 1)[int(a * SR): int(b * SR)], r), 0.5, 3.0), -5), 'highpass=f=24,lowpass=f=500', mono=True)
+    ice = read(fs(737896), 1)       # a frozen lake under strain, slowed: the weight of the place settling
+    for i, (a, b, r) in enumerate(((9.0, 11.5, 0.55), (23.0, 27.0, 0.5), (39.5, 43.0, 0.5), (52.2, 55.5, 0.55))):
+        write(f'groan{i + 1}', norm(fade(_resample(ice[int(a * SR): int(b * SR)], r), 0.06, 2.0), -5), 'highpass=f=30,lowpass=f=1700', mono=True)
+
+
+@recipe('detail_life')
+def _():
+    c = read(fs(495396), 1)
+    oc = onsets(c, -18, 0.8)
+    group('cricket', [fade(c[s: s + int(0.8 * SR)].copy(), 0.01, 0.25) for s in oc[3:15:4]], -10, 'highpass=f=1800')
+    group('beetle', best_hits(831713, 4, 0.25, -24), -10, 'highpass=f=500')
+    group('twig', best_hits(552006, 5, 0.3, -20, 0.5), -7, 'highpass=f=200')
+    lv = read(fs(179338), 1)
+    group('leaf', [fade(lv[int(a * SR): int((a + 0.75) * SR)].copy(), 0.15, 0.35) for a in (0.4, 2.6, 4.2, 6.2)], -10, 'highpass=f=500,afftdn=nr=14:nf=-34')
+    # roots and beams taking weight: dry cracks slowed until they are timber (a leaning-tree recording was tried: it
+    # ticks like a tightening rope, which the user does not want to hear)
+    tw = best_hits(552006, 4, 0.5, -20, 0.5)
+    tm = []
+    for i, h in enumerate(tw):
+        z = np.zeros((int(1.6 * SR), 1), np.float32)
+        for at, r, g in ((0.0, 0.3, 1.0), (0.16 + 0.09 * i, 0.24, 0.5), (0.5 - 0.07 * i, 0.36, 0.25)):
+            q = norm(_resample(h, r), 0) * g
+            k = int(at * SR); m = min(len(q), len(z) - k)
+            z[k:k + m] += q[:m]
+        tm.append(fade(z, 0.002, 0.6))
+    group('timber', tm, -7, 'highpass=f=50,lowpass=f=1300')
+    ch = read(fs(235805), 1)
+    group('chair', [fade(ch[int(a * SR): int((a + 1.5) * SR)].copy(), 0.03, 0.5) for a in (3.2, 7.6, 14.2, 20.8)], -8, 'highpass=f=90,lowpass=f=2400', 0.72)
+    fl, fl2 = read(fs(406620), 1), read(fs(802578), 1)
+    group('floor', [fade(h.copy(), 0.01, 0.2) for h in (fl[int(0.9 * SR): int(1.5 * SR)], fl[int(2.5 * SR): int(3.3 * SR)], fl[int(4.2 * SR): int(4.9 * SR)], fl2)], -8, 'highpass=f=80,lowpass=f=2600,afftdn=nr=10:nf=-36', 0.8)
+    sc = read(fs(354094), 1)
+    so = [int(a * SR) for a in (2.0, 5.0, 8.0, 11.0)]
+    group('scratch', [fade(sc[a: a + int(1.0 * SR)].copy(), 0.08, 0.4) for a in so], -9, 'highpass=f=180,lowpass=f=3800', 0.8)
+    lm = read(fs(582994), 1)
+    group('loomwork', [fade(lm[int(a * SR): int((a + 2.8) * SR)].copy(), 0.4, 1.0) for a in (3.0, 9.0, 14.0)], -6, 'highpass=f=80,lowpass=f=1500', 0.6)
+
+
+@recipe('detail_iron')
+def _():
+    r = read(fs(95275), 1)
+    ro = onsets(r, -20, 0.6)
+    group('ring', [fade(r[s: s + int(1.1 * SR)].copy(), 0.001, 0.6) for s in ro[:2]], -9, 'lowpass=f=5200', 0.62)
+    k = read(fs(401622), 1)
+    ko = onsets(k, -24, 0.5)
+    group('chain', [fade(k[s: s + int(0.9 * SR)].copy(), 0.004, 0.45) for s in ko[:4]], -9, 'highpass=f=250,lowpass=f=6000', 0.8)
+    q = read(fs(248021), 1)
+    group('hinge', [fade(q[int(a * SR): int(b * SR)].copy(), 0.03, 0.2) for a, b in ((1.8, 2.3), (3.7, 4.1), (4.15, 4.6))], -10, 'highpass=f=200,lowpass=f=2800', 0.7)
+
+
+@recipe('detail_water')
+def _():
+    p = read(fs(166325), 1)
+    s = onsets(p, -30)[0]
+    h = fade(p[s: s + int(0.4 * SR)].copy(), 0.002, 0.15)
+    for i, r in enumerate((0.55, 0.75, 1.0)):
+        write(f'plop{i + 1}', norm(_resample(h, r), -6), 'highpass=f=90', mono=True)
+    b = read(fs(577880), 1)
+    group('bubble', [fade(b[int(a * SR): int((a + 1.3) * SR)].copy(), 0.1, 0.5) for a in (0.8, 3.4, 6.0, 8.4)], -8, 'highpass=f=50,lowpass=f=1400', 0.7)
+    write('lap', loopify(seg(fs(574869), 2, 40), 2.0), 'asetrate=44100*0.8,aresample=44100,highpass=f=80,lowpass=f=3000,acompressor=threshold=0.06:ratio=4:attack=3:release=120', lufs=-24, q=3)
+
+
+@recipe('detail_beds')
+def _():
+    write('amb_pit', loopify(seg(fs(576970), 2, 70), 4.0), 'lowpass=f=1800', lufs=-24, q=3)
+    write('amb_deep', loopify(_resample(seg(fs(454356), 4, 44), 0.7), 4.0), 'highpass=f=24,lowpass=f=220', lufs=-26, q=3)
+    n = int(10 * SR)
+    # a flame: a low flutter and dry pops
+    rng = np.random.default_rng(8)
+    t = np.arange(n) / SR
+    y = band(n, 1, 60, 420) * (0.35 + 0.65 * np.abs(band(n, 2, 0.5, 9))) * 0.6 + band(n, 3, 1500, 6000) * 0.03
+    m = int(0.012 * SR)
+    for at in rng.uniform(0.1, 9.8, 26):
+        i = int(at * SR)
+        y[i:i + m] += (band(m, int(at * 999), 900, 5000) * np.exp(-np.arange(m) / (0.0025 * SR)) * rng.uniform(0.15, 0.6)).astype(np.float32)
+    write('flame', loopify(np.stack([y, y], 1).astype(np.float32), 1.0), 'highpass=f=50', lufs=-24, q=3, mono=True)
+    # the veil: a breath that never finishes
+    v = np.stack([band(n, 5 + c, 500, 1500) * (0.45 + 0.4 * np.sin(2 * np.pi * t / 5 + c) + 0.15 * np.abs(band(n, 9, 0.5, 6))) for c in range(2)], 1)
+    write('veil', loopify(v.astype(np.float32), 1.5), 'highpass=f=250', lufs=-27, q=3)
+    # moving air, for falls and swings (the game filters it by her speed)
+    a = np.stack([band(n, 20 + c, 80, 2500) for c in range(2)], 1)
+    write('air', loopify(a, 1.0), None, lufs=-22, q=3)
+    # a lit bell, still ringing: the middle of a singing bowl, held
+    bw = read(fs(841989), 2)
+    z = bw[int(0.5 * SR): int(2.1 * SR)]
+    f0 = z * np.hanning(len(z))[:, None]
+    hold = np.zeros((int(8 * SR) + len(z), 2), np.float32)
+    for k in range(0, int(8 * SR), len(z) // 4):
+        hold[k:k + len(z)] += f0
+    write('bellhum', loopify(hold[len(z): -len(z)].astype(np.float32), 1.0), 'lowpass=f=3000', lufs=-26, q=3)
+
+
 def credits():
     m = meta()
     lines = ['# Sound & music credits', '', '## Music', '',

@@ -87,6 +87,18 @@ recording is kept in `app/assets/voice_young/` (+ `.cache/raw_young`); switch wi
 main-cave air or the real cave gets painted over. Narrow cracks need a `QUIET` rect or erosion can seal them. Rooms must be
 walkable both ways (no side-view switchbacks: a hairpin always leaves a ledge taller than the 1.87 m jump).
 
+A room's rock crumbles at the mouth of its crack (`open`, `mouthZone` in world.js, `at` per room), before the doll can be inside
+it; keep zones off poles and the main way. Every `SECRETS.kind` needs a `KEEP` drawing in props.js.
+
+## Sound (app/src/sound.js)
+
+`Sound` feels out the cave at 10 Hz (size, walls, roof, drop) and drives audio.js: four reverbs (`setSpace`), wall echoes, muffling
+(`setFilters`, occlusion per sound), ground under her feet (`ground`, `GROUND`), pebbles over edges, answers to a pluck, placed
+loops (`_sources` → `A.source`), and what happens on its own per area (`LIFE`). Variants: `GROUPS` in audio.js, `A.any(group)`.
+New files come from the `detail_*` recipes; after adding sources run the prune (ids not in build_audio.py out of the cache's
+meta.json) before `credits()`. Never use rope/creak-like recordings for anything here, and nothing that drones near the player.
+The finale (Loom floor, climb, top) keeps its own silence: `_life` skips it.
+
 ## Cinematics (scripts/cine)
 
 Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) and `outro.mp4`

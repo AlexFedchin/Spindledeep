@@ -28,7 +28,8 @@ export class World {
     this.gates = L.GATES.map((g) => ({ ...g, open: 0 }));
     this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
     // hidden rooms and their keepsakes
-    this.secrets = L.SECRETS.map((s, i) => ({ ...snap(s, 1.2), i, seen: false, taken: false, bob: rand(0, 6) }));
+    // `open`: the rock over it has begun to crumble (she is at the mouth of its crack); `seen`: she is inside it
+    this.secrets = L.SECRETS.map((s, i) => ({ ...snap(s, 1.2), i, open: false, seen: false, taken: false, bob: rand(0, 6), zone: mouthZone(T, s) }));
     // brambles grow only on real floor: points on walls or slopes (where a ground search lands on the side of a
     // shaft or pit) are dropped, and a run is split wherever it crosses a gap, so no invisible thorn is left behind
     this.thorns = [];
@@ -332,8 +333,10 @@ export class World {
     }
     for (const s of this.secrets) {
       const [cx, cy, rx, ry] = s.r;
-      if (!s.seen && ((p.x - cx) / rx) ** 2 + ((p.y - cy) / ry) ** 2 < 1.0) { s.seen = true; this.emit('secret', { name: s.name, hide: s.hide, x: p.x, y: p.y }); }
-      if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9) {
+      // the rock opens before she walks into it, so she is never drawn inside rock and nothing in the room shows early
+      if (!s.open && s.zone.has(p.x, p.y)) { s.open = true; this.emit('secretOpen', { i: s.i, hide: s.hide, x: p.x, y: p.y }); }
+      if (!s.seen && ((p.x - cx) / rx) ** 2 + ((p.y - cy) / ry) ** 2 < 1.0) { s.seen = true; this.emit('secret', { name: s.name, i: s.i, x: p.x, y: p.y }); }
+      if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9 && !this.hiddenAt(s.x, s.y + 0.2)) {
         s.taken = true;
         this.emit('keepsake', { x: s.x, y: s.y, kind: s.kind, what: s.what, text: s.text, n: this.secrets.filter((q) => q.taken).length, of: this.secrets.length });
       }
@@ -354,8 +357,12 @@ export class World {
     }
   }
 
-  // inside a hidden room nobody has found yet (drawn as rock, so nothing in it is drawn either)
-  hiddenAt(x, y) { return this.secrets.some((s) => !s.seen && x > s.hide[0] && x < s.hide[2] && y > s.hide[1] - 0.5 && y < s.hide[3]); }
+  // still drawn as rock: inside a hidden room nobody has found yet, or one whose rock has not crumbled this far (main.js
+  // moves `rev` outward from where she stood). Nothing there is drawn, lit or picked up.
+  hiddenAt(x, y) {
+    return this.secrets.some((s) => (!s.open || s.rev) && x > s.hide[0] && x < s.hide[2] && y > s.hide[1] - 0.5 && y < s.hide[3]
+      && !(s.rev && Math.hypot(x - s.rev.x, y - s.rev.y) < s.rev.r));
+  }
 
   // ── lights for the renderer ────────────────────────────────────────────
   lights(cam, viewW, viewH) {
@@ -401,7 +408,7 @@ export class World {
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
-    for (const s of this.secrets) if (!s.taken && s.seen && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.35, r: 2.0, i: 0.3 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
+    for (const s of this.secrets) if (!s.taken && s.open && vis(s.x, s.y) && !this.hiddenAt(s.x, s.y + 0.2)) out.push({ x: s.x, y: s.y + 0.35, r: 2.2, i: 0.42 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     if (this.extraLights) out.push(...this.extraLights);
     // a found item held up in the showcase: a warm light on it (and on her face below it)
@@ -449,6 +456,32 @@ function nearestOn(g, px, py) {
   let best = 0, bd = 1e9;
   for (let i = 0; i < g.n; i++) { const d = Math.hypot(g.x[i] - px, g.y[i] - py); if (d < bd) { bd = d; best = i; } }
   return { x: g.x[best], y: g.y[best], gi: best };
+}
+
+// Where standing opens a hidden room: its own air, and the crack outside it within `at` metres of walking (measured through
+// the air, so being on the far side of a wall from it does not count).
+function mouthZone(T, s) {
+  const G = 0.25, at = s.at ?? 3.0, [hx0, hy0, hx1, hy1] = s.hide, x0 = hx0 - at - 1, y0 = hy0 - at - 1;
+  const w = Math.ceil((hx1 - hx0 + 2 * at + 2) / G), h = Math.ceil((hy1 - hy0 + 2 * at + 2) / G);
+  const dist = new Float32Array(w * h).fill(1e9);
+  const at2 = (i, j) => [x0 + (i + 0.5) * G, y0 + (j + 0.5) * G];
+  const inside = (x, y) => x > hx0 && x < hx1 && y > hy0 && y < hy1;
+  const ci = Math.floor((s.r[0] - x0) / G), cj = Math.floor((s.r[1] - y0) / G);
+  const q = [cj * w + ci]; dist[q[0]] = 0;
+  while (q.length) {                                  // Dijkstra with a lazy queue: the window is small
+    let b = 0; for (let k = 1; k < q.length; k++) if (dist[q[k]] < dist[q[b]]) b = k;
+    const c = q.splice(b, 1)[0], i = c % w, j = (c / w) | 0;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const ni = i + di, nj = j + dj;
+      if (ni < 0 || nj < 0 || ni >= w || nj >= h) continue;
+      const [x, y] = at2(ni, nj);
+      if (T.d(x, y) < 0.1) continue;
+      const nd = dist[c] + (inside(x, y) ? 0 : G * Math.hypot(di, dj)), n = nj * w + ni;
+      if (nd > at || nd >= dist[n] - 1e-4) continue;
+      dist[n] = nd; q.push(n);
+    }
+  }
+  return { has(x, y) { const i = Math.floor((x - x0) / G), j = Math.floor((y - y0) / G); return i >= 0 && j >= 0 && i < w && j < h && dist[j * w + i] < 1e8; } };
 }
 
 function makeHints() {

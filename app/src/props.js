@@ -157,10 +157,14 @@ export function drawHusks(D, ctx, ectx) {
 // the keepsakes in the hidden rooms: small things of hers, drawn at the doll's scale, bobbing a little
 export function drawKeepsakes(D, ctx, ectx) {
   for (const k of D.w.secrets || []) {
-    if (k.taken || !k.seen || !D.vis(k.x, k.y, 2)) continue;
-    const P = new Pen(D, ctx, ectx, { x: k.x, y: k.y + 0.08 + Math.sin(D.time * 1.4 + k.bob) * 0.03, flip: 1 });
-    P.glow(0, 0.14, 0.42, `rgba(255,228,180,${0.16 + 0.06 * Math.sin(D.time * 1.7 + k.bob)})`);
-    (KEEP[k.kind] || (() => {}))(P, D.time);
+    if (k.taken || !k.open || !D.vis(k.x, k.y, 2) || D.w.hiddenAt(k.x, k.y + 0.2)) { k.fade = 0; continue; }
+    k.fade = Math.min(1, (k.fade || 0) + D.dtLast * 2.5);
+    const P = new Pen(D, ctx, ectx, { x: k.x, y: k.y + 0.1 + Math.sin(D.time * 1.4 + k.bob) * 0.03, flip: 1, s: 1.35 });
+    ctx.globalAlpha = ectx.globalAlpha = k.fade;
+    // a wide faint halo: the light in world.js shows the thing itself (a strong one washed it out to a white dot)
+    P.glow(0, 0.14, 0.5, `rgba(255,228,180,${0.05 + 0.02 * Math.sin(D.time * 1.7 + k.bob)})`);
+    KEEP[k.kind](P, D.time);
+    ctx.globalAlpha = ectx.globalAlpha = 1;
   }
 }
 // a found item held up in the showcase (main.js startShow): drawn at scale it.s, centred on (it.x, it.y), lit warm
@@ -181,7 +185,7 @@ export function drawShowItem(D, ctx, ectx, it) {
   }
   // keepsakes are drawn standing on y = 0 and about 0.3 m tall: lift them so their middle sits on the anchor
   const Q = new Pen(D, ctx, ectx, { x: it.x, y: it.y - 0.15 * it.s, flip: 1, s: it.s });
-  (KEEP[it.kind] || (() => {}))(Q, D.time);
+  KEEP[it.kind](Q, D.time);
 }
 const KEEP = {
   // a wooden spool, a few turns of red still on it
@@ -229,7 +233,46 @@ const KEEP = {
     for (let y = 0.11; y < 0.27; y += 0.04) P.line([[-0.1, y], [0.1, y]], 0.42, 0.006);
     P.beam(-0.2, 0.3, 0.18, 0.4, 0.016, 0.8); P.beam(-0.16, 0.38, 0.22, 0.28, 0.016, 0.8);
   },
+  // a knitting pattern: a creased sheet, a doll drawn beside a grid, rows of notes, the last line underlined twice
+  pattern(P) {
+    P.poly([[-0.17, 0.0], [0.085, -0.008], [0.155, 0.07], [0.18, 0.33], [0.04, 0.336], [0.034, 0.329], [0.026, 0.337], [-0.14, 0.35], [-0.148, 0.27], [-0.143, 0.262], [-0.15, 0.255]], 0.84, INK, 0.012);
+    P.poly([[0.085, -0.008], [0.155, 0.07], [0.1, 0.066]], 0.55, 0.06, 0.008);                                                // a corner folded up
+    P.line([[-0.152, 0.176], [0.158, 0.172]], 0.66, 0.006); P.line([[0.008, 0.004], [0.022, 0.326]], 0.7, 0.005);            // where it was folded
+    for (let i = 0; i < 6; i++) { P.line([[0.036 + i * 0.022, 0.196], [0.04 + i * 0.022, 0.306]], 0.58, 0.004); P.line([[0.036, 0.196 + i * 0.022], [0.15, 0.197 + i * 0.022]], 0.58, 0.004); }
+    for (const [i, j] of [[0, 1], [1, 1], [2, 2], [3, 2], [2, 3], [3, 3], [1, 4], [4, 4]]) P.poly([[0.038 + i * 0.022, 0.198 + j * 0.022], [0.058 + i * 0.022, 0.198 + j * 0.022], [0.058 + i * 0.022, 0.218 + j * 0.022], [0.038 + i * 0.022, 0.218 + j * 0.022]], 0.3, null);
+    P.ell(-0.07, 0.287, 0.034, 0.03, 0, 0.78, 0.1, 0.006); P.ell(-0.07, 0.222, 0.038, 0.037, 0, 0.78, 0.1, 0.006);             // the doll
+    for (const x of [-0.082, -0.058]) P.ell(x, 0.294, 0.0045, 0.0045, 0, 0.05, null);
+    P.line([[-0.086, 0.273], [-0.054, 0.273]], 0.05, 0.004);                                                                    // its mouth, sewn
+    for (let i = 0; i < 4; i++) P.line([[-0.083 + i * 0.009, 0.268], [-0.079 + i * 0.009, 0.278]], 0.05, 0.004);
+    P.line([[-0.1, 0.235], [-0.12, 0.215]], 0.1, 0.006); P.line([[-0.04, 0.235], [-0.02, 0.215]], 0.1, 0.006);
+    for (let k = 0; k < 4; k++) { const y = 0.152 - k * 0.024; for (let x = -0.13, j = 0; x < 0.11 - (k % 3) * 0.03; j++) { const w = 0.018 + ((j * 7 + k * 3) % 4) * 0.008; P.line([[x, y], [x + w * 0.5, y + 0.004], [x + w, y - 0.001]], 0.3, 0.005); x += w + 0.011; } }
+    P.line([[-0.13, 0.052], [-0.09, 0.056], [-0.05, 0.051], [0.0, 0.056], [0.05, 0.052]], 0.1, 0.007);
+    P.line([[-0.135, 0.034], [0.055, 0.031]], 0.08, 0.006); P.line([[-0.13, 0.022], [0.05, 0.018]], 0.08, 0.006);
+  },
+  // a child's shoe: one strap, the button gone, the toe worn through
+  shoe(P) {
+    P.poly(curve([[-0.2, 0.012], [-0.06, 0.02], [0.08, 0.004], [0.2, 0.012], [0.228, 0.04], [0.12, 0.052], [-0.08, 0.052], [-0.21, 0.05]]), 0.2, INK, 0.01);          // sole
+    P.poly([[-0.205, 0.0], [-0.11, 0.0], [-0.1, 0.03], [-0.205, 0.034]], 0.16, INK, 0.01);                                                                              // heel
+    P.poly(curve([[-0.208, 0.05], [0.0, 0.052], [0.2, 0.048], [0.224, 0.085], [0.195, 0.125], [0.12, 0.142], [0.06, 0.146], [0.035, 0.118], [-0.04, 0.105], [-0.11, 0.125], [-0.15, 0.185], [-0.195, 0.21], [-0.222, 0.19], [-0.216, 0.11]]), 0.56, INK, 0.012);
+    P.poly(curve([[-0.195, 0.2], [-0.15, 0.178], [-0.105, 0.122], [-0.04, 0.108], [0.03, 0.12], [0.045, 0.14], [-0.02, 0.135], [-0.085, 0.142], [-0.13, 0.19]]), 0.08, 0.04, 0.006);      // the dark inside
+    P.line(curve([[-0.1, 0.1], [-0.085, 0.15], [-0.045, 0.178], [-0.01, 0.165], [0.005, 0.125]], false), 0.06, 0.034);
+    P.line(curve([[-0.1, 0.1], [-0.085, 0.15], [-0.045, 0.178], [-0.01, 0.165], [0.005, 0.125]], false), 0.46, 0.022);                                                   // strap
+    P.ell(-0.098, 0.1, 0.012, 0.012, 0, 0.06, null); P.line([[-0.098, 0.1], [-0.118, 0.078], [-0.108, 0.06]], 0.85, 0.005);                                               // a thread where the button was
+    P.ell(0.188, 0.088, 0.018, 0.022, 0.3, 0.06, 0.4, 0.006); P.line([[0.17, 0.115], [0.2, 0.06]], 0.4, 0.005);                                                             // toe worn through
+    P.line(curve([[0.06, 0.146], [0.085, 0.11], [0.07, 0.06]], false), 0.3, 0.006); P.line(curve([[-0.15, 0.185], [-0.16, 0.12], [-0.145, 0.06]], false), 0.3, 0.006);   // seams
+    P.line([[-0.2, 0.064], [0.2, 0.062]], 0.75, 0.005);
+  },
 };
+// a smooth curve through the points (Catmull-Rom)
+function curve(pts, closed = true, m = 6) {
+  const n = pts.length, out = [], q = (i) => (closed ? pts[(i + n) % n] : pts[Math.max(0, Math.min(n - 1, i))]);
+  for (let i = 0; i < (closed ? n : n - 1); i++) for (let k = 0; k < m; k++) {
+    const t = k / m, [a, b, c, d] = [q(i - 1), q(i), q(i + 1), q(i + 2)];
+    out.push([0, 1].map((j) => 0.5 * (2 * b[j] + (c[j] - a[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - d[j]) * t * t + (3 * b[j] - a[j] - 3 * c[j] + d[j]) * t * t * t)));
+  }
+  if (!closed) out.push(pts[n - 1]);
+  return out;
+}
 
 export function drawLore(D, ctx, ectx) {
   if (!D.lore || D.w.noLore) return;
