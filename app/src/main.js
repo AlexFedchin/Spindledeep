@@ -607,23 +607,21 @@ function rollCredits(cut, instant) {
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
   setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); }, 76000);
 }
-// after the credits of the second ending: nothing to see. It is going through the names.
+// after the credits of the second ending: the bottom of the well, and what is going through the names there (scripts/cine N1).
+// [frame the name is said on, which name]
+const NAMES_AT = [[90, 5], [148, 6], [206, 7], [264, 8], [322, 9], [428, 10], [498, 11]];
 function coda() {
   log('coda');
-  state = 'coda';
   CODA = true;
   W.hideDoll = true;
-  A.setMusic(null, 1); A.beds({ amb_breath: 0.25 });
+  A.setMusic(null, 1); A.beds({});
   show($('sub'), false);
-  const N = L.FINALE.names;
-  const over = () => setTimeout(() => { if (state === 'coda') passage(() => enterTitle(), { out: 2.2, back: 1.6 }); }, 4200);
-  setTimeout(() => {
-    if (state !== 'coda') return;
-    A.voice('names', () => over()).then((dur) => {
-      if (!dur) { over(); return; }
-      N.forEach((n, i) => setTimeout(() => { if (state === 'coda') subtitle(n, 1.1); }, 300 + (dur - 1) * 1000 * i / N.length));
-    });
-  }, 3000);
+  const out = () => {
+    state = 'coda';
+    show($('sub'), false); document.body.classList.remove('names');
+    passage(() => enterTitle(), { out: 0.05, hold: 0.8, back: 1.6 });      // (the film ends in the dark)
+  };
+  passage(() => { document.body.classList.add('names'); playCine('names', out); return 'keep'; }, { out: 0.6 });
 }
 
 // ── cinematics ──────────────────────────────────────────────────────────
@@ -658,6 +656,9 @@ function cineUpdate(dt) {
   if (!cine) return;
   const vid = $('cine');
   if (cine.name === 'intro' && vid.duration && vid.currentTime > vid.duration - 4.2) A.storm(2.4);
+  if (cine.name === 'names' && !cine.skipping) {
+    for (const [f, i] of NAMES_AT) if (vid.currentTime >= (f - 1) / 24 && vid.currentTime < (f + 24) / 24 && cine.said !== i) { cine.said = i; subtitle(L.FINALE.names[i], 1.0); }
+  }
   const anyHeld = I.held.act || I.held.jump || I.held.pause || I.held.grip;
   const anyPressed = Object.values(I.pressed).some(Boolean);
   if (cine.skipping) return;
@@ -672,7 +673,7 @@ function cineUpdate(dt) {
     const v0 = vid.volume, t0 = performance.now();
     const fade = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / 700); vid.volume = v0 * (1 - k); if (k >= 1) clearInterval(fade); }, 30);
     show($('skip'), false);
-    veil(true, 0.7).then(() => { endCine(); veil(false, 1.0); });
+    veil(true, 0.7).then(() => { endCine(); if (!busy) veil(false, 1.0); });
   }
 }
 

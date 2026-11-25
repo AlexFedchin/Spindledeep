@@ -79,6 +79,7 @@ kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(-
 /* the choice at the end */
 #choice { position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%); width: min(1240px, 90vw); z-index: 7; pointer-events: none; text-align: center; transition: opacity 1.4s; }
 body.choosing #sub { bottom: auto; top: 15vh; }
+body.names #sub { z-index: 41; transition: opacity 0.5s; }
 #choice .cq { font-style: italic; font-size: clamp(17px, 1.35vw, 23px); color: var(--paper-dim); margin-bottom: 22px; text-shadow: 0 0 2px #000, 0 2px 14px #000; }
 #choice .cols { display: flex; gap: 7vw; justify-content: center; }
 #choice .cols > div { flex: 1; max-width: 520px; }

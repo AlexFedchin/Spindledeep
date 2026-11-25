@@ -29,6 +29,7 @@ CONTRAST = 1.25
 OUT_W, OUT_H = 1920, 1080
 DEBUG = None
 LOCK = True
+BLACK = True
 BOIL = 1.0
 
 
@@ -231,6 +232,8 @@ def process(fdir, f, exposure, boil, first_k=None):
     m_sky = engrave(v, ph_sky, ph_sky, 2.4 / (sp_px * 1.3), cross=0.0)
     m_sky = m_sky * 0.55 + 0.45 * v
     mask = torch.where(sky, m_sky, mask)
+    if BLACK:                                              # where there is no light there are no lines (they drew what stood in the dark)
+        mask = mask * smoothstep(torch.tensor(0.0, device=dev), torch.tensor(0.03, device=dev), v)
     # depth fog lifts far things toward paper a little, like aerial perspective in a print
     # (the beauty already carries the volumetric haze; this just keeps the far plate from going muddy)
     # blown snow: bright paper strokes regardless of tone
@@ -271,7 +274,8 @@ def main():
     frames = sorted(int(os.path.basename(p)[7:11]) for p in glob.glob(os.path.join(fdir, 'beauty_*.png')))
     first = int(opts.get('first', frames[0])); last = int(opts.get('last', frames[-1]))
     exposure = float(opts.get('exposure', 1.0)); boil = int(opts.get('boil', 4))
-    global CONTRAST, DEBUG, OUT_W, OUT_H, LOCK, BOIL
+    global CONTRAST, DEBUG, OUT_W, OUT_H, LOCK, BOIL, BLACK
+    BLACK = opts.get('black', '1') == '1'
     LOCK = opts.get('lock', '1') == '1'; BOIL = float(opts.get('wobble', 1.0))
     if 'size' in opts:
         OUT_W, OUT_H = (int(x) for x in opts['size'].split('x'))

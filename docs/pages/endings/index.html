@@ -1,0 +1,313 @@
+<title>Both Ends: the ending films</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    .screen { max-width: 1040px; margin: 34px auto 18px; }
+    .screen video, .solo video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000; border: 1px solid var(--rule); }
+    .solo.wide { max-width: 680px; }
+    video:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    .reveal-cap { margin-top: 10px; }
+    .col > .ask:only-child { margin-top: 26px; }
+    details.seal { max-width: 900px; margin: 34px auto; border: 1px solid var(--rule); padding: 18px 22px; }
+    details.seal summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); }
+    details.seal summary:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    details.seal[open] summary { margin-bottom: 22px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the two ending films</div>
+    <h1>Both Ends</h1>
+    <p class="tag">the thaw, the chair<span></span>and the way down</p>
+  </header>
+
+  <div class="col summary">
+    <p>Both ending films have been staged again by the rules of the new opening film. Hands rest on what they hold, feet stay where they are put, every camera runs straight at one speed, and each sound is placed by the movement that makes it. The bitten ending is 45 seconds long and the tied one 56. The tied ending was made of drawn plates and is now animated throughout. It stays sealed near the bottom of this page.</p>
+  </div>
+  <div class="col"><p class="ask">do the samw thing with the ending cutscene: polish all the movements, the characters, the camera movement, act as a director and 3d supervisor. Rewatch the scene until it&rsquo;s perfect</p></div>
+
+  <div class="screen"><video controls playsinline preload="metadata" poster="img/c5_after.jpg"><source src="vid/cut_720.mp4" type="video/mp4"></video>
+    <p class="reveal-cap">The bitten ending, with sound</p></div>
+
+  <h2>The thaw</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/c1_before.jpg" alt="Before: the cottage from far off, snow fading in patches">
+      <img class="after" src="img/c1_after.jpg" alt="After: snow coming off the roof, ground showing through">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-c1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <figure class="solo wide"><video muted loop playsinline controls preload="metadata" poster="img/c1_after.jpg"><source src="vid/c1.mp4" type="video/mp4"></video><figcaption>It runs on the very track the opening film starts with.</figcaption></figure>
+    <ul class="what">
+      <li><b>The snow lets go of the roof.</b> It cracks across, slides faster and faster, goes to pieces at the eave and bursts on the ground.</li>
+      <li><b>The ground comes through from the house outward,</b> and grass grows where it has. One map drives both, so they cannot disagree.</li>
+    </ul>
+  </div>
+
+  <h2>Her window</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/c2_before.jpg" alt="Before: round flowers on bare stems">
+      <img class="after" src="img/c2_after.jpg" alt="After: sweet peas climbing the wool strung for them">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-c2" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <figure class="solo wide"><video muted loop playsinline controls preload="metadata" poster="img/c2_after.jpg"><source src="vid/c2.mp4" type="video/mp4"></video><figcaption>The stems climb, the leaves open, then the flowers. One lets a petal go.</figcaption></figure>
+    <ul class="what">
+      <li><b>The sweet peas climb.</b> Each stem winds up its own strand of wool, with leaves, tendrils and flowers that open in turn, and meltwater drips off the sill.</li>
+      <li><b>The shutters are built of boards</b> with battens across. They were bare slabs.</li>
+    </ul>
+  </div>
+
+  <h2>Her track</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/c3_before.jpg" alt="Before: flying over a thick grey band into the pit">
+      <img class="after" src="img/c3_after.jpg" alt="After: the grey thread through the grass to the edge">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-c3" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <figure class="solo wide"><video muted loop playsinline controls preload="metadata" poster="img/c3_after.jpg"><source src="vid/c3.mp4" type="video/mp4"></video><figcaption>The same track as her walk in the opening film, with no one on it. A petal goes the way she went.</figcaption></figure>
+  </div>
+
+  <h2>Down the well</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/c4_before.jpg" alt="Before: the thread ended in mid-air">
+      <img class="after" src="img/c4_after.jpg" alt="After: the thread comes over the lip">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-c4" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <p>The thread comes over the lip, lies down the rock and hangs free where the rock falls back. In the old film its top end hung in the open sky. Petals fall past, and the light on the walls goes as the mouth gets smaller.</p>
+  </div>
+
+  <h2>The chair</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/c5_before.jpg" alt="Before: a stool, a striped shawl, stiff arms">
+      <img class="after" src="img/c5_after.jpg" alt="After: a rocking chair, a hand on the doll, the face looking up">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-c5" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <figure class="solo wide"><video muted loop playsinline controls preload="metadata" poster="img/c5_after.jpg"><source src="vid/c5.mp4" type="video/mp4"></video><figcaption>It rocks, strokes the doll, whispers, and looks up.</figcaption></figure>
+    <ul class="what">
+      <li><b>The chair rolls on its runners</b> and everything in it goes with it: body, doll, hands. The empty chairs behind rock too, each in its own time.</li>
+      <li><b>A hand strokes the doll&rsquo;s head</b> from brow to nape, again and again.</li>
+      <li><b>The mouth moves with the whisper.</b> The jaw follows the recording itself, so it opens on the words.</li>
+      <li><b>The petal lands on the hand.</b> Every chair stops in the same moment, the sounds stop with them, and only then does the face come up, straight at the camera.</li>
+    </ul>
+    <div class="chart"><p class="legend"><span><i style="background:#a99f8c"></i>before, left hand</span><span><i style="background:repeating-linear-gradient(90deg,#a99f8c 0 5px,transparent 5px 9px)"></i>before, right hand</span><span><i style="background:#d8262c"></i>now, both hands</span></p>
+<svg viewBox="0 0 640 250" role="img" aria-label="Millimetres between the hands and the doll in the last shot"><line x1="46" x2="628" y1="37.8" y2="37.8" stroke="#2c2832" stroke-width="1"/><text x="38" y="41.8" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+20</text><line x1="46" x2="628" y1="77.4" y2="77.4" stroke="#2c2832" stroke-width="1"/><text x="38" y="81.4" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+10</text><line x1="46" x2="628" y1="117.0" y2="117.0" stroke="#a99f8c" stroke-width="1"/><text x="38" y="121.0" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+0</text><line x1="46" x2="628" y1="156.6" y2="156.6" stroke="#2c2832" stroke-width="1"/><text x="38" y="160.6" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">-10</text><line x1="46" x2="628" y1="196.2" y2="196.2" stroke="#2c2832" stroke-width="1"/><text x="38" y="200.2" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">-20</text><text x="57.2" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">0 s</text><text x="191.5" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">2 s</text><text x="325.8" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">4 s</text><text x="460.1" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">6 s</text><text x="594.4" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">8 s</text><polyline points="46.0,170.9 68.4,171.3 90.8,171.7 113.2,172.5 135.5,173.3 157.9,172.9 180.3,171.3 202.7,170.1 225.1,168.1 247.5,166.1 269.8,161.0 292.2,155.8 314.6,149.5 337.0,141.6 359.4,133.6 381.8,123.7 404.2,113.8 426.5,104.7 448.9,95.2 471.3,85.3 493.7,77.4 516.1,71.0 538.5,66.7 560.8,64.7 583.2,64.3 605.6,64.3 628.0,64.3" fill="none" stroke="#a99f8c" stroke-width="2" /><polyline points="46.0,198.6 68.4,199.0 90.8,199.4 113.2,198.2 135.5,197.4 157.9,196.6 180.3,195.4 202.7,191.5 225.1,187.1 247.5,182.4 269.8,174.4 292.2,166.5 314.6,156.6 337.0,145.5 359.4,134.8 381.8,121.8 404.2,109.1 426.5,97.2 448.9,85.7 471.3,74.2 493.7,64.3 516.1,56.8 538.5,51.6 560.8,48.9 583.2,48.5 605.6,48.5 628.0,48.5" fill="none" stroke="#a99f8c" stroke-width="2" stroke-dasharray="5 4"/><line x1="46.0" x2="628.0" y1="120.2" y2="120.2" stroke="#d8262c" stroke-width="3"/></svg></div>
+    <p class="reveal-cap">Millimetres between skin and doll in the last shot; below zero is inside</p>
+    <p>In the old film both hands drifted from 2 cm inside the doll to 1.7 cm off it. Now they stay within 1.1 mm of its surface for all 336 frames, pressed in about as far as wool gives.</p>
+    <div class="tablebox"><table class="windows"><tr><th>Shot</th><th>Flicker before</th><th>Now</th></tr><tr><td>The thaw</td><td class="n">10.9</td><td class="n">9.1</td></tr><tr><td>Her window</td><td class="n">26.7</td><td class="n">4.7</td></tr><tr><td>Her track</td><td class="n">29.5</td><td class="n">26.4</td></tr><tr><td>Down the well</td><td class="n">19.4</td><td class="n">16.1</td></tr><tr><td>The chair</td><td class="n">11.9</td><td class="n">6.5</td></tr></table></div>
+    <p class="reveal-cap">Average back-and-forth change per pixel (0 to 255). In the track shot most of it is grass blades passing the camera.</p>
+  </div>
+
+  <h2>The camera</h2>
+  <div class="col">
+    <p>All twelve moves run in a straight line at one speed from the first frame to the last. Within any shot the fastest and slowest frames differ by at most 0.007 mm. Over snow and grass the cameras track sideways, so the engraved lines stand still on the ground.</p>
+  </div>
+
+  <h2>The dark</h2>
+  <div class="col">
+    <p>Where no light falls, no line is drawn any more. Before, figures standing in the dark were outlined and could be seen before they should be. This is in the grading step, so it applies to any film made from now on.</p>
+  </div>
+
+  <h2>The sound</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>395 sounds are written by the movement.</b> Each clod of snow, drop, runner, footfall and hand notes its own frame, and the moment of contact in the recording is laid on it.</li>
+      <li><b>Checked in the finished files:</b> in both films the mixed sound sits 0.0 ms from where the movements put it, in every stretch loud enough to measure. Sounds that ring out alone (runners, boards, drops, hands, the lamp) start within 2 ms of their frame. Many of the softer ones overlap and cannot be timed one by one.</li>
+      <li><b>No magic sounds</b> in either film. The tied ending has no music at all.</li>
+    </ul>
+  </div>
+
+  <h2>The tied ending</h2>
+  <div class="col">
+    <p>Seven shots, all animated. Sealed, as you asked for this film.</p>
+  </div>
+  <details class="seal">
+    <summary>Open the tied ending</summary>
+    <div class="screen"><video controls playsinline preload="metadata" poster="img/o1_after.jpg"><source src="vid/outro_720.mp4" type="video/mp4"></video>
+      <p class="reveal-cap">The tied ending, with sound</p></div>
+    <div class="col">
+    <div class="reveal">
+      <img src="img/o1_before.jpg" alt="Shot 1 before">
+      <img class="after" src="img/o1_after.jpg" alt="Shot 1 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o2_before.jpg" alt="Shot 2 before">
+      <img class="after" src="img/o2_after.jpg" alt="Shot 2 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o2" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o3_before.jpg" alt="Shot 3 before">
+      <img class="after" src="img/o3_after.jpg" alt="Shot 3 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o3" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o4_before.jpg" alt="Shot 4 before">
+      <img class="after" src="img/o4_after.jpg" alt="Shot 4 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o4" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o5_before.jpg" alt="Shot 5 before">
+      <img class="after" src="img/o5_after.jpg" alt="Shot 5 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o5" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o6_before.jpg" alt="Shot 6 before">
+      <img class="after" src="img/o6_after.jpg" alt="Shot 6 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o6" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/o7_before.jpg" alt="Shot 7 before">
+      <img class="after" src="img/o7_after.jpg" alt="Shot 7 after">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o7" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+      <ul class="what">
+        <li><b>The crowds walk.</b> Every foot is planted and stays until it lifts, and the nearest steps you hear are the ones you see.</li>
+        <li><b>The hand on the doll&rsquo;s head</b> stays within 0.8 mm of it for 107 frames, the other within 0.8 mm for 89.</li>
+        <li><b>The hands at the edge</b> close on the snow they rest on, finger by finger.</li>
+      </ul>
+    </div>
+  </details>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The films</b><span><code>app/assets/cine/cut.mp4</code>, <code>outro.mp4</code></span></div>
+    <div><b>The shots</b><span><code>scripts/cine/shots_end.py</code></span></div>
+    <div><b>Lines in the dark</b><span><code>scripts/cine/post.py</code> (<code>BLACK</code>)</span></div>
+    <div><b>Sounds and mix</b><span><code>scripts/cine/foley.py</code>, <code>edit.py</code></span></div>
+    <div><b>Checks</b><span><code>scripts/cine/touch.py</code>, <code>synccheck.py</code></span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/U3awPggQ9kitFSbExvunak">by hand</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

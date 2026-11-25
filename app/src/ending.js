@@ -144,12 +144,13 @@ export class Ending {
     this.climb(dt);
   }
   // Five places she came through, each seen from a camera that does not move: the thread lying there, nothing, then it
-  // comes hand over hand along the thread and everything it passes goes out. Faster each time. The last is home.
+  // comes hand over hand along the thread and everything it passes goes out. Faster each time. The last is the way out,
+  // and it is cut short there: the film takes it up from the other side, hands first.
   startClimb() {
     const { W, A } = this.c, w = W(), { arc, gi, near } = this.measure();
     // [camera x, y, view height, enters at, leaves at, seconds before it comes, seconds crossing]
     const P = [[31, -243.2, 13, [46.4, -262], [15, -224], 2.6, 6.5], [62.5, -188.6, 15, [84, -191.5], [42, -190], 1.8, 5.0],
-      [62, -119.2, 17, [88, -120.5], [38, -122], 1.4, 4.2], [56, -20, 19, [66, -38], [42.6, -3], 1.0, 4.4], [20.5, 3.0, 12.5, [38, 1], [18.8, 1.4], 3.0, 6.0]];
+      [62, -119.2, 17, [88, -120.5], [38, -122], 1.4, 4.2], [56, -20, 19, [66, -38], [53.4, -11], 1.0, 4.0], [45.6, -3.6, 12.5, [53.1, -10.3], [41.8, -0.5], 1.8, 4.2]];
     this.pulse = { arc, total: arc[0], gi, s: 0, slap: 0, drag: 0, k: -1, t: 0, places: P.map(([x, y, vh, a, b, wait, dur]) => ({ x, y, vh, s0: near(...a), s1: near(...b), wait, dur })) };
     const T = w.T;
     w.climber = { x: -90, y: 0, s: 0, k: 2.6, lift: 0.46, step: 0.95, spread: 0.12, neck: 0.5, head: 1.25, mouth: 0.5, twitch: 1, look: 0, quick: 7, view: [0, 0, 0.75], lights: [],
@@ -183,17 +184,17 @@ export class Ending {
     const q = P.places[P.k];
     P.t += dt;
     const u = clamp((P.t - q.wait) / q.dur, 0, 1), end = P.k === P.places.length - 1;
-    P.s = lerp(q.s0, q.s1, end ? 1 - Math.pow(1 - u, 1.6) : u);
-    this.dark = Math.max(1 - smooth(0.0, 0.7, P.t), end ? 0 : smooth(q.wait + q.dur - 0.1, q.wait + q.dur + 0.4, P.t));
+    P.s = lerp(q.s0, q.s1, end ? u * (0.75 + 0.25 * u) : u);
+    this.dark = Math.max(1 - smooth(0.0, 0.7, P.t), smooth(q.wait + q.dur - (end ? 0.3 : 0.1), q.wait + q.dur + (end ? 0.05 : 0.4), P.t));
     // it goes in pulls: each reach hauls the whole of it a length further
     const G = c.step * c.k;
     this.moving = u > 0 && u < 1;
     c.s = Math.max(1, P.s - 2.5 - (u < 1 ? Math.sin(P.s / G * Math.PI * 2) * G * 0.11 : 0));
     const [bx, by] = this.pt(c.s);
     c.x = bx; c.y = by;
-    // half way across each place it looks out at you, once; at the end it has all the time there is
-    c.look = damp(c.look, end ? (u > 0.97 ? 1 : 0) : u > 0.42 && u < 0.62 ? 1 : 0, 9, dt);
-    c.mouth = 0.35 + c.look * 1.3; c.neck = 0.5 + 0.25 * c.look + 0.06 * Math.sin(P.t * 3.1); c.rear = 0.35 + (end ? 1.6 * c.look : 0.2 * c.look);
+    // half way across each place it looks out at you, once; the last time it does not stop for that
+    c.look = damp(c.look, !end && u > 0.42 && u < 0.62 ? 1 : 0, 9, dt);
+    c.mouth = 0.35 + c.look * 1.3; c.neck = 0.5 + 0.25 * c.look + 0.06 * Math.sin(P.t * 3.1); c.rear = 0.35 + 0.2 * c.look;
     const out = u <= 0 ? 1 : 0;
     const [fx, fy] = this.pt(Math.min(P.total, P.s + 4));
     const [mx, my] = this.pt((q.s0 + q.s1) / 2);
@@ -208,20 +209,16 @@ export class Ending {
         if (b._rang && dist(b, 1) < 4 && b.lit > 0) { b.lit = 0; b.ring = 0; A.play('release', { vol: 0.4, rate: 0.5, x: b.x, y: b.y }); }
       }
       const before = w.lamps.length;
-      w.lamps = w.lamps.filter((o) => (end && o.x < 14) || dist(o) > 6);
+      w.lamps = w.lamps.filter((o) => o.x < 14 || dist(o) > 6);
       if (w.lamps.length < before) { A.play('release', { vol: 0.5, rate: 0.45 }); w.hallOut = w.hallOut ?? (P.k === 0 ? w.time : undefined); }
       for (const pg of w.pegs) if (dist(pg) < 4) { pg.tied = false; pg.glow = 0; }
       P.drag -= dt;
       if (P.drag <= 0 && u < 1) { P.drag = 3.6; A.play('drag', { vol: 0.45, rate: 0.75, x: c.x, y: c.y }); }
     }
     if (end && u >= 1) {
-      this.once('arrive', () => { this.arriveT = P.t; this.c.log('it is out'); });
-      const s = P.t - this.arriveT;
-      this.lights = this.lights.slice(0, 1); c.lights = c.lights.map((l) => ({ ...l, i: l.i * (1 - 0.6 * smooth(1.6, 3, s)) }));
-      if (s > 1.6) this.once('win', () => { w.lamps = []; w.windowOut = true; A.play('release', { vol: 0.6, rate: 0.4 }); });
-      if (s > 3.2) this.once('door', () => A.play('gate', { vol: 0.3, rate: 0.4, verb: 0.6 }));
-      this.dark = smooth(4.0, 6.0, s);
-      if (s > 6.4) this.once('film', () => this.c.film(CARDS.tie));
+      // its hands are under the lip. Black, and everything stops: the film is the other side of it
+      this.once('arrive', () => { this.arriveT = P.t; A.beds({ amb_wind: 0.18 }); this.c.log('it is at the lip'); });
+      if (P.t - this.arriveT > 1.0) this.once('film', () => this.c.film(CARDS.tie));
     }
   }
 

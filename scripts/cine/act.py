@@ -347,7 +347,7 @@ class Actor:
         P['head'].rotation_euler = (c(pit, limit + 0.2), 0, c(yaw, limit))
 
     # ── legs ──
-    def leg(self, s, ankle, footR, knee_fwd):
+    def leg(self, s, ankle, footR, knee_fwd, up=None):
         """two-bone leg: ankle to a world point, the foot's world rotation, the knee bent toward knee_fwd"""
         P = self.P
         th, sn, ft = P[f'thigh{s}'], P[f'shin{s}'], P[f'foot{s}']
@@ -363,7 +363,7 @@ class Actor:
         v = knee_fwd - u * knee_fwd.dot(u); v.normalize()
         K = H + (u * math.cos(a) + v * math.sin(a)) * L1
         A = H + u * d
-        side = knee_fwd.cross(V((0, 0, 1)))           # her +x when facing -y along knee_fwd
+        side = knee_fwd.cross(V((0, 0, 1)) if up is None else V(up))           # her +x when facing -y along knee_fwd (up: for a body that is not upright)
         side = -side
         def fr(dr, x):
             return lib._basis(dr, x)

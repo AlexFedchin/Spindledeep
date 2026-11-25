@@ -1,0 +1,204 @@
+<title>Every Name: after the titles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    .screen { max-width: 1040px; margin: 34px auto 18px; }
+    .screen video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000; border: 1px solid var(--rule); }
+    video:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    .reveal-cap { margin-top: 10px; }
+    kbd { font-family: var(--mono); font-size: .82em; border: 1px solid var(--rule); padding: 1px 7px; }
+    details.seal { max-width: 900px; margin: 34px auto; border: 1px solid var(--rule); padding: 18px 22px; }
+    details.seal summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); }
+    details.seal summary:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    details.seal[open] summary { margin-bottom: 22px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; after the titles</div>
+    <h1>Every Name</h1>
+    <p class="tag">a light from far up<span></span>and something on the walls</p>
+  </header>
+
+  <div class="col summary">
+    <p>The bitten ending now has a film after its titles instead of a black screen. The tied ending joins its film without a jump: the climb stops at the mouth of the cave, and the film begins there, hands first. Plucking is on <kbd>;</kbd>.</p>
+  </div>
+
+  <h2>After the titles</h2>
+  <p class="ask">make a cutscene for the ending where i cut the thread after the titles. [&hellip;] the doll sitting on the floor of the cave under some pale top-down light, monster crawling behind it over the walls and trying names. The camera should be slowly zooming out.</p>
+  <div class="screen"><video controls playsinline preload="metadata" poster="img/names.jpg"><source src="vid/names_720.mp4" type="video/mp4"></video>
+    <p class="reveal-cap">The whole film, 26 seconds, with sound. In the game each name is also subtitled.</p></div>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/coda_before.jpg" alt="Before: a black screen with a stray piece of thread and a name">
+      <img class="after" src="img/coda_after.jpg" alt="After: the doll in the light from the well, the thing on the wall behind it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-coda" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>One shot, one move.</b> The camera goes back from the doll in a straight line at one speed, on one lens, until the whole cave is in view.</li>
+      <li><b>It crawls.</b> On hands and feet over the rock, up the wall and onto the roof. A hand or foot that is down stays down until it lifts, and moves on in diagonal pairs.</li>
+      <li><b>It stops to ask.</b> At every name it stands still, its head comes round to the doll, and the jaw moves with the recording. Then it waits, and goes on.</li>
+      <li><b>One name makes the doll look up.</b> It is the fifth, and it isn&rsquo;t hers.</li>
+      <li><b>The light.</b> It falls down the well and lies on the floor round the doll, with the grey thread and the petals. At the end the thing reaches the mouth of the well, and the light goes.</li>
+      <li><b>The sound.</b> Palms and toes on rock are placed by the crawl itself, the names carry round the cave, water drips. Far above, the title&rsquo;s tune runs at half its speed.</li>
+      <li><b>A fault gone with the old screen:</b> a piece of red thread was left floating on the black.</li>
+    </ul>
+    <div class="tablebox"><table class="windows"><tr><th>Checked</th><th>Result</th></tr>
+      <tr><td>Camera speed, fastest against slowest frame</td><td class="n">0.001 mm</td></tr>
+      <tr><td>Sound in the film against the movement</td><td class="n">0.0 ms</td></tr>
+      <tr><td>Flicker (back-and-forth change per pixel, 0 to 255)</td><td class="n">9.2</td></tr>
+      <tr><td>Hand or foot sliding while it is down</td><td class="n">hands under 2 mm, feet 0 mm</td></tr></table></div>
+    <p class="reveal-cap">The first version pulled back faster and from closer, and flickered at 12.8</p>
+  </div>
+
+  <h2>Out of the cave</h2>
+  <p class="ask">the monster running out of cave animation should end when it reaches the exit of the cave. After that the cutscene should start with hands popping out of the cave</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/tie_before.jpg" alt="Before: it crawled all the way to the cottage, and then the film showed the pit again">
+      <img class="after" src="img/tie_after.jpg" alt="After: the last stretch is the climb to the lip">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-tie" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>The last stretch is the way out.</b> It comes over the first ledge and up the wall of the pit. As it gets to the top everything goes black and silent.</li>
+      <li><b>The film begins on the other side</b> of that same lip, with the hands. The shot of the cottage that used to open it comes second.</li>
+      <li><b>That second shot is new.</b> It had no one in it, so nothing said how the thing got from the pit to the house.</li>
+    </ul>
+  </div>
+  <details class="seal">
+    <summary>Open the tied ending&rsquo;s film</summary>
+    <div class="screen"><video controls playsinline preload="metadata" poster="img/o1_after.jpg"><source src="vid/outro_720.mp4" type="video/mp4"></video>
+      <p class="reveal-cap">The whole film in its new order, with sound</p></div>
+    <div class="col">
+    <div class="reveal">
+      <img src="img/o1_before.jpg" alt="Before: the line and the cottage, no one there">
+      <img class="after" src="img/o1_after.jpg" alt="After: it walks home along the thread and stands at her window">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-o1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+      <p>It walks along the thread the way she used to come home, with its arms hanging and its eyes on the window. Seventeen steps, each foot planted, each step heard on the frame it lands. When it stops at the window, the light goes out.</p>
+    </div>
+  </details>
+
+  <h2>The key</h2>
+  <p class="ask">make thr default key for the pluck to be ;</p>
+  <div class="col">
+    <p>Plucking is <kbd>;</kbd> by default, and the prompts and the choice at the end show it. <kbd>F</kbd>, <kbd>J</kbd> and <kbd>C</kbd> still work. A key you have chosen yourself in the options stays as you set it.</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The film</b><span><code>app/assets/cine/names.mp4</code></span></div>
+    <div><b>The shot</b><span><code>scripts/cine/shots_end.py</code> (<code>N1</code>, <code>Crawler</code>)</span></div>
+    <div><b>After the titles</b><span><code>app/src/main.js</code> (<code>coda</code>)</span></div>
+    <div><b>The climb</b><span><code>app/src/ending.js</code> (<code>startClimb</code>, <code>climb</code>)</span></div>
+    <div><b>The key</b><span><code>app/src/input.js</code></span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/UxSTG2brFauukhhFqTWdy9">both ends</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

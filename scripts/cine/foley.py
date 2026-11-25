@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, '..', 'audio')))
 SR = 48000
 _REC, _BANK = {}, {}
-SOFT = ('yarn', 'needle_wool', 'pinch', 'wool_turn', 'wool_head', 'wool_arm', 'candle_out')     # no edge of their own: they begin with the movement
+SOFT = ('petal', 'petal_land', 'leaf', 'dig', 'breath_in', 'breath_out', 'pit_breath', 'rocker_far', 'yarn', 'needle_wool', 'pinch', 'wool_turn', 'wool_head', 'wool_arm', 'candle_out')     # no edge of their own: they begin with the movement
 
 
 def rec(sid):
@@ -235,6 +235,76 @@ def bank(name):
     elif name == 'wool_grip':
         c = rec('grip'); t = float(np.argmax(env(c, 5)) / SR)
         B = [mixd((wool(0.5, 9), 0.04, 0.8, 0), (band(c, 120, 3500), t, 0.5, 0.0), (hits(563779, 3, 0.03, 0.12, 0.06, lo=350)[1][0], 0.03, 0.22, 0.05))]
+    # ── the endings ──
+    elif name == 'snow_fall':
+        B = []
+        for i, f in enumerate(('snow1', 'snow2', 'snow3', 'snow2')):
+            x = rate(rec(f), 0.62 + 0.05 * i); e = env(x, 4); a = int(np.argmax(e > 0.35 * e.max()))
+            B.append(mixd((x / np.abs(x).max(), a / SR, 0.8, 0), (thump(58 + 5 * i, 0.26, i, 0.8), 0.0, 0.7, 0)))
+    elif name in ('drop', 'well_drop'):
+        x = rec('drip'); e = env(x, 3); a = int(np.argmax(e > 0.4 * e.max()))
+        B = [(shape(rate(x, r)[: int(0.5 * SR)], 0.5, 0.005, 0.6), a / r / SR) for r in ((1.2, 1.35, 1.5, 1.1) if name == 'drop' else (0.8, 0.9, 0.7))]
+        if name == 'well_drop':
+            B = [mixd((c, t, 1.0, 0), (c * 0.5, t, 0.5, 0.31), (c * 0.5, t, 0.25, 0.63)) for c, t in B]
+    elif name in ('petal', 'petal_land'):
+        B = [(band(shape(wool_raw(0.3, 3), 0.18, 0.2, 0.6), 1200, 7000), 0.03)]
+    elif name == 'leaf':
+        B = [(shape(rec(f'leaf{i}'), 0.9, 0.1, 0.5), 0.1) for i in (1, 2, 3, 4)]
+    elif name in ('rocker', 'rocker_far'):
+        B = []
+        for i in (1, 2, 3, 4):
+            x = rec(f'chair{i}'); e = env(x, 20); a = int(np.argmax(e > 0.5 * e.max()))
+            c = x[max(0, a - int(0.12 * SR)): a + int(0.55 * SR)].copy(); f = int(0.35 * SR); c[-f:] *= np.linspace(1, 0, f) ** 1.5
+            c = c / (np.abs(c).max() + 1e-6)
+            if name == 'rocker_far':
+                c = band(rate(c, 0.86 + 0.07 * i), 90, 900)
+            B.append((c, 0.12))
+    elif name == 'rocker_stop':
+        x = rec('wood'); e = env(x, 4); a = int(np.argmax(e > 0.5 * e.max()))
+        B = [mixd((band(rate(x, 0.6), 60, 1400), a / 0.6 / SR, 0.8, 0), (thump(64, 0.2, 2, 0.2), 0.0, 0.7, 0))]
+    elif name == 'neck':
+        B = []
+        for f in ('bone1', 'bone2'):
+            x = rate(rec(f), 0.55); e = env(x, 4); a = int(np.argmax(e > 0.5 * e.max()))
+            B.append((x / np.abs(x).max(), a / SR))
+    elif name == 'lamp_out':
+        x = rec('wood'); e = env(x, 4); a = int(np.argmax(e > 0.5 * e.max()))
+        B = [mixd((band(rate(x, 0.5), 50, 900), a / 0.5 / SR, 0.9, 0), (puff(0.4, 5), 0.02, 0.15, 0))]
+    elif name == 'board':
+        x = rec('wood'); e = env(x, 4); a = int(np.argmax(e > 0.5 * e.max()))
+        B = [mixd((rate(x, r), a / r / SR, 1.0, 0), (thump(54, 0.3, 3, 0.2), 0.0, 0.5, 0)) for r in (0.62, 0.55, 0.7)]
+    elif name == 'line_pull':
+        B = [mixd((thump(70, 0.18, 4, 0.6), 0.0, 0.35, 0), (shape(steady(596513, 0.5, 3, 120, 2500)[k % 2], 0.45, 0.15, 0.6), 0.05, 0.6, 0)) for k in range(2)]
+    elif name == 'palm_snow':
+        B = []
+        for i, f in enumerate(('palm1', 'palm2', 'palm3')):
+            x = rate(rec(f), 0.8); e = env(x, 4); a = int(np.argmax(e > 0.4 * e.max()))
+            s_ = rate(rec('snow%d' % (i + 1)), 0.8); es = env(s_, 4); as_ = int(np.argmax(es > 0.35 * es.max()))
+            B.append(mixd((band(x / np.abs(x).max(), 50, 1800), a / SR, 0.7, 0), (s_ / np.abs(s_).max(), as_ / SR, 0.6, 0)))
+    elif name in ('palm_rock', 'toe_rock'):
+        B = []
+        for i, f in enumerate(('palm1', 'palm2', 'palm3')):
+            x = rate(rec(f), 0.95 if name == 'palm_rock' else 1.2); e = env(x, 4); a = int(np.argmax(e > 0.4 * e.max()))
+            for j in (1, 2):
+                g = rec('st_grit%d' % ((i + 2 * j) % 4 + 1)); eg = env(g, 4); ag = int(np.argmax(eg > 0.4 * eg.max()))
+                B.append(mixd((band(x / np.abs(x).max(), 60, 2600), a / SR, 0.8 if name == 'palm_rock' else 0.35, 0), (band(g / np.abs(g).max(), 300, 5000), ag / SR, 0.28 if name == 'palm_rock' else 0.4, 0)))
+    elif name == 'dig':
+        B = [(shape(rate(rec('snow%d' % k), 0.7), 0.4, 0.15, 0.5), 0.06) for k in (1, 2, 3)]
+    elif name == 'bare_snow':
+        B = []
+        for i in range(6):
+            x = rate(rec('snow%d' % (1 + i % 3)), 0.9 + 0.08 * i); e = env(x, 4); a = int(np.argmax(e > 0.35 * e.max()))
+            B.append((band(x / np.abs(x).max(), 150, 1700), a / SR))
+    elif name == 'shutter':
+        x = rec('wood'); e = env(x, 4); a = int(np.argmax(e > 0.5 * e.max()))
+        B = [(band(rate(x, r), 120, 800), a / r / SR) for r in (0.9, 1.05, 1.2, 0.8)]
+    elif name in ('breath_in', 'breath_out'):
+        x = rate(rec('inhale'), 0.8 if name == 'breath_in' else 0.72)
+        if name == 'breath_out':
+            x = x[::-1].copy()
+        B = [(shape(x, min(1.8, len(x) / SR), 0.12, 0.3), 0.1)]
+    elif name == 'pit_breath':
+        B = [(band(shape(rec('amb_breath')[int(2 * SR): int(6 * SR)], 3.2, 0.4, 0.5), 40, 500), 0.6)]
     if not B:
         raise KeyError('no foley for ' + name)
     out = []
@@ -271,6 +341,12 @@ def sustained(name, dur, k=0):
         return shape(b[k % len(b)], dur, 0.06, 0.2)
     if name == 'spool':
         x = rec('roll1'); return shape(x / np.abs(x).max(), dur, 0.1, 0.4)
+    if name == 'stroke':
+        return shape(wool_raw(dur, k), dur, 0.15, 0.3)
+    if name == 'roof_slide':
+        x = band(rate(rec('drag'), 0.7), 60, 2600); return shape(x / np.abs(x).max(), dur, 0.35, 0.3)
+    if name == 'heave':
+        x = rate(rec('drag'), 0.6); return shape(x / np.abs(x).max(), dur, 0.2, 0.4)
     if name == 'frost':
         x = rate(band(rec(737896), 400), 2.4); n = int(dur * SR)
         e = env(x, 40); i = int(np.argmax(np.convolve(e, np.ones(n // 8) / (n // 8), mode='same')[n:-n])) if len(x) > 2 * n else 0
@@ -283,9 +359,9 @@ def sustained(name, dur, k=0):
 GAIN = {'needle_in': 0.34, 'needle_off': 0.26, 'needle_draw': 0.16, 'yarn': 0.16, 'stab': 0.30, 'needle_wool': 0.14, 'pinch': 0.10, 'thread_draw': 0.20,
         'thread_taut': 0.28, 'cinch': 0.36, 'take': 0.34, 'lift': 0.26, 'cloth_let': 0.22, 'cloth': 0.2, 'setdown': 0.36, 'pat': 0.32, 'wool_turn': 0.22, 'palm_door': 0.32,
         'latch': 0.36, 'door_bang': 0.95, 'lantern': 0.14, 'candle_out': 0.18, 'step_wood': 0.27, 'step_snow': 0.44, 'step_stone': 0.42, 'wool_head': 0.36,
-        'wool_arm': 0.28, 'wool_grip': 0.36, 'hinge': 0.34, 'spool': 0.14, 'frost': 0.12, 'flame_bend': 0.25}
-LAST = ('thread_draw', 'hinge', 'spool', 'frost', 'flame_bend')
-DUR = {'frost': 3.0, 'flame_bend': 1.4, 'hinge': 1.0, 'spool': 1.5, 'thread_draw': 0.6}
+        'wool_arm': 0.28, 'snow_fall': 0.42, 'drop': 0.2, 'well_drop': 0.3, 'petal': 0.05, 'petal_land': 0.12, 'leaf': 0.14, 'rocker': 0.3, 'rocker_far': 0.16, 'rocker_stop': 0.45, 'neck': 0.42, 'lamp_out': 0.5, 'board': 0.6, 'line_pull': 0.3, 'palm_snow': 0.55, 'palm_rock': 0.42, 'toe_rock': 0.22, 'dig': 0.22, 'bare_snow': 0.2, 'shutter': 0.16, 'breath_in': 0.5, 'breath_out': 0.4, 'pit_breath': 0.22, 'stroke': 0.16, 'roof_slide': 0.34, 'heave': 0.4, 'wool_grip': 0.36, 'hinge': 0.34, 'spool': 0.14, 'frost': 0.12, 'flame_bend': 0.25}
+LAST = ('stroke', 'roof_slide', 'heave', 'thread_draw', 'hinge', 'spool', 'frost', 'flame_bend')
+DUR = {'stroke': 1.5, 'roof_slide': 3.0, 'heave': 1.5, 'frost': 3.0, 'flame_bend': 1.4, 'hinge': 1.0, 'spool': 1.5, 'thread_draw': 0.6}
 
 
 def clip(kind, i, dur=None):

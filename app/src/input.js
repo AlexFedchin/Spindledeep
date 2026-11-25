@@ -1,7 +1,7 @@
 // Keyboard + gamepad → a small set of actions. `held` for continuous, `pressed` for edges this frame.
 const MAP = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
-  jump: ['Space', 'KeyZ'], grip: ['ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX'], pluck: ['KeyF', 'KeyJ', 'KeyC'],
+  jump: ['Space', 'KeyZ'], grip: ['ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX'], pluck: ['Semicolon', 'KeyF', 'KeyJ', 'KeyC'],
   act: ['KeyE', 'Enter', 'KeyL'], dim: ['KeyQ', 'KeyV', 'KeyH'], pause: ['Escape', 'KeyP'],
 };
 // these work whatever else is chosen, so no choice of keys can lock anyone out of the menus
@@ -64,6 +64,6 @@ export class Input {
   label(a) {
     if (this.usingPad) return { jump: 'A', grip: 'RT', pluck: 'X', dim: 'LB', act: 'Y', pause: 'Start', up: '↑', down: '↓', left: '←', right: '→' }[a] || a;
     if (this.custom[a]) return this.keyName(this.custom[a]);
-    return { jump: 'Space', grip: 'Shift', pluck: 'F', dim: 'Q', act: 'E', pause: 'Esc', up: 'W', down: 'S', left: 'A', right: 'D' }[a] || a;
+    return { jump: 'Space', grip: 'Shift', pluck: ';', dim: 'Q', act: 'E', pause: 'Esc', up: 'W', down: 'S', left: 'A', right: 'D' }[a] || a;
   }
 }

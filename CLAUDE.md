@@ -125,7 +125,7 @@ Builds: `build.cmd` bumps the patch version. Trailer: `scripts/trailer/capture.p
 from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (fouls on the thread). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
 H1 → Slabs → Pin Walk → rope → H2; well ledge → bobbin's lane → lower room → the Loom's well. `LEVEL` planes their floors. Gate 0 and 1 must stay g2 and east.
 Check: `scripts/checks/rooms.mjs [frayed]` (`ONLY=name`, `TRACE=1`, `HANDS=1`). Beds of pins at floor level need the ring ~3.6 m up.
-Hands: `deaf` ones strike where she was heading (she stopped). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
+Hands: `deaf` ones strike where she was heading (she stopped). Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
 Options in `options.js` (kept in settings.json with `found`, `ended`, `best`); key bindings in input.js. Saves are v3; older ones in the deep get their thread re-laid.
 `--size=WxH` with `--smoke` tests another window shape.
 
@@ -141,11 +141,11 @@ The finale (Loom floor, climb, top) keeps its own silence: `_life` skips it.
 ## Cinematics (scripts/cine)
 
 Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) and `outro.mp4`
-(epilogue of the 'tie' ending; since 2026-11-24 made of engraved SDXL plates by `plates.py`, not Blender shots; E2–E7 in shots.py are retired). The user asked not to be told what the ending
+(epilogue of the 'tie' ending; Blender shots again since 2026-11-25; `plates.py` and E2–E7 in shots.py are retired). The user asked not to be told what the ending
 film shows; keep its content out of pages and summaries.
 
-- `cut.mp4` (2026-11-25): the film of the bitten ending, Blender again: `shots_cut.py` (C1-C5), `render_cut.sh` (`--prev=F,F` stills; `# auto=` on a
-  shot's decorator fixes its exposure, since post.py otherwise takes it from the first frame), `edit.py cut`. Run the flicker metric on the
+- `cut.mp4`: the film of the bitten ending. Both endings' shots are in `shots_end.py` (below); `shots_cut.py` keeps only the meadow and snow helpers.
+  `# auto=` on a shot's decorator fixes its exposure, since post.py otherwise takes it from the first frame. Run the flicker metric on the
   finished mp4: it catches whole seconds that stills at round frames miss.
 - Blender 4.2.3 portable lives in `scripts/cine/.cache/blender-4.2.3-windows-x64/` (ignored by git).
 - `lib.py` (materials, doll, knitter, snow, threads), `sets.py` (exterior, interior, Loom, shaft),
@@ -186,6 +186,19 @@ hand-held drift); every sound is exactly on its movement; no magic sounds (no ha
 - `post.py`: line fields are tied to one axis per shot (they swept when the camera panned); position pass is written from `lib.ORIGIN` (near the subject: EEVEE keeps
   it in half floats) plus a fine pass `posf`. Moving things carry their lines (`lib.stick`, `restp` on the knitter). Outdoors move the camera sideways: pushing toward
   the snow strobes. Snow strokes must be as long as a frame's flight (`streak` 0.04).
+
+## The endings, second staging (2026-11-25)
+
+`shots_end.py`: C1-C5 (cut.mp4), O1-O7 (outro.mp4), under the prologue's rules (contact, linear cameras, sounds written by the movement). Same tools:
+`render_intro.sh SHOTS`, `pv.sh`, `touch.py`, `edit.py cut|outro`, `synccheck.py cut|outro`. Parts to reuse: `Melt` (one melt map drives the snow's material and
+the grass), `RoofSnow` (sheet + lumps by numpy), `Vine`, `PetalFall`, `Rocker` (rolls on its runners), `Face`/`voice_env` (jaw from the recording), `Walkers`
+(a crowd, steps planted; `steps()` gives the frames feet land on for `ev`), `board_shutters`. `post.py` `BLACK`: where no light falls no line is drawn, so nothing
+in the dark is outlined. A shot looked at only in stills hides faults: make a contact sheet of the full render (`tile`), then flick.py.
+
+`names.mp4` (N1) plays after the titles of the bitten ending (`coda` in main.js; the names' frames stand in `NAMES_AT` there and in `SAY` in the shot: change both). `outro.mp4`
+opens with O2 (hands at the pit's lip), because the game's climb now ends under that lip (ending.js, last of `places`, then black). `Crawler`: the figure on all fours over any
+surface; its arms are 0.44 m, so keep the stride and height or check the reach again (0 to 2 mm short now). Pull-backs strobe above about 0.3 % of the distance per frame.
+Lamps inside a fog box need `volume_factor = 0` or they glow.
 
 ## The knitter model (2026-11-23)
 

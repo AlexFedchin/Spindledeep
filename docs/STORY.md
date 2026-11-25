@@ -37,17 +37,18 @@ does, and what became of the knitter and the doll are all said in plain words, i
 - **Tie.** Silence; the candle goes; "Mama?". Light comes up on her, still kneeling (the same size: the user saw her grow in the dark and disliked it); the neck goes up into the dark and comes down
   over the doll, the head the wrong way up; it turns over, thanks her with every voice it has, waits, and calls. Then five places she came through, seen from a
   camera that doesn't move, as it comes, still in her shape, hand over hand up the thread and everything goes out behind it; the last is the
-  cottage. Film (`plates.py`). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
+  lip of the pit (since 2026-11-26), black, and the film takes it up there: hands (`shots_end.py` O2, O1, O3-O7; in O1 it walks home along the thread). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
   the doll sits in her window, still holding the thread.
 - **Bite** (remade 2026-11-25: the user found "What have you done?" and then black disappointing). The red goes out of the thread. "What
   have you done?", twice, the second time not in her voice. The red dies up the whole thread (Hall, Gallery, Throat, her door); the wind
   drops. It comes up the well on what is left of the thread; the thread parts; it hangs, looks, falls. The doll walks back to the candle
   and what is left of the knitter. The face comes, asks ("That isn't a name. What is your name?"), goes over her head, asks again, blows the
-  candle out. Film (`shots_cut.py`, cut.mp4): the Brink thaws, her empty window with the sweet peas, the dead thread into the pit, down the
+  candle out. Film (`shots_end.py` C1-C5, cut.mp4): the Brink thaws, her empty window with the sweet peas, the dead thread into the pit, down the
   well, and what sits in her chair with the doll in its lap, whispering names, until it looks up. Cards: it can never climb out, no one will
   be called again; she had been dead since the first night; the snow melted; the doll is still down there, nameless, so it cannot call
   her; it is trying every name there is.
-  After the credits: black, and the names, whispered, in alphabetical order.
+  After the credits: the film `names.mp4` (N1): the doll sits in the light of the well, it goes round the walls behind her and tries names; at the
+  fifth she looks up; it reaches the mouth of the well and the light goes.
 
 ## The deep
 - **The Hall of Chairs.** Forty-one rocking chairs with shawls; her candle by an empty one. m7.
@@ -74,4 +75,4 @@ does, and what became of the knitter and the doll are all said in plain words, i
 - Remains: `app/src/props.js` (`LORE` husk entries, `huskBody`, `drawHusks`); your deaths: `World._die` → `world.husks`,
   saved as `husks` in `main.js`.
 - Ending: `app/src/ending.js` (timelines, cards), `drawend.js` (the called, the dark, the thing, the climb), `deep.js` (the called,
-  the rising dark, the crawler). Film: `scripts/cine/plates.py`, cut in `edit.py` (`outro`).
+  the rising dark, the crawler). Film: `scripts/cine/shots_end.py` (O1-O7), cut in `edit.py` (`outro`).

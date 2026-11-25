@@ -39,6 +39,8 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 30. Worn: smooth rock and its kinds, the dark, the thread's light, the Hush, quiet places, her and the beasts, picture check, logs, 1.2.0 (`worn/`, one place sealed) | https://claude.ai/artifact/KqKHAJhVneDr7eihafk6BM |
 | 31. Rough: stone lines that waver, swell and break (`rough/`) | https://claude.ai/artifact/W7jrYmxMZJTfqAj1wYvMeW |
 | 32. By Hand: the opening film staged again: hands that touch, walking, flicker, linear cameras, sound in sync, no magic sounds (`prologue/`, open) | https://claude.ai/artifact/U3awPggQ9kitFSbExvunak |
+| 33. Both Ends: the two ending films staged again (contact, linear cameras, sound in sync, the tied ending animated) (`endings/`, the tied film sealed) | https://claude.ai/artifact/UxSTG2brFauukhhFqTWdy9 |
+| 34. Every Name: a film after the bitten ending's titles, the tied ending joined to its film at the pit's lip, pluck on `;` (`names/`, the tied film sealed) | https://claude.ai/artifact/RJNXr6n4aYbLTjUQ2XYdte |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,

@@ -27,8 +27,9 @@ INK = np.array([0.045, 0.04, 0.06]); PAPER = np.array([0.91, 0.86, 0.75]); RED =
 # (shot, transition into this shot in frames: 0 = cut)
 FILMS = {
     'intro': [('I1', 0), ('I2', 16), ('I2K', 0), ('I3', 0), ('I4', 0), ('I5', 10), ('I5S', 0), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],      # shots_intro.py
-    'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0), ('C5', 0)],      # shots_cut.py: the bitten ending
-    'outro': [('O1', 0), ('O2', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # plates.py; hard cuts through black
+    'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0), ('C5', 0)],      # shots_end.py: the bitten ending
+    'outro': [('O2', 0), ('O1', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # shots_end.py: the tied ending; hard cuts. It opens where the game's ending leaves off, at the lip of the pit
+    'names': [('N1', 0)],      # shots_end.py: after the titles of the bitten ending
 }
 
 
@@ -120,8 +121,14 @@ def picture(film, draft):
                 seq[j] = ('mix', seq[j], ('png', p), k)
             else:
                 seq.append(('png', p))
-    if film in ('outro', 'cut'):
-        seq.extend(('black', None) for _ in range(60))
+    for e in film_events(film, cuts):                          # the dark blinks
+        if e['kind'] == 'blink':
+            for j in range(int(e['f']), int(e['to'])):
+                i = cuts[e['shot']] + j - 1
+                if i < len(seq):
+                    seq[i] = ('black', None)
+    if film in ('outro', 'cut', 'names'):
+        seq.extend(('black', None) for _ in range(36 if film == 'names' else 60))
     return seq, cuts
 
 
@@ -217,11 +224,11 @@ def breath(seconds, seed=1):
     return np.stack([x, x * 0.95], 1)
 
 
-def intro_events(cuts):
+def film_events(film, cuts):
     """every sound the shots asked for, on the film's clock: [{t, kind, vol, pan, shot, ...}]"""
     import json
     out = []
-    for name, _ in FILMS['intro']:
+    for name, _ in FILMS[film]:
         p = os.path.join(CACHE, 'frames', name, 'events.json')
         if name not in cuts or not os.path.exists(p):
             continue
@@ -230,39 +237,15 @@ def intro_events(cuts):
     return sorted(out, key=lambda e: e['t'])
 
 
-def intro_sound(M, cuts, at, T, wind, wind_in):
-    """the prologue. Beds follow the picture; every other sound is an event the shot itself wrote from the numbers its
-    movement is made of (shots_intro.ev), and lands with its contact moment on that frame (foley.py). No chimes, no harp:
-    when the doll wakes there is wool, and nothing else."""
+def place_events(M, E, place, film):
+    """lay every event with its contact moment on its frame; leaves the stem and the list for synccheck.py"""
     import foley
-    E = intro_events(cuts)
-    when = lambda kind: next((e['t'] for e in E if e['kind'] == kind), None)
-    t_open, t_shut, t_hush = when('wind_open'), when('wind_shut'), when('hush')
-    t_k, t_5s, t_6, t_8, t_9, t_t = at('I2K'), at('I5S'), at('I6'), at('I8'), at('I9'), at('TITLE')
-    # music: under the storm and the work, gone before the door shuts
-    M.add(decode('mus_title'), 1.5, 0.25, fade_in=5, fade_out=6, dur=t_shut - 0.3 - 1.5)
-    # the storm: outside / through the walls / outside at the glass / through the walls / the door / outside / the room again
-    M.bed(wind, 0, t_k, 0.95, fi=2.5, fo=0.25)
-    M.bed(wind_in, t_k - 0.2, t_5s + 0.1, 0.34, fi=0.3, fo=0.2)
-    M.bed(wind, t_5s - 0.05, t_6 + 0.1, 0.42, fi=0.25, fo=0.2)
-    M.bed(wind_in, t_6 - 0.05, t_open + 0.2, 0.45, fi=0.25, fo=0.2)
-    M.bed(wind, t_open - 0.02, t_8 + 0.6, 1.0, fi=0.3, fo=0.9)
-    M.bed(wind, t_8, t_shut + 0.06, 0.6, fi=0.6, fo=0.12)                   # through the open door
-    M.bed(wind_in, t_shut - 0.05, t_9 + 0.2, 0.6, fi=0.05, fo=0.4)
-    M.bed(decode('amb_wind', af='lowpass=f=1500'), t_9 - 0.1, t_hush + 1.2, 0.4, fi=0.3, fo=1.6)     # outside the glass, then it holds its breath
-    M.bed(decode('amb_wind', af='lowpass=f=160'), t_hush, t_t + 1.0, 0.35, fi=1.4, fo=1.0)
-    M.bed(wind, t_t + 0.6, T, 0.34, fi=1.6, fo=2.2)
-    room = crackle(t_open - t_k + 0.2)
-    M.add(room[: int((t_5s - t_k) * SR)], t_k, 0.26, fade_in=0.4, fade_out=0.15)
-    M.add(room[int((t_6 - t_k) * SR):], t_6, 0.26, fade_in=0.1, fade_out=0.2)
-    # what each place does to a sound
-    place = {**{k: dict(lo=None, hi=None, g=1.8, room=0.12) for k in ('I2K', 'I3', 'I4', 'I5')}, 'I2': dict(lo=None, hi=750, g=0.8, room=0.0), 'I5S': dict(lo=None, hi=2600, g=1.15, room=0.12), 'I7': dict(lo=None, hi=None, g=1.0, room=0.0),
-             'I9': dict(lo=None, hi=5000, g=1.15, room=0.0)}
+    import json
     count, log = {}, []
     stem = np.zeros_like(M.buf)
     for e in E:
         k = e['kind']
-        if k in ('wind_open', 'wind_shut', 'hush'):
+        if k in ('wind_open', 'wind_shut', 'hush', 'blink', 'stop', 'black', 'cutblack', 'voice'):
             continue
         if k == 'breath':
             M.add(breath(4.2), e['t'], 0.34 * e['vol']); continue
@@ -286,9 +269,112 @@ def intro_sound(M, cuts, at, T, wind, wind_in):
         if i0 >= 0:
             m = min(len(x2), len(stem) - i0); stem[i0: i0 + m] += x2[:m] * v
         log.append({'t': e['t'], 'kind': k, 'shot': e['shot'], 'f': e['f'], 'lasts': k in foley.LAST})
-    import json
-    json.dump(log, open(os.path.join(CACHE, 'intro_events.json'), 'w'), indent=0)
-    np.save(os.path.join(CACHE, 'intro_foley.npy'), stem.mean(1).astype(np.float32))
+    json.dump(log, open(os.path.join(CACHE, film + '_events.json'), 'w'), indent=0)
+    np.save(os.path.join(CACHE, film + '_foley.npy'), stem.mean(1).astype(np.float32))
+
+
+def dull(x, hz=2400):
+    import foley
+    return np.stack([foley.band(x[:, 0], None, hz), foley.band(x[:, 1], None, hz)], 1).astype(np.float32)
+
+
+def voices(M, E):
+    V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')
+    for e in E:
+        if e['kind'] == 'voice':
+            x = decode(V(e['name']))[int(e.get('at', 0) * SR):]
+            M.add(x, e['t'], e['vol'], fade_out=0.05, dur=e['dur'], pan=e['pan'])
+            if e.get('cave'):                                  # the walls have it too, a little after
+                y = np.zeros((int(3.2 * SR), 2), np.float32); m = min(len(x), int(e['dur'] * SR)); y[:m] = x[:m]
+                wet = np.zeros_like(y)
+                for d, g, p in ((0.083, 0.30, 0.5), (0.131, 0.26, -0.5), (0.227, 0.22, 0.2), (0.341, 0.17, -0.7), (0.52, 0.12, 0.7), (0.79, 0.08, -0.2), (1.13, 0.05, 0.3)):
+                    i = int(d * SR); wet[i:] += y[: len(y) - i] * g * np.array([1 - max(0, p), 1 + min(0, p)], np.float32)
+                M.add(dull(wet), e['t'], e['vol'])
+            if e.get('echo'):                                  # the far side of the valley says it back, and not in the same voice
+                for k, (d, r, v, p) in enumerate(((1.9, 0.94, 0.16, -0.6), (3.4, 1.1, 0.12, 0.6), (4.8, 0.72, 0.18, -0.2))):
+                    M.add(decode(V(e['name']), rate=r, af='highpass=f=250,lowpass=f=1500,aecho=0.8:0.6:240|520:0.4|0.25'), e['t'] + d, v, fade_in=0.4, fade_out=0.8, pan=p)
+
+
+def cut_sound(M, cuts, at, T, wind):
+    """the bitten ending: the storm lets go, meltwater, the title's music for the only time since; then the well; then chairs and names"""
+    E = film_events('cut', cuts)
+    when = lambda kind: next(e['t'] for e in E if e['kind'] == kind)
+    t2, t3, t4, t5, t_stop, t_black = at('C2'), at('C3'), at('C4'), at('C5'), when('stop'), when('black')
+    soft = decode('amb_wind', af='lowpass=f=700'); far = decode('amb_wind', af='lowpass=f=240')
+    M.bed(wind, 0, 3.6, 0.5, fi=1.2, fo=2.8)
+    M.bed(soft, 1.0, t4 + 0.4, 0.22, fi=3, fo=0.5)
+    M.add(decode('mus_title'), 1.2, 0.34, fade_in=4, fade_out=3.2, dur=t4 + 0.6 - 1.2)
+    M.bed(decode('amb_drips'), at('C1', 60), t4 + 0.2, 0.34, fi=3, fo=0.5)
+    for f in (90, 140, 190):
+        M.add(decode('trickle%d' % (f % 3 + 1)), at('C1', f), 0.16, fade_in=0.4, fade_out=0.6)
+    M.bed(far, t4 - 0.6, t5 + 2.0, 0.8, fi=0.6, fo=2.5)
+    M.bed(decode('amb_drips', af='lowpass=f=900,aecho=0.8:0.7:400|900:0.5|0.3'), t4, t_stop + 0.03, 0.30, fi=1, fo=0.03)
+    M.bed(decode('amb_hall'), t5 + 0.5, t_stop + 0.03, 0.22, fi=3, fo=0.03)            # and all of it stops with the chairs
+    place = {'C1': dict(lo=None, hi=None, g=1.0, room=0.0), 'C2': dict(lo=None, hi=None, g=2.2, room=0.0), 'C3': dict(lo=None, hi=None, g=3.2, room=0.0), 'C5': dict(lo=None, hi=None, g=1.0, room=0.3)}
+    place_events(M, E, place, 'cut'); voices(M, E)
+    M.add(decode('inhale', rate=1.1), t_black - 0.75, 0.4, fade_out=0.05, dur=0.83)
+
+
+def outro_sound(M, cuts, at, T):
+    """the tied ending: no music. Snow, wood, hands, her voice, and bare feet"""
+    E = film_events('outro', cuts)
+    still = decode('amb_wind', af='lowpass=f=300')
+    t3, t4, t5, t6, t7 = at('O3'), at('O4'), at('O5'), at('O6'), at('O7')
+    M.bed(still, 0, t3 - 0.02, 0.4, fi=1.5, fo=0.02)
+    M.bed(decode('amb_wind', af='lowpass=f=160'), t3, t4 + 0.2, 0.3, fi=0.3, fo=0.3)
+    M.bed(decode('amb_wind', af='lowpass=f=160'), t4, t5 + 0.1, 0.22, fi=0.3, fo=0.1)
+    M.bed(decode('amb_wind', af='lowpass=f=520'), t5, t6 + 0.2, 0.34, fi=0.2, fo=0.3)
+    M.bed(still, t6, t7 + 0.1, 0.34, fi=0.2, fo=0.15)
+    M.bed(decode('amb_wind', af='lowpass=f=130'), t7, T - 1.2, 0.3, fi=0.2, fo=1.5)
+    step = decode('snow1', af='lowpass=f=1300')                # a great many bare feet, in no hurry
+    rng = np.random.default_rng(3)
+    for k in range(230):
+        M.add(step, t6 + rng.random() * (t7 - t6 - 0.4), 0.07 + 0.06 * rng.random(), pan=float(rng.uniform(-0.8, 0.8)))
+    place = {'O1': dict(lo=None, hi=None, g=1.0, room=0.0), 'O2': dict(lo=None, hi=None, g=1.0, room=0.0), 'O4': dict(lo=None, hi=2600, g=1.1, room=0.12),
+             'O5': dict(lo=None, hi=None, g=2.4, room=0.0), 'O6': dict(lo=None, hi=None, g=1.0, room=0.0)}
+    place_events(M, E, place, 'outro'); voices(M, E)
+
+
+def names_sound(M, cuts, at, T):
+    """after the titles: the bottom of the well, what moves on the walls, the names that are left; from very far up, at half its
+    speed, what is left of the tune"""
+    E = film_events('names', cuts)
+    M.bed(decode('amb_pit', af='lowpass=f=400'), 0, T - 1.2, 0.30, fi=2.5, fo=1.6)
+    M.bed(decode('amb_drips', af='lowpass=f=1400,aecho=0.8:0.7:400|900:0.5|0.3'), 0.4, T - 1.2, 0.22, fi=2, fo=1.2)
+    M.bed(decode('amb_breath', af='lowpass=f=900'), 2.0, T - 1.0, 0.20, fi=4, fo=0.4)
+    M.add(decode('mus_title', rate=0.5, af='lowpass=f=700,aecho=0.8:0.8:600|1100:0.4|0.3'), 1.0, 0.20, fade_in=5, fade_out=4, dur=T - 5.0)
+    place_events(M, E, {'N1': dict(lo=None, hi=None, g=1.0, room=0.35)}, 'names'); voices(M, E)
+
+
+def intro_sound(M, cuts, at, T, wind, wind_in):
+    """the prologue. Beds follow the picture; every other sound is an event the shot itself wrote from the numbers its
+    movement is made of (shots_intro.ev), and lands with its contact moment on that frame (foley.py). No chimes, no harp:
+    when the doll wakes there is wool, and nothing else."""
+    import foley
+    E = film_events('intro', cuts)
+    when = lambda kind: next((e['t'] for e in E if e['kind'] == kind), None)
+    t_open, t_shut, t_hush = when('wind_open'), when('wind_shut'), when('hush')
+    t_k, t_5s, t_6, t_8, t_9, t_t = at('I2K'), at('I5S'), at('I6'), at('I8'), at('I9'), at('TITLE')
+    # music: under the storm and the work, gone before the door shuts
+    M.add(decode('mus_title'), 1.5, 0.25, fade_in=5, fade_out=6, dur=t_shut - 0.3 - 1.5)
+    # the storm: outside / through the walls / outside at the glass / through the walls / the door / outside / the room again
+    M.bed(wind, 0, t_k, 0.95, fi=2.5, fo=0.25)
+    M.bed(wind_in, t_k - 0.2, t_5s + 0.1, 0.34, fi=0.3, fo=0.2)
+    M.bed(wind, t_5s - 0.05, t_6 + 0.1, 0.42, fi=0.25, fo=0.2)
+    M.bed(wind_in, t_6 - 0.05, t_open + 0.2, 0.45, fi=0.25, fo=0.2)
+    M.bed(wind, t_open - 0.02, t_8 + 0.6, 1.0, fi=0.3, fo=0.9)
+    M.bed(wind, t_8, t_shut + 0.06, 0.6, fi=0.6, fo=0.12)                   # through the open door
+    M.bed(wind_in, t_shut - 0.05, t_9 + 0.2, 0.6, fi=0.05, fo=0.4)
+    M.bed(decode('amb_wind', af='lowpass=f=1500'), t_9 - 0.1, t_hush + 1.2, 0.4, fi=0.3, fo=1.6)     # outside the glass, then it holds its breath
+    M.bed(decode('amb_wind', af='lowpass=f=160'), t_hush, t_t + 1.0, 0.35, fi=1.4, fo=1.0)
+    M.bed(wind, t_t + 0.6, T, 0.34, fi=1.6, fo=2.2)
+    room = crackle(t_open - t_k + 0.2)
+    M.add(room[: int((t_5s - t_k) * SR)], t_k, 0.26, fade_in=0.4, fade_out=0.15)
+    M.add(room[int((t_6 - t_k) * SR):], t_6, 0.26, fade_in=0.1, fade_out=0.2)
+    # what each place does to a sound
+    place = {**{k: dict(lo=None, hi=None, g=1.8, room=0.12) for k in ('I2K', 'I3', 'I4', 'I5')}, 'I2': dict(lo=None, hi=750, g=0.8, room=0.0), 'I5S': dict(lo=None, hi=2600, g=1.15, room=0.12), 'I7': dict(lo=None, hi=None, g=1.0, room=0.0),
+             'I9': dict(lo=None, hi=5000, g=1.15, room=0.0)}
+    place_events(M, E, place, 'intro')
     # the title: the thread drawn under it, as it is drawn
     tt = at('TITLE')
     M.add(np.stack([foley.sustained('thread_draw', 1.4, 1)] * 2, 1), tt + 0.6, 0.16, pan=0.0)
@@ -303,57 +389,11 @@ def soundtrack(film, cuts, nframes):
     if film == 'intro':
         intro_sound(M, cuts, at, T, wind, wind_in)
     elif film == 'cut':
-        # the storm lets go; water; the title's music, for the only time since; then the well, and the names
-        V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')
-        soft = decode('amb_wind', af='lowpass=f=700'); far = decode('amb_wind', af='lowpass=f=260')
-        M.bed(wind, 0, 3.4, 0.5, fi=1.2, fo=2.6)
-        M.bed(soft, 1.0, at('C4') + 0.5, 0.22, fi=3, fo=1.0)
-        M.add(decode('mus_title'), 1.2, 0.36, fade_in=4, fade_out=3.0, dur=at('C4') - 0.4 - 1.2)
-        drips = decode('amb_drips')
-        M.bed(drips, at('C1', 70), at('C4', 1), 0.5, fi=3, fo=0.6)
-        rng = np.random.default_rng(5)
-        for k in range(26):
-            M.add(decode('drip', rate=0.9 + 0.5 * rng.random()), at('C1', 80) + rng.random() * (at('C3', 60) - at('C1', 80)), 0.1 + 0.16 * rng.random(), pan=float(rng.uniform(-0.7, 0.7)))
-        for f in (60, 78, 101, 119):
-            M.add(decode('trickle%d' % (f % 3 + 1)), at('C1', f), 0.22, fade_in=0.2, fade_out=0.4)
-        M.add(decode('land', rate=0.6), at('C1', 120), 0.35); M.add(decode('snow2', rate=0.7), at('C1', 121), 0.6)       # the roof lets its snow go
-        for f in (20, 52, 90):
-            M.add(decode('leaf%d' % (f % 4 + 1)), at('C2', f), 0.2, pan=0.2)
-        M.bed(far, at('C3', 60), at('C5', 40), 0.9, fi=2.5, fo=3.0)
-        M.add(breath(4.5), at('C3', 84), 0.5)
-        M.bed(decode('amb_drips', af='lowpass=f=900,aecho=0.8:0.7:400|900:0.5|0.3'), at('C4'), at('C5', 60), 0.5, fi=1, fo=2)
-        M.bed(decode('amb_breath'), at('C5', 20), at('C5', 246), 0.32, fi=3, fo=0.1)
-        M.add(decode('wood', rate=0.5), at('C5', 34), 0.35)
-        M.add(decode(V('names'), af='lowpass=f=3200'), at('C5', 66), 0.75, fade_in=1.0, fade_out=0.06, dur=(246 - 66) / FPS)
-        M.add(decode('bone1', rate=0.55), at('C5', 246), 0.9)
-        M.add(decode('inhale', rate=1.1), at('C5', 250), 0.5, fade_out=0.3, dur=1.2)
+        cut_sound(M, cuts, at, T, wind)
+    elif film == 'names':
+        names_sound(M, cuts, at, T)
     else:
-        # no music. Snow falling, hands on stone, her voice, and the names
-        V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')
-        still = decode('amb_wind', af='lowpass=f=300')
-        M.bed(still, 0, at('O3'), 0.4, fi=1.5, fo=0.1)
-        M.add(decode('wood', rate=0.5), at('O1', 64), 0.5)
-        for k, (f, v) in enumerate(((25, 1.5), (41, 1.2), (50, 1.4), (62, 1.5), (68, 1.3), (74, 1.5), (79, 1.4))):
-            M.add(decode('palm%d' % (k % 3 + 1), rate=0.8), at('O2', f), v)
-        M.add(decode('drag', rate=0.7), at('O2', 50), 1.1, fade_out=0.6, dur=1.9)
-        M.add(decode('inhale', rate=0.9), at('O3', 1), 0.9, dur=2.2, fade_out=0.1)
-        for f in (54, 88):                                   # the two blinks: a board, then nothing
-            M.add(decode('wood', rate=0.62), at('O3', f), 1.3)
-        M.add(decode('bone1', rate=0.5), at('O3', 98), 1.2)
-        M.add(decode('inhale', rate=1.1), at('O4', 20), 0.8)
-        M.add(decode(V('home')), at('O4', 70), 1.0)
-        # she goes to the door and calls. It is answered.
-        M.add(decode(V('call')), at('O5', 6), 0.9)
-        M.add(decode(V('call'), rate=0.8), at('O5', 40), 0.35, pan=-0.6)
-        M.add(decode(V('call'), rate=1.12, af='lowpass=f=1400'), at('O5', 74), 0.3, pan=0.6)
-        M.add(decode(V('call'), rate=0.66, af='lowpass=f=900'), at('O5', 110), 0.4)
-        for k in range(9):
-            M.add(decode(V('call'), rate=0.7 + 0.07 * k, af='lowpass=f=1100,aecho=0.8:0.7:300|700:0.4|0.3'), at('O6', 1) + k * 0.33, 0.16, pan=((k % 3) - 1) * 0.7, fade_in=1.5, fade_out=1.0, dur=6.2 - k * 0.33)
-        step = decode('snow1', af='lowpass=f=1500')
-        rng = np.random.default_rng(3)
-        for k in range(150):                                 # a great many bare feet, in no hurry
-            M.add(step, at('O6', 1) + rng.random() * 6.4, 0.12 + 0.08 * rng.random(), pan=float(rng.uniform(-0.8, 0.8)))
-        M.add(decode('inhale', rate=0.8), at('O7', 30), 0.9)
+        outro_sound(M, cuts, at, T)
     y = M.buf[: int((T + 0.5) * SR)]
     peak = np.abs(y).max()
     if peak > 0.98:

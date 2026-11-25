@@ -14,7 +14,9 @@ from lib import key, cam_keys, light, empty, prim, parent, M
 
 SHOTS = {}
 INTRO = ['I1', 'I2', 'I2K', 'I3', 'I4', 'I5', 'I5S', 'I6', 'I7', 'I8', 'I9']
-OUTRO = ['E2', 'E3', 'E4', 'E5', 'E6', 'E7']
+OUTRO = ['O2', 'O1', 'O3', 'O4', 'O5', 'O6', 'O7']
+CUT = ['C1', 'C2', 'C3', 'C4', 'C5']
+NAMES = ['N1']
 EXPOSURE = {}    # post exposure per shot
 
 
@@ -330,4 +332,4 @@ def K3(out, preview):
 
 
 import shots_intro  # noqa: E402,F401  (the prologue)
-import shots_cut  # noqa: E402,F401  (the bitten ending)
+import shots_end  # noqa: E402,F401  (the two endings)

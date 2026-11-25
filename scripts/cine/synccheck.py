@@ -1,11 +1,11 @@
 """Is every sound on its movement? Reads the finished film's sound (or the foley stem edit.py leaves) and, for every event,
 finds where the attack really is (first reaching half of its loudest).
 
-    <art venv>/python scripts/cine/synccheck.py [film.mp4]
+    <art venv>/python scripts/cine/synccheck.py [intro|cut|outro]
 
 1. the stem: for each struck event the attack within 80 ms of its frame, in ms from the frame's start.
 2. the film: the whole mix against the stem by correlation, so a delay added by the encoder or the container would show.
-One frame is 41.7 ms. Prints a table by kind and the worst; writes .cache/intro_sync.json."""
+One frame is 41.7 ms. Prints a table by kind and the worst; writes .cache/<film>_sync.json."""
 import json
 import os
 import subprocess
@@ -16,8 +16,9 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, '.cache')
 SR = 48000
-stem = np.load(os.path.join(CACHE, 'intro_foley.npy'))
-E = json.load(open(os.path.join(CACHE, 'intro_events.json')))
+NAME = sys.argv[1] if len(sys.argv) > 1 else 'intro'
+stem = np.load(os.path.join(CACHE, NAME + '_foley.npy'))
+E = json.load(open(os.path.join(CACHE, NAME + '_events.json')))
 
 
 def env(x, ms):
@@ -47,7 +48,7 @@ for k, v in sorted(kinds.items()):
     print(f'{k:13s} n={len(v):3d}  attack {min(v):+4d} .. {max(v):+4d} ms, median {int(np.median(v)):+d}')
 al = [x for v in kinds.values() for x in v]
 print('events', len(E), 'struck and alone', len(al), 'within one frame', sum(abs(x) <= 42 for x in al), 'within half a frame', sum(abs(x) <= 21 for x in al))
-film = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', '..', 'app', 'assets', 'cine', 'intro.mp4')
+film = os.path.join(HERE, '..', '..', 'app', 'assets', 'cine', NAME + '.mp4')
 raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', film, '-ac', '1', '-ar', str(SR), '-f', 'f32le', '-'], capture_output=True).stdout
 mix = np.frombuffer(raw, np.float32)
 n = min(len(mix), len(stem))
@@ -67,4 +68,4 @@ best = [x for x in best if x[1] > 0.25]
 print('film against stem, ms (correlation):', best)
 probe = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_type,start_time,duration', '-of', 'csv=p=0', film], capture_output=True, text=True).stdout
 print('streams (type, start, length):', probe.split())
-json.dump({'rows': rows, 'film': best}, open(os.path.join(CACHE, 'intro_sync.json'), 'w'))
+json.dump({'rows': rows, 'film': best}, open(os.path.join(CACHE, NAME + '_sync.json'), 'w'))
