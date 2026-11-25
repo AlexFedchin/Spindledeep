@@ -178,6 +178,9 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
 
   // ── rock ──────────────────────────────────────────────────────────────
   let dRaw = sdfAt(p);
+  let sc = textureSampleLevel(spriteTex, linSamp, uv, 0.0);
+  // things buried in the rock (buried.js) come on the sprite layer too, told apart by being blue
+  let bury = smoothstep(0.1, 0.25, sc.b - sc.r);
   let detail = (fbm(p * 2.6) - 0.5) * 0.16 + (vnoise(p * 11.0) - 0.5) * 0.035;
   let d = dRaw + detail;
 
@@ -195,6 +198,24 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     let ph1 = (d * ppm) / (sp * 1.05) + wob + strata * 1.5;
     let ph2 = dirPhase(px, 1.05, sp * 1.1) + wob * 0.6;
     paperMask = engrave(expose(value), ph1, ph2, aa, 1.0);
+    // where two faces are equally far (the middle of a ledge) the contours have nothing to follow and used to clot into blots
+    // that looked like things in the ground: the lines run level there instead
+    if (depthIn > 0.12) {
+      let gh = 0.16;
+      let gv = vec2f(sdfAt(p + vec2f(gh, 0.0)) - sdfAt(p - vec2f(gh, 0.0)), sdfAt(p + vec2f(0.0, gh)) - sdfAt(p - vec2f(0.0, gh))) / (2.0 * gh);
+      let level = smoothstep(0.92, 0.6, length(gv)) * smoothstep(0.12, 0.3, depthIn);
+      if (level > 0.0) {
+        let phF = (p.y * ppm) / (sp * 1.05) + wob + strata * 1.5 + detail * ppm / (sp * 2.0);
+        paperMask = mix(paperMask, engrave(expose(value), phF, ph2, aa, 1.0), level);
+      }
+    }
+    // buried things: cut into the rock in finer lines of their own, lit and fading with depth exactly as the rock is
+    if (bury * sc.a > 0.004) {
+      let vb = sc.r * 1.95 * exp(-depthIn * 0.5) * lum(light) * 1.6;
+      let phB = dirPhase(px, 0.6, sp * 0.62) + wob * 0.3;
+      let phB2 = dirPhase(px, -0.6, sp * 0.62) + wob * 0.3;
+      paperMask = mix(paperMask, engrave(expose(vb), phB, phB2, 1.1 / (sp * 0.62), 1.0), bury * sc.a * smoothstep(0.1, 0.25, depthIn) * 0.9);
+    }
     // the very face of the rock: a crisp inked edge
     paperMask *= smoothstep(0.6, 1.8, abs(d) * ppm);
     tint = light / max(lum(light), 1e-3);
@@ -261,15 +282,15 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   }
 
   // ── sprites (Canvas2D layer: grey = engraved tone, alpha = coverage) ─────
-  let sc = textureSampleLevel(spriteTex, linSamp, uv, 0.0);
-  if (sc.a > 0.004) {
+  let sa = sc.a * (1.0 - bury);
+  if (sa > 0.004) {
     let tone = sc.r;
     let sv = tone * (lum(light) * 1.5 + 0.05);
     let ph = dirPhase(px, 0.6, sp * 0.62) + wob * 0.3;
     let ph2s = dirPhase(px, -0.6, sp * 0.62) + wob * 0.3;
     let sm = engrave(expose(sv), ph, ph2s, 1.1 / (sp * 0.62), 1.0);
-    paperMask = mix(paperMask, sm, sc.a);
-    tint = mix(tint, light / max(lum(light), 1e-3), sc.a);
+    paperMask = mix(paperMask, sm, sa);
+    tint = mix(tint, light / max(lum(light), 1e-3), sa);
   }
 
   // ── figures (3D, already lit): lines that bend round the form, heavier where it turns away, hidden by rock ─────

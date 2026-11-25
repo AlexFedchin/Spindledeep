@@ -3,6 +3,7 @@
 // Grey tone on the sprite canvas like everything else (the engraving shader lights it); glows on the additive one.
 import * as L from './level.js';
 import { clamp, mulberry, TAU } from './util.js';
+import { hug } from './route.js';
 import { SPRITES, drawHands, drawCalled, drawDark, drawRemains } from './drawend.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
@@ -99,15 +100,23 @@ function drawChairs(D, ctx, ectx) {
 
 // the faded red thread of a doll that came down seventy winters ago (memory m9 is knotted in it)
 const OLD = [[55.5, -365.85], [58.5, -365.85], [61.4, -365.85], [64.5, -365.9], [67.2, -366.1], [69.7, -364], [69.8, -360.5], [70.6, -358.15], [76, -358.15], [86, -358.15]];
+// laid along the rock, like the grey one
+function laidOld(T) {
+  const out = [];
+  const up = ([x, y]) => { for (let k = 0; k < 30 && T.d(x, y) < 0.05; k++) { const [gx, gy] = T.grad(x, y); x += gx * 0.04; y += gy * 0.04; } return [x, y]; };
+  OLD.map(up).forEach((p, i, a) => { if (i) hug(T, a[i - 1][0], a[i - 1][1], p[0], p[1], (x, y) => out.push([x, y]), 0.06, true, 8); out.push(p); });
+  return out;
+}
 function drawOldThread(D, ctx, ectx) {
   if (!D.vis(70, -362, 20)) return;
   ctx.strokeStyle = g(0.3); ctx.lineWidth = Math.max(1, D.k * 0.014);
   ctx.beginPath();
-  OLD.forEach(([x, y], i) => (i ? ctx.lineTo(D.sx(x), D.sy(y + Math.sin(x * 3.1) * 0.02)) : ctx.moveTo(D.sx(x), D.sy(y))));
+  const P = D.oldThread ||= laidOld(D.w.T);
+  P.forEach(([x, y], i) => (i ? ctx.lineTo(D.sx(x), D.sy(y)) : ctx.moveTo(D.sx(x), D.sy(y))));
   ctx.stroke();
   ectx.strokeStyle = 'rgba(140,40,30,0.35)'; ectx.lineWidth = 1.2;
   ectx.beginPath();
-  OLD.forEach(([x, y], i) => (i ? ectx.lineTo(D.sx(x), D.sy(y)) : ectx.moveTo(D.sx(x), D.sy(y))));
+  P.forEach(([x, y], i) => (i ? ectx.lineTo(D.sx(x), D.sy(y)) : ectx.moveTo(D.sx(x), D.sy(y))));
   ectx.stroke();
 }
 
@@ -116,6 +125,17 @@ function ropeTop(D, r) {
   if (r.top === undefined) { let y = r.y1; for (let k = 0; k < 400 && D.w.T.d(r.x, y) > 0; k++) y += 0.25; r.top = y; }
   return r.top;
 }
+// the stretches of one warp thread that are in the air: [top, bottom] (a ledge or the Loom's wall stands in front of the rest)
+function warpSpans(T, x) {
+  const out = []; let top = null;
+  for (let y = Math.min(-432, -430 - Math.abs(x - 60) * 0.5); y > -562; y -= 0.2) {
+    const air = T.d(x, y) > -0.12;
+    if (air && top === null) top = y;
+    if (!air && top !== null) { if (top - y > 0.8) out.push([top, y + 0.2]); top = null; }
+  }
+  if (top !== null) out.push([top, -562]);
+  return out;
+}
 function drawWarpBack(D, ctx) {
   // the Loom's warp: hundreds of threads from the roof to the cloth, behind everything
   if (!D.vis(60, -492, 70) || D.cam[1] > -420) return;
@@ -123,9 +143,12 @@ function drawWarpBack(D, ctx) {
   ctx.lineWidth = Math.max(0.6, k * 0.008);
   for (let x = 6.5; x < 114; x += 1.55) {
     if (Math.abs(x - D.cam[0]) > D.viewW / 2 + 2) continue;
-    const top = -430 - 18 * (1 - ((x - 60) / 56) ** 2) ** 0.5 * 0 - Math.abs(x - 60) * 0.5;
+    const sp = ((D.warpSpans ||= {})[x.toFixed(2)] ||= warpSpans(D.w.T, x));
     ctx.strokeStyle = g(0.18 + 0.06 * Math.sin(x * 2.3));
-    ctx.beginPath(); ctx.moveTo(D.sx(x), D.sy(Math.min(top, -432))); ctx.lineTo(D.sx(x + Math.sin(D.time * 0.3 + x) * 0.03), D.sy(lvl)); ctx.stroke();
+    for (const [a, b] of sp) {
+      if (a <= lvl || b > D.cam[1] + D.viewH / 2 + 1 || a < D.cam[1] - D.viewH / 2 - 1) continue;
+      ctx.beginPath(); ctx.moveTo(D.sx(x), D.sy(a)); ctx.lineTo(D.sx(x + Math.sin(D.time * 0.3 + x) * 0.03), D.sy(Math.max(b, lvl))); ctx.stroke();
+    }
   }
 }
 function drawRopes(D, ctx, ectx) {
@@ -157,6 +180,17 @@ function drawRopes(D, ctx, ectx) {
   }
 }
 
+// the line of the roof over a heddle, from its left edge to its right
+function heddleRoof(T, s) {
+  const [x0, y0, x1, y1] = s.r, out = [];
+  for (let x = x0 - 1; x <= x1 + 1.01; x += 0.15) {
+    let y = y0 - 1.5;
+    for (let k = 0; k < 120 && T.d(x, y) > -0.02; k++) y += 0.1;
+    out.push([x, Math.min(y, y1 + 8)]);
+  }
+  return out;
+}
+
 // ── heddles and needles ──────────────────────────────────────────────────
 function drawStampers(D, ctx, ectx) {
   const k = D.k, w = D.w;
@@ -168,6 +202,13 @@ function drawStampers(D, ctx, ectx) {
       // a heavy frame of timber strung with wire heddles, hung from the roof on chains
       const ex = s.dist * s.f, bot = s.r[1] - ex, top = s.r[3];
       let roof = top; for (let i = 0; i < 80 && w.T.d((x0 + x1) / 2, roof) > 0; i++) roof += 0.25;
+      // drawn up, its top is inside the slot in the roof: nothing of it shows above the rock's edge
+      s.slot ||= heddleRoof(w.T, s);
+      for (const c of [ctx, ectx]) {
+        c.save(); c.beginPath(); c.moveTo(D.sx(x0 - 1), D.sy(y0 - 12));
+        for (const [x, y] of s.slot) c.lineTo(D.sx(x), D.sy(y));
+        c.lineTo(D.sx(x1 + 1), D.sy(y0 - 12)); c.closePath(); c.clip();
+      }
       ctx.strokeStyle = g(0.1); ctx.lineWidth = Math.max(1, k * 0.03);
       for (const cx of [x0 + 0.3, x1 - 0.3]) for (let y = top + 0.2; y < roof; y += 0.24) { ctx.beginPath(); ctx.ellipse(D.sx(cx + jit), D.sy(y), 0.04 * k, 0.09 * k, 0, 0, TAU); ctx.stroke(); }
       const X0 = D.sx(x0 + jit), X1 = D.sx(x1 + jit), YT = D.sy(top + 0.6), YB = D.sy(bot);
@@ -179,15 +220,21 @@ function drawStampers(D, ctx, ectx) {
       ectx.strokeRect(X0, YT, X1 - X0, YB - YT);
       ctx.strokeStyle = g(0.6); ctx.lineWidth = Math.max(0.6, k * 0.008);
       for (let x = x0 + 0.35; x < x1 - 0.3; x += 0.13) { ctx.beginPath(); ctx.moveTo(D.sx(x + jit), YT + 0.35 * k); ctx.lineTo(D.sx(x + jit), YB - 0.45 * k); ctx.stroke(); }
+      ctx.restore(); ectx.restore();
       if (s.shake > 0) for (let i = 0; i < 2; i++) if (Math.random() < s.shake * 0.4) D.spawn('puff', x0 + Math.random() * (x1 - x0), top - 0.2, 1, { speed: 0.3, vy: -1.5, life: 0.8, r: 0.6 });
     } else {
       // a knitting needle as long as a house, sliding out of the cloth wall
-      const e = s.dist * s.f, yc = (s.r[1] + s.r[3]) / 2, xs = s.r[0], xt = s.r[2] + e + jit;
+      const e = s.dist * s.f, yc = (s.r[1] + s.r[3]) / 2, xt = s.r[2] + e + jit;
+      // (the rest of it is in the wall: it is drawn from where it comes out)
+      if (s.out === undefined) { s.out = s.r[0]; for (let i = 0; i < 400 && w.T.d(s.out, yc) < -0.12; i++) s.out += 0.1; }
+      const xs = Math.max(s.r[0], s.out);
+      if (xt - 0.2 < xs) continue;
+      const xb = Math.max(xs, xt - 0.9);
       ctx.fillStyle = g(0.62); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.02);
-      ctx.beginPath(); ctx.moveTo(D.sx(xs), D.sy(yc + 0.16)); ctx.lineTo(D.sx(xt - 0.9), D.sy(yc + 0.12)); ctx.lineTo(D.sx(xt), D.sy(yc));
-      ctx.lineTo(D.sx(xt - 0.9), D.sy(yc - 0.12)); ctx.lineTo(D.sx(xs), D.sy(yc - 0.16)); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(D.sx(xs), D.sy(yc + 0.16)); ctx.lineTo(D.sx(xb), D.sy(yc + 0.12)); ctx.lineTo(D.sx(xt), D.sy(yc));
+      ctx.lineTo(D.sx(xb), D.sy(yc - 0.12)); ctx.lineTo(D.sx(xs), D.sy(yc - 0.16)); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = g(0.9); ctx.lineWidth = Math.max(0.6, k * 0.012);
-      ctx.beginPath(); ctx.moveTo(D.sx(xs), D.sy(yc + 0.08)); ctx.lineTo(D.sx(xt - 0.6), D.sy(yc + 0.05)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(D.sx(xs), D.sy(yc + 0.08)); ctx.lineTo(D.sx(Math.max(xs, xt - 0.6)), D.sy(yc + 0.05)); ctx.stroke();
       if (s.shake > 0 || s.f > 0) {
         ectx.fillStyle = `rgba(230,235,255,${0.25 * Math.max(s.shake, s.f)})`;
         ectx.beginPath(); ectx.arc(D.sx(xt), D.sy(yc), 0.35 * k, 0, TAU); ectx.fill();

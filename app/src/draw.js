@@ -6,6 +6,7 @@ import { SNAG_R } from './player.js';
 import { drawLore, drawKeepsakes, drawHusks, drawShowItem } from './props.js';
 import { drawDeep } from './drawdeep.js';
 import { drawShelves } from './drawshelf.js';
+import { drawBuried, placeBuried } from './buried.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -16,6 +17,7 @@ export class Drawer {
     this.rng = mulberry(7);
     this.trees = makeTrees();
     this.fg = makeForeground(world);
+    this.buried = world.T.buried ||= placeBuried(world.T);
     this.hookChains = world.hooks.map((h) => {
       let top = h.sway ? h.ay : h.y;
       for (let k = 0; k < 160; k++) { top += 0.1; if (world.T.d(h.x, top) < 0) break; }
@@ -55,6 +57,7 @@ export class Drawer {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     this.time = time; this.dtLast = dt;
     this.ambientFx(dt);
+    drawBuried(this, ctx);
     this.drawFog(ctx, false);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
@@ -323,7 +326,9 @@ export class Drawer {
     const eL = gx - 1.1, eR = gx + W + 1.1, apex = gx + W / 2, ridge = base + WH + 3.0, eave = base + WH - 0.15;
 
     // ── lean-to woodshed on the left, its logs stacked under the eave ──
-    poly([[gx - 2.5, gy - 0.2], [gx - 2.5, gy + 1.7], [gx, base + 2.4], [gx, gy - 0.2]], 0.16, 0.03);
+    const foot = [];                                  // its back stands on the ground, which rises to the left here
+    for (let x = gx; x >= gx - 2.5; x -= 0.25) foot.push([x, L.surfaceY(x) - 0.1]);
+    poly([[gx - 2.5, gy + 1.7], [gx, base + 2.4], ...foot], 0.16, 0.03);
     this._woodpile ||= makeWoodpile(gx, gy, base);
     for (const lg of this._woodpile) drawLogEnd(ctx, X(lg.x), Y(lg.y), lg, k);
     // a dusting of snow blown in over the top of the pile
@@ -632,11 +637,12 @@ export class Drawer {
         for (let i = 0; i < 9; i++) {
           const y = gt.y0 + 0.5 + Math.sin(i * 1.7) * 0.25;
           ctx.globalAlpha = 1 - o;
-          ctx.beginPath(); ctx.moveTo(this.sx(gt.x0 - 0.3), this.sy(y));
-          ctx.quadraticCurveTo(this.sx((gt.x0 + gt.x1) / 2), this.sy(y - 0.5 - Math.sin(this.time + i) * 0.1 - o * 2), this.sx(gt.x1 + 0.3), this.sy(y + Math.cos(i) * 0.2));
+          const y2 = y + Math.cos(i) * 0.2, mid = (gt.x0 + gt.x1) / 2, [wl, wr] = (gt.ends ||= [])[i] ||= [wallFrom(this.w.T, mid, y, -1), wallFrom(this.w.T, mid, y2, 1)];
+          ctx.beginPath(); ctx.moveTo(this.sx(wl), this.sy(y));
+          ctx.quadraticCurveTo(this.sx(mid), this.sy(y - 0.5 - Math.sin(this.time + i) * 0.1 - o * 2), this.sx(wr), this.sy(y2));
           ctx.stroke();
         }
-        for (let x = gt.x0; x < gt.x1; x += 0.6) { ctx.beginPath(); ctx.moveTo(this.sx(x), this.sy(gt.y1)); ctx.lineTo(this.sx(x + 0.3), this.sy(gt.y0 - o * 2)); ctx.stroke(); }
+        for (let x = gt.x0; x < gt.x1; x += 0.6) { if (this.w.T.d(x, gt.y1) < -0.15 || this.w.T.d(x + 0.3, gt.y0) < -0.15) continue; ctx.beginPath(); ctx.moveTo(this.sx(x), this.sy(gt.y1)); ctx.lineTo(this.sx(x + 0.3), this.sy(gt.y0 - o * 2)); ctx.stroke(); }
         ctx.globalAlpha = 1;
       } else {
         const n = 16;
@@ -903,12 +909,20 @@ export class Drawer {
 
   // ── foreground silhouettes (in front of the play plane, drifting faster) ─
   drawForeground(ctx) {
-    const PAR = 1.35;
     ctx.fillStyle = g(0.0); ctx.strokeStyle = g(0.0);
     for (const f of this.fg) {
+      const PAR = f.type === 'grass' ? 1 : 1.35;      // grass stands on the floor and stays there
       const X = this.sx(f.x, PAR) + this.cam[0] * 0, Y = this.sy(f.y, PAR);
       if (X < -400 || X > this.W + 400 || Y < -600 || Y > this.H + 600) continue;
       const k = this.k * PAR;
+      // the others drift in front of the rock; one that has drifted so far that its top hangs in the air, or that lies over solid
+      // rock, is not shown
+      if (PAR > 1) {
+        const wx = this.cam[0] + (f.x - this.cam[0]) * PAR, wy = this.cam[1] + (f.y - this.cam[1]) * PAR, T = this.w.T, dt = T.d(wx, wy);
+        const a = clamp((0.7 - dt) / 0.5, 0, 1) * clamp((T.d(wx, wy - f.len * PAR * 0.45) + 0.1) / 0.5, 0, 1) * clamp((dt + 2.2) / 0.8, 0, 1);
+        if (a <= 0) continue;
+        ctx.globalAlpha = a;
+      } else ctx.globalAlpha = 1;
       if (f.type === 'root') {
         ctx.lineWidth = f.w * k;
         ctx.beginPath(); ctx.moveTo(X, Y);
@@ -927,14 +941,19 @@ export class Drawer {
       } else if (f.type === 'strand') {
         ctx.lineWidth = Math.max(1.5, f.w * k);
         ctx.beginPath(); ctx.moveTo(X, Y); ctx.quadraticCurveTo(X + f.dx * 0.5 * k, Y + f.len * 0.5 * k + f.sag * k, X + f.dx * k, Y + f.len * k); ctx.stroke();
-      } else if (f.type === 'mound') {
-        ctx.beginPath(); ctx.ellipse(X, Y, f.w * k, f.len * k, 0, Math.PI, TAU); ctx.fill();
       } else if (f.type === 'grass') {
         ctx.lineWidth = Math.max(1.2, 0.03 * k);
         for (let i = 0; i < 9; i++) { const a = (i - 4) * 0.12 + Math.sin(this.time * 1.2 + f.seed + i) * 0.05; ctx.beginPath(); ctx.moveTo(X + i * 0.05 * k, Y); ctx.quadraticCurveTo(X + i * 0.05 * k + a * 0.3 * k, Y - f.len * 0.5 * k, X + i * 0.05 * k + a * f.len * k, Y - f.len * k); ctx.stroke(); }
       }
     }
+    ctx.globalAlpha = 1;
   }
+}
+
+// how far a web strung across a shaft reaches: just into the rock on that side
+function wallFrom(T, x, y, dir) {
+  for (let k = 0; k < 100 && T.d(x, y) > -0.1; k++) x += dir * 0.08;
+  return x;
 }
 
 function heart(c, x, y, s) {
@@ -981,12 +1000,12 @@ function makeForeground(world) {
     // foreground is offset in parallax space, so place relative to its own drift: approximate by world pos
     out.push({ type, x, y: top, len: 2 + rng() * (type === 'stal' ? 4 : 9), w: type === 'stal' ? 0.3 + rng() * 0.5 : 0.05 + rng() * 0.12, seed: rng() * 10, dx: (rng() - 0.5) * 12, sag: rng() * 2 });
   }
-  // dark mounds and grass tufts along the floors
+  // grass tufts along the floors
   for (let i = 0; i < 90; i++) {
     const x = rng() * 120, y = 4 - rng() * 262;
     const gy = T.ground(x, y, 6);
     if (gy === null || T.d(x, gy + 1.0) < 0.8) continue;
-    out.push({ type: rng() < 0.6 ? 'grass' : 'mound', x, y: gy - 0.6, len: 0.4 + rng() * 0.8, w: 0.6 + rng() * 1.4, seed: rng() * 10 });
+    if (rng() < 0.6) out.push({ type: 'grass', x, y: gy - 0.08, len: 0.25 + rng() * 0.45, seed: rng() * 10 });
   }
   return out;
 }

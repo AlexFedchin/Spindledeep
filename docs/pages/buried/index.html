@@ -1,0 +1,230 @@
+<title>Spindledeep · Buried</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    .wide { max-width: 900px; margin: 0 auto; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; in the ground</div>
+    <h1>Buried</h1>
+    <p class="tag">Nothing in the rock by accident<span></span>and a few things on purpose</p>
+  </header>
+
+  <p class="ask">make sure there are no unintended objects inside the ground, there are some mushrooms in the middle of the ground in some place. You can put some intentional object there though - like bones for example. But make sure they look like they belong there and do not pop into eyes much</p>
+
+  <h2>The mushrooms</h2>
+  <div class="col">
+    <p>They were the mushroom pots of the Seed Hollow, the hidden room under the Root Gardens. Things are set down by looking for the floor below them, but in the hidden rooms that search began inside the roof and climbed out of it upwards. Ten things ended up 5 to 14 metres above the rooms they belong to, nine of them inside solid rock: the pots, a row of garden markers, a lantern, a bucket, candles, a stool, letters, boots and two piles of baskets. All ten are now in their rooms and stay hidden until the room is found.</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/mush_before.jpg" alt="Before: three mushrooms glowing in solid rock beside the Root Gardens">
+      <img class="after" src="img/mush_after.jpg" alt="Now: only rock">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-mush" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/seed_before.jpg" alt="Before: the Seed Hollow was empty">
+      <img class="after" src="img/seed_after.jpg" alt="Now: its pots and its row of markers are in it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-seed" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Everything else in the rock</h2>
+  <div class="col">
+    <p>I then drew every layer of the game over the whole world and listed each spot where something shows inside rock. The list went from 192 entries, one for each two-metre square, to 11. Those 11 are meant: the ends of the roots and yarn the upper shelves hang by, a corner of a basket on a slope, and the glow of two candles on the floor under them.</p>
+    <ul class="what">
+      <li><b>Warp threads in the Loom.</b> The hundreds of threads behind everything ran straight through ledges and up to 13 metres into the walls. They now stop at the rock.</li>
+      <li><b>Heddles and needles.</b> The heddles of the Treadles were drawn over the ceiling when pulled up, and the Loom&rsquo;s needles showed through the wall. Both now come out of the rock.</li>
+      <li><b>The woodshed.</b> Its back reached half a metre down through the snow as a dark slab.</li>
+      <li><b>Blots in the ledges.</b> In the middle of every ledge the engraved lines clotted into small white squiggles that looked like things in the ground. The lines now run level there.</li>
+      <li><b>Dark shapes in front.</b> Mounds, hanging roots and stalactites in the foreground drifted over the rock as you moved, or hung from nothing. The mounds are gone, the grass stays on the floor, and the rest shows only where it hangs from a roof.</li>
+      <li><b>Two smaller ones.</b> The veil over the shaft in the Bell Gallery ends at the shaft&rsquo;s walls, and the old faded thread in the Treadles lies on the ground instead of cutting through it.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/cellar_before.jpg" alt="Before: a dark slab under the woodshed, squiggles in the rock over the cellar">
+      <img class="after" src="img/cellar_after.jpg" alt="Now: clean ground">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-cellar" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/tread_before.jpg" alt="Before: the heddle frames drawn over the ceiling">
+      <img class="after" src="img/tread_after.jpg" alt="Now: they come out of it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-tread" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/ledge_before.jpg" alt="Before: squiggles along the middle of the ledge">
+      <img class="after" src="img/ledge_after.jpg" alt="Now: lines, and two old bones">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-ledge" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>What lies there on purpose</h2>
+  <div class="col">
+    <p>About a hundred things are set into the rock over the whole descent, never two within eight metres of each other. They are cut into the rock&rsquo;s own lines, so they take the same light, fade with depth the same way, and are not there at all in the dark. You will pass most of them without noticing.</p>
+    <ul class="what">
+      <li><b>They follow the depth.</b> Shells and roots near the top, then small beasts and broken pots, fish under the Mere, and worse further down.</li>
+      <li><b>They are always well inside the rock.</b> Every part of each one is checked against the cave, and none is near a hidden room, on an upper shelf, or under the top of the Loom.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/bone_before.jpg" alt="Before: the Bell Gallery">
+      <img class="after" src="img/bone_after.jpg" alt="Now: a long bone in the ledge">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-bone" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/shell_before.jpg" alt="Before: an island in the Ink Mere">
+      <img class="after" src="img/shell_after.jpg" alt="Now: a coiled shell in it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shell" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/head_before.jpg" alt="Before: the floor of the Loom">
+      <img class="after" src="img/head_after.jpg" alt="Now: a skull in it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-head" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/buried.js</code></b><span>The bones and shells: what, where, and how they are drawn.</span></div>
+      <div><b><code>app/src/shaders.js</code></b><span>Cutting them into the rock; level lines in the middle of ledges.</span></div>
+      <div><b><code>app/src/props.js</code></b><span>The floor search, and the hidden rooms&rsquo; things.</span></div>
+      <div><b><code>app/src/drawdeep.js</code></b><span>Warp threads, heddles, needles, the old thread.</span></div>
+      <div><b><code>app/src/draw.js</code></b><span>The foreground, the veil, the woodshed.</span></div>
+      <div><b><code>scripts/checks/inside.js</code></b><span>The check that lists everything drawn inside rock.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/6bqJt6HgPBpE5bcSrLgANS">bitten</a> &middot; <a href="https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7">listen</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

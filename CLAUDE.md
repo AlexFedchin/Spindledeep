@@ -95,6 +95,11 @@ it; keep zones off poles and the main way. Every `SECRETS.kind` needs a `KEEP` d
 2.5; drawn by `drawshelf.js`; floor searches (chairs, lore) must not land on them. `LEVEL` planes ledges flat where a jump is made. New poles go
 at the **end** of `PEGS` (indices are used in code). After touching the level or `player.js`: `scripts/checks` (lip, gal, reach, shelfrun, fuzz, hands).
 
+Nothing may be drawn inside solid rock by accident: after adding props, machines or foreground, run `scripts/checks/inside.js` as a `--shots` step
+(lists every layer's spots in rock). `buildLore` looks for the floor from the hint itself, never from above it (a room's roof). Things in the
+rock on purpose are in `buried.js`: sprite layer, drawn blue, engraved into the rock by ENGRAVE (lit and fading as rock does). Beasts only above
+the Hush, people only from the Hush down.
+
 ## Sound (app/src/sound.js)
 
 `Sound` feels out the cave at 10 Hz (size, walls, roof, drop) and drives audio.js: four reverbs (`setSpace`), wall echoes, muffling

@@ -49,10 +49,10 @@ export const LORE = [
   ['huskhung', 53.0, -503.6, -1],       // the Loom: hung from the first warp's ledge by its own thread
   // the hidden rooms (level.js SECRETS): each was somebody's private place
   ['baskets', 8.2, -4, 1],             // the Cellar
-  ['lantern', 83.8, -15, 1], ['bucket', 88.4, -15, -1],         // the Diggers' Cache
-  ['markers', 1.3, -85, 1], ['pots', 5.4, -85, -1],              // the Seed Hollow
-  ['candles', 2.2, -116, 1], ['stool', 5.5, -116, -1],          // the Ringer's Cell
-  ['letters', 117.6, -155, 1], ['boots', 114.6, -155, 1],       // the Sill
+  ['lantern', 83.8, -15, 1], ['bucket', 87.2, -15, -1],         // the Diggers' Cache
+  ['markers', 2.1, -85, 1], ['pots', 4.8, -85, -1],              // the Seed Hollow
+  ['candles', 2.9, -116, 1], ['stool', 4.6, -116, -1],          // the Ringer's Cell
+  ['letters', 117.0, -155, 1], ['boots', 115.2, -155, 1],       // the Sill
   ['baskets', 71.2, -243, 1],                                   // the Last Basket
 ];
 
@@ -81,8 +81,10 @@ export function loreLights(lore, t, vis) {
 
 export function buildLore(T) {
   return LORE.map(([kind, x, yh, flip], i) => {
-    let y0 = yh + 2.5;
-    for (let k = 0; k < 200 && T.d(x, y0) < 0; k++) y0 += 0.05;
+    // the first air at or above the hint (not from well above it: in the hidden rooms that is in their roof, and climbing out of
+    // it left nine of these standing in solid rock ten metres up)
+    let y0 = yh + 0.3;
+    for (let k = 0; k < 100 && T.d(x, y0) < 0.05; k++) y0 += 0.05;
     const gy = T.ground(x, y0, 9);
     return { kind, x, y: gy === null ? yh : gy - 0.04, flip, seed: i * 97 + 13 };
   });
