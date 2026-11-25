@@ -1,5 +1,5 @@
 """Spindledeep: cut the picks of caller.py / facework.py out of their black into sprites (grey tone, soft alpha).
-    scripts/art/.cache/venv/Scripts/python.exe scripts/art/cutout.py     -> app/assets/art/sprites/*.png"""
+    scripts/art/.cache/venv/Scripts/python.exe scripts/art/cutout.py     -> app/assets/art/sprites/*.webp"""
 import os
 
 import cv2
@@ -50,7 +50,7 @@ def save(name, g, a, crop=True, maxh=900, gain=1.0):
         s = maxh / g.shape[0]
         g = cv2.resize(g, None, fx=s, fy=s, interpolation=cv2.INTER_AREA); a = cv2.resize(a, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
     t = (np.clip(g * gain, 0, 1) * 255).astype(np.uint8)
-    cv2.imwrite(os.path.join(OUT, name + '.png'), np.dstack([t, t, t, (np.clip(a, 0, 1) * 255).astype(np.uint8)]))
+    cv2.imwrite(os.path.join(OUT, name + '.webp'), np.dstack([t, t, t, (np.clip(a, 0, 1) * 255).astype(np.uint8)]), [cv2.IMWRITE_WEBP_QUALITY, 101])       # (101: lossless)
     print(name, t.shape[1], t.shape[0], flush=True)
     return t.shape
 

@@ -33,7 +33,7 @@ const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 // so it survives a crash or a killed process; localStorage is only a fallback/migration source
 const savePath = () => path.join(app.getPath('userData'), 'save.json');
 // a plain-text log of each session (what screen the game is on, saves, deaths, respawns, errors, crashes), one file
-// per launch in userData/logs, the last 10 kept. The player can send these in when something goes wrong.
+// per launch in userData/logs, the last 40 kept. The player can send these in when something goes wrong.
 let logFile = null;
 function logLine(src, msg) {
   try {
@@ -41,7 +41,7 @@ function logLine(src, msg) {
       const dir = path.join(app.getPath('userData'), 'logs');
       fs.mkdirSync(dir, { recursive: true });
       const old = fs.readdirSync(dir).filter((f) => f.endsWith('.log')).sort();
-      for (const f of old.slice(0, Math.max(0, old.length - 9))) fs.rmSync(path.join(dir, f), { force: true });
+      for (const f of old.slice(0, Math.max(0, old.length - 39))) fs.rmSync(path.join(dir, f), { force: true });
       logFile = path.join(dir, 'session-' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
       fs.appendFileSync(logFile, `Spindledeep ${app.getVersion()} · Electron ${process.versions.electron} · ${process.platform} ${require('os').release()}
 `);
@@ -144,8 +144,11 @@ app.whenReady().then(() => {
   protocol.handle('app', (req) => {
     const u = new URL(req.url);
     const rel = decodeURIComponent(u.pathname).replace(/^\/+/, '');
-    const file = path.normalize(path.join(APP_DIR, rel));
-    if (!file.startsWith(APP_DIR)) return new Response('forbidden', { status: 403 });
+    // tests: --src=<folder> runs an older copy of app/ code (whatever files are in that folder) over the current assets
+    const alt = SMOKE && typeof arg('src') === 'string' ? path.resolve(arg('src')) : null, over = alt && path.normalize(path.join(alt, rel));
+    const root = over && over.startsWith(alt) && fs.existsSync(over) && fs.statSync(over).isFile() ? alt : APP_DIR;
+    const file = path.normalize(path.join(root, rel));
+    if (!file.startsWith(root)) return new Response('forbidden', { status: 403 });
     if (!fs.existsSync(file)) return new Response('not found', { status: 404 });
     return net.fetch(pathToFileURL(file).toString());
   });

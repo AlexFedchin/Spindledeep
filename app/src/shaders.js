@@ -28,6 +28,26 @@ fn sdfAt(p: vec2f) -> f32 {
   let uv = vec2f((p.x - u.worldMin.x) / u.worldSize.x, (u.worldMin.y + u.worldSize.y - p.y) / u.worldSize.y);
   return textureSampleLevel(sdfTex, linSamp, uv, 0.0).r;
 }
+// both fields with a cubic filter (four bilinear taps): no facets along the edge, however close the view
+fn fieldAt(p: vec2f) -> vec2f {
+  let dim = vec2f(textureDimensions(sdfTex));
+  let t = vec2f((p.x - u.worldMin.x) / u.worldSize.x, (u.worldMin.y + u.worldSize.y - p.y) / u.worldSize.y) * dim - 0.5;
+  let i = floor(t); let f = t - i;
+  let w0 = (1.0 - f) * (1.0 - f) * (1.0 - f) / 6.0;
+  let w1 = (4.0 - 6.0 * f * f + 3.0 * f * f * f) / 6.0;
+  let w3 = f * f * f / 6.0;
+  let w2 = 1.0 - w0 - w1 - w3;
+  let g0 = w0 + w1; let g1 = w2 + w3;
+  // (sample k sits at (k + 0.5) / dim)
+  let a = (i - 0.5 + w1 / g0) / dim; let b = (i + 1.5 + w3 / g1) / dim;
+  let s00 = textureSampleLevel(sdfTex, linSamp, a, 0.0).rg; let s10 = textureSampleLevel(sdfTex, linSamp, vec2f(b.x, a.y), 0.0).rg;
+  let s01 = textureSampleLevel(sdfTex, linSamp, vec2f(a.x, b.y), 0.0).rg; let s11 = textureSampleLevel(sdfTex, linSamp, b, 0.0).rg;
+  return mix(mix(s11, s01, g0.x), mix(s10, s00, g0.x), g0.y);
+}
+fn grainAt(p: vec2f) -> f32 {
+  let uv = vec2f((p.x - u.worldMin.x) / u.worldSize.x, (u.worldMin.y + u.worldSize.y - p.y) / u.worldSize.y);
+  return textureSampleLevel(sdfTex, linSamp, uv, 0.0).g;
+}
 fn hash21(p: vec2f) -> f32 {
   var q = fract(p * vec2f(123.34, 456.21));
   q += dot(q, q + 45.32);
@@ -77,9 +97,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   var atten = 1.0;
   if (d < 0.0) {
     // inside rock: light the surface point above it and fade with depth (lit rims, black hearts)
-    let e = 0.1;
-    let g = normalize(vec2f(sdfAt(p + vec2f(e, 0.0)) - sdfAt(p - vec2f(e, 0.0)), sdfAt(p + vec2f(0.0, e)) - sdfAt(p - vec2f(0.0, e))) + 1e-5);
-    p = p + g * (-d + 0.06);
+    // (the way out comes from the smoothed field, so two pixels side by side never look at faces far apart)
+    let e = 0.1 + min(-d, 1.0) * 0.25;
+    let g = normalize(vec2f(grainAt(p + vec2f(e, 0.0)) - grainAt(p - vec2f(e, 0.0)), grainAt(p + vec2f(0.0, e)) - grainAt(p - vec2f(0.0, e))) + 1e-5);
+    p = p + g * (-d + 0.1);
+    // if that stopped short of the face, go the rest of the way
+    let d2 = sdfAt(p);
+    if (d2 < 0.06) { p = p + g * min(0.06 - d2, 0.8); }
     atten = exp(d * 2.6);
   }
   var col = vec3f(0.0);
@@ -154,6 +178,110 @@ fn engrave(v: f32, phase1: f32, phase2: f32, aa: f32, cross: f32) -> f32 {
   return mix(single, crossed, k);
 }
 
+// ── what each place is cut from ──────────────────────────────────────────
+// 0 frozen earth (the Brink) · 1 split stone (the Throat) · 2 earth and roots (the Gardens) · 3 columns (the Gallery) ·
+// 4 wet stone (the Mere) · 5 shale (the Hall) · 6 packed soil (the Hush) · 7 hewn rock (the Treadles) · 8 felt (the Loom)
+fn kindAt(p: vec2f) -> vec3f {                 // this kind, the next one down, how far over
+  let y = p.y + (fbm(p * 0.13) - 0.5) * 9.0;
+  if (y > -103.0 && y < -30.0 && p.x > 44.5 && y > -66.0) { return vec3f(1.0, 1.0, 0.0); }
+  if (y > -286.0 && y < -258.0 && p.x < 33.0) { return vec3f(5.0, 5.0, 0.0); }
+  let b = array<f32, 8>(-5.0, -46.0, -103.0, -150.0, -208.0, -262.0, -340.0, -430.0);
+  for (var k = 0; k < 8; k++) {
+    if (y > b[k] - 2.5) { return vec3f(f32(k), f32(k + 1), smoothstep(b[k] + 2.5, b[k] - 2.5, y)); }
+  }
+  return vec3f(8.0, 8.0, 0.0);
+}
+// nearest and second nearest cell point: (F1, F2 - F1, the cell's own number)
+fn cells(p: vec2f) -> vec3f {
+  let i = floor(p); let f = fract(p);
+  var a = 9.0; var b = 9.0; var id = 0.0;
+  for (var y = -1; y <= 1; y++) { for (var x = -1; x <= 1; x++) {
+    let o = vec2f(f32(x), f32(y)); let h = hash21(i + o);
+    let q = o + vec2f(h, fract(h * 57.3)) * 0.8 + 0.1 - f; let d = dot(q, q);
+    if (d < a) { b = a; a = d; id = h; } else if (d < b) { b = d; }
+  } }
+  return vec3f(sqrt(a), sqrt(b) - sqrt(a), id);
+}
+// how the face is broken (metres, small: the thread and her feet go by the smooth one)
+fn chip(kind: f32, p: vec2f) -> f32 {
+  if (kind < 0.5) { return (fbm(p * 2.2) - 0.5) * 0.12; }
+  if (kind < 1.5) { let c = cells(p * vec2f(1.1, 1.5)); return (c.z - 0.5) * 0.07 * smoothstep(0.0, 0.2, c.y) + (vnoise(p * 7.0) - 0.5) * 0.05; }
+  if (kind < 2.5) { return (fbm(p * 2.4) - 0.5) * 0.17; }
+  if (kind < 3.5) { return (vnoise(vec2f(p.x * 2.6, p.y * 0.7)) - 0.5) * 0.10 + (vnoise(p * 9.0) - 0.5) * 0.03; }
+  if (kind < 4.5) { return (vnoise(p * 1.3) - 0.5) * 0.09; }
+  if (kind < 5.5) { return (vnoise(vec2f(p.x * 0.9, (p.y - p.x * 0.12) * 5.5)) - 0.5) * 0.15; }
+  if (kind < 6.5) { return (vnoise(p * 4.5) - 0.5) * 0.09 + (vnoise(p * 13.0) - 0.5) * 0.04; }
+  if (kind < 7.5) { return (abs(fract(p.x * 0.9 + p.y * 0.5 + vnoise(p * 0.7)) - 0.5) - 0.25) * 0.10 + (vnoise(p * 8.0) - 0.5) * 0.04; }
+  return (vnoise(p * 10.0 + vec2f(vnoise(p * 3.0) * 4.0, 0.0)) - 0.5) * 0.09 + (vnoise(p * 24.0) - 0.5) * 0.04;
+}
+// what is in it: x = ink (cracks, joints, holes), y = light (roots, fibres, pebbles), z = how the tone is shifted, w = how the lines are bent
+fn body(kind: f32, p: vec2f, depth: f32, lw: f32) -> vec4f {
+  if (kind < 0.5) {
+    let c = cells(p * 2.3 + (vec2f(vnoise(p * 4.0), vnoise(p * 4.0 + 9.0)) - 0.5) * 0.6); let peb = smoothstep(0.30, 0.24, c.x) * step(0.86, c.z);
+    return vec4f(smoothstep(0.05, 0.0, abs(c.x - 0.27)) * step(0.86, c.z) * 0.6, peb * 0.4, (fbm(p * vec2f(0.5, 2.0)) - 0.5) * 0.3, fbm(vec2f(p.x * 0.4, p.y * 2.2)) * 1.6);
+  }
+  if (kind < 1.5) {
+    let w = p + (vnoise(p * 0.9) - 0.5) * 0.7;
+    let c = cells(w * vec2f(0.75, 1.05));
+    let fine = cells(w * vec2f(2.1, 2.6) + 7.0);
+    let cr = smoothstep(lw * 1.1, lw * 0.25, c.y * 0.85) + smoothstep(lw * 0.9, 0.0, fine.y * 0.4) * 0.55 * step(0.6, c.z);
+    return vec4f(clamp(cr, 0.0, 1.0), 0.0, (c.z - 0.5) * 0.55, c.z * 4.0 + dot(w, vec2f(cos(c.z * 6.0), sin(c.z * 6.0))) * 0.9);
+  }
+  if (kind < 2.5) {
+    // roots run down and outward, one thick family and one thin; pebbles between
+    let q = vec2f(p.x * 0.42 + (fbm(p * 0.3) - 0.5) * 2.6, p.y * 0.12 + (vnoise(p * 0.3) - 0.5) * 0.6);
+    let a1 = (vnoise(q * 2.0) - 0.5) / 2.0; let a2 = (vnoise(q * vec2f(4.4, 3.0) + 13.0) - 0.5) / 4.4;
+    let r = abs(a1) * 2.2; let r2 = abs(a2) * 2.2;
+    let k = smoothstep(0.024, 0.016, r); let k2 = smoothstep(0.013, 0.008, r2) * 0.85;
+    let edge = smoothstep(0.036, 0.027, r) * (1.0 - k) + smoothstep(0.020, 0.014, r2) * (1.0 - k2) * 0.5;
+    let c = cells(p * 2.9 + (vec2f(vnoise(p * 5.0), vnoise(p * 5.0 + 9.0)) - 0.5) * 0.5); let peb = smoothstep(0.26, 0.2, c.x) * step(0.94, c.z) * (1.0 - k);
+    let grow = smoothstep(3.2, 0.4, depth);
+    return vec4f(clamp(edge * grow + smoothstep(0.05, 0.0, abs(c.x - 0.25)) * step(0.94, c.z) * 0.8, 0.0, 1.0), clamp((k + k2) * grow * 0.9 + peb * 0.4, 0.0, 1.0), -0.05, (fbm(p * 0.45) - 0.5) * 2.2);
+  }
+  if (kind < 3.5) {
+    // columns of all widths, leaning a little, some broken across
+    let x = p.x + (vnoise(vec2f(p.x * 0.35, p.y * 0.12)) - 0.5) * 1.6 + (vnoise(p * 1.7) - 0.5) * 0.10;
+    let i = floor(x / 0.85); let f = fract(x / 0.85);
+    let j0 = hash21(vec2f(i, 3.0)) * 0.66 - 0.33; let j1 = hash21(vec2f(i + 1.0, 3.0)) * 0.66 - 0.33;
+    let left = select(i - 1.0, i, f > j0 + 0.0); 
+    let e = min(abs(f - j0), abs(1.0 + j1 - f)) * 0.85;
+    let id = hash21(vec2f(left, 7.0));
+    let round = clamp(e * 2.6, 0.0, 1.0);
+    let yj = p.y / (1.1 + id * 1.6) + id * 7.0; let j = min(fract(yj), 1.0 - fract(yj)) * (1.1 + id * 1.6) + (vnoise(p * 5.0) - 0.4) * 0.08;
+    let faint = smoothstep(0.25, 0.6, vnoise(vec2f(left * 3.1, p.y * 0.35)));
+    return vec4f(clamp(smoothstep(lw, lw * 0.25, e) * (0.35 + 0.65 * faint) + smoothstep(lw * 0.8, 0.0, j) * 0.7 * step(0.45, id), 0.0, 1.0), 0.0, (round - 0.5) * 0.4 + (id - 0.5) * 0.3, round * 0.9 + (fbm(p * 0.4) - 0.5) * 1.2);
+  }
+  if (kind < 4.5) {
+    let wetRun = smoothstep(0.62, 0.8, vnoise(vec2f(p.x * 2.4 + (vnoise(p * 0.8) - 0.5), p.y * 0.22)));
+    let band = fbm(vec2f(p.x * 0.18, p.y * 0.9));
+    let sheen = smoothstep(0.05, 0.09, depth) * smoothstep(0.2, 0.12, depth) * smoothstep(0.35, 0.6, vnoise(p * 1.1));
+    let flow = smoothstep(0.1, 0.03, abs(fract(band * 9.0) - 0.5)) * 0.75;
+    return vec4f(flow * smoothstep(0.1, 0.4, depth), clamp(wetRun * smoothstep(1.2, 0.1, depth) + sheen, 0.0, 1.0) * 0.85, (band - 0.5) * 0.5, (band - 0.5) * 2.2);
+  }
+  if (kind < 5.5) {
+    let y = p.y - p.x * 0.12 + (fbm(p * vec2f(0.25, 0.6)) - 0.5) * 1.1;
+    let l = y * 2.1; let id = hash21(vec2f(floor(l), 9.0)); let e = min(fract(l), 1.0 - fract(l)) / 2.1;
+    let gap = step(0.3, vnoise(vec2f(p.x * 0.7 + id * 20.0, floor(l))));
+    return vec4f(smoothstep(lw, lw * 0.2, e) * gap, 0.0, (id - 0.5) * 0.5, l * 0.6 + id * 2.0);
+  }
+  if (kind < 6.5) {
+    let c = cells(p * 1.7 + (vec2f(vnoise(p * 3.6), vnoise(p * 3.6 + 9.0)) - 0.5) * 0.55); let hole = step(0.9, c.z); let stone = step(0.3, c.z) * (1.0 - hole);
+    let rim = smoothstep(0.05, 0.0, abs(c.x - 0.22)) * stone;
+    let dots = smoothstep(0.5, 0.72, vnoise(p * 14.0)) * smoothstep(0.3, 0.6, vnoise(p * 1.3 + 5.0));
+    return vec4f(clamp(rim * 0.8 + smoothstep(0.2, 0.12, c.x) * hole + dots * 0.5, 0.0, 1.0), smoothstep(0.22, 0.17, c.x) * stone * 0.45, (vnoise(p * 1.1) - 0.5) * 0.35, (fbm(p * 0.5) - 0.5) * 2.0);
+  }
+  if (kind < 7.5) {
+    let c = cells(p * vec2f(0.9, 1.1)); let an = 0.5 + (c.z - 0.5) * 1.5;
+    let t = dot(p, vec2f(-sin(an), cos(an))) * 5.2; let along = dot(p, vec2f(cos(an), sin(an)));
+    let cut = smoothstep(0.22, 0.05, abs(fract(t) - 0.5)) * smoothstep(0.34, 0.5, vnoise(vec2f(along * 1.3, floor(t) * 3.7)));
+    return vec4f(cut * smoothstep(0.0, 0.2, c.y), 0.0, (c.z - 0.5) * 0.6, c.z * 4.0);
+  }
+  let w = p + (vec2f(vnoise(p * 1.4), vnoise(p * 1.4 + 31.0)) - 0.5) * 1.3;
+  let f1 = smoothstep(0.1, 0.02, abs(vnoise(w * vec2f(1.3, 6.5)) - 0.5)); let f2 = smoothstep(0.1, 0.02, abs(vnoise(w * vec2f(6.5, 1.3) + 17.0) - 0.5));
+  let wisp = smoothstep(0.35, 0.7, vnoise(p * 0.8));
+  return vec4f(f2 * 0.85 * (1.0 - wisp * 0.5), f1 * 0.7 * wisp, (wisp - 0.5) * 0.3, (fbm(w * 0.5) - 0.5) * 3.0);
+}
+
 fn lum(c: vec3f) -> f32 { return dot(c, vec3f(0.3, 0.52, 0.18)); }
 fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
 
@@ -177,11 +305,21 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     + textureSampleLevel(lightTex, linSamp, uv + vec2f(0.0, o.y), 0.0).rgb + textureSampleLevel(lightTex, linSamp, uv - vec2f(0.0, o.y), 0.0).rgb) * 0.25;
 
   // ── rock ──────────────────────────────────────────────────────────────
-  let dRaw = sdfAt(p);
+  let fld = fieldAt(p);
+  let dRaw = fld.x;
   let sc = textureSampleLevel(spriteTex, linSamp, uv, 0.0);
   // things buried in the rock (buried.js) come on the sprite layer too, told apart by being blue
   let bury = smoothstep(0.1, 0.25, sc.b - sc.r);
-  let detail = (fbm(p * 2.6) - 0.5) * 0.16 + (vnoise(p * 11.0) - 0.5) * 0.035;
+  // the face of the rock, broken the way this place's rock breaks
+  var kd = vec3f(0.0); var detail = 0.0;
+  if (dRaw < 0.3) {
+    kd = kindAt(p);
+    if (dRaw > -0.5) {
+      detail = chip(kd.x, p);
+      if (kd.z > 0.0) { detail = mix(detail, chip(kd.y, p), kd.z); }
+      detail *= smoothstep(-0.5, -0.2, dRaw);
+    }
+  }
   let d = dRaw + detail;
 
   var paperMask = 0.0;    // 1 = paper shows, 0 = ink
@@ -190,41 +328,61 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   var value = 0.0;
 
   if (d < 0.0) {
-    // contour engraving: lines run parallel to the rock face, packing tighter toward its heart
     let depthIn = -d;
-    let strata = fbm(vec2f(p.x * 0.25, p.y * 1.6)) ;
-    let tone = mix(0.8, 0.55, strata) * exp(-depthIn * 0.5);
-    value = tone * lum(light) * 1.6;
-    let ph1 = (d * ppm) / (sp * 1.05) + wob + strata * 1.5;
+    // light in the rock spreads: the further in, the wider it is taken, so no shadow of a bump is cut sharp across the ground
+    var lr = light;
+    if (depthIn > 0.08) {
+      let r = min(depthIn * 0.75, 0.8) * ppm / u.res;
+      for (var k = 0; k < 8; k++) { let an = f32(k) * 0.7854 + 0.39; let q = vec2f(cos(an), sin(an)) * r * select(0.5, 1.0, (k & 1) == 0); lr += textureSampleLevel(lightTex, linSamp, uv + q, 0.0).rgb; }
+      lr /= 9.0;
+    }
+    let lw = max(0.045, 1.6 / ppm);
+    var bd = body(kd.x, p, depthIn, lw);
+    if (kd.z > 0.0) { bd = mix(bd, body(kd.y, p, depthIn, lw), kd.z); }
+    // contour engraving: lines run along the rock face (the smoothed one, further in), bent by what the rock is made of
+    let tone = clamp(0.66 + bd.z, 0.25, 1.05) * exp(-depthIn * 0.5);
+    // the rim: a breath of the place's own light on every edge, so a cave has a shape beyond the thread's glow
+    let rim = lum(u.ambient.rgb) * (1.5 * exp(-depthIn * 5.5) + 0.75 * exp(-depthIn * 1.1));
+    value = tone * lum(lr) * 1.6 + rim;
+    let inner = fld.y + detail * smoothstep(0.7, 0.0, depthIn);
+    let ph1 = (inner * ppm) / (sp * 1.05) + wob + bd.w;
     let ph2 = dirPhase(px, 1.05, sp * 1.1) + wob * 0.6;
     paperMask = engrave(expose(value), ph1, ph2, aa, 1.0);
-    // where two faces are equally far (the middle of a ledge) the contours have nothing to follow and used to clot into blots
-    // that looked like things in the ground: the lines run level there instead
+    // the middle of a ledge, where the contours have nothing to follow: the lines run level there instead
     if (depthIn > 0.12) {
-      let gh = 0.16;
-      let gv = vec2f(sdfAt(p + vec2f(gh, 0.0)) - sdfAt(p - vec2f(gh, 0.0)), sdfAt(p + vec2f(0.0, gh)) - sdfAt(p - vec2f(0.0, gh))) / (2.0 * gh);
-      let level = smoothstep(0.92, 0.6, length(gv)) * smoothstep(0.12, 0.3, depthIn);
+      let gh = 0.2;
+      let gv = vec2f(grainAt(p + vec2f(gh, 0.0)) - grainAt(p - vec2f(gh, 0.0)), grainAt(p + vec2f(0.0, gh)) - grainAt(p - vec2f(0.0, gh))) / (2.0 * gh);
+      let level = smoothstep(0.62, 0.25, length(gv)) * smoothstep(0.12, 0.3, depthIn);
       if (level > 0.0) {
-        let phF = (p.y * ppm) / (sp * 1.05) + wob + strata * 1.5 + detail * ppm / (sp * 2.0);
+        let phF = (p.y * ppm) / (sp * 1.05) + wob + bd.w;
         paperMask = mix(paperMask, engrave(expose(value), phF, ph2, aa, 1.0), level);
       }
     }
+    // cracks and holes are cut as ink; roots, pebbles and fibres stand light
+    let seen = smoothstep(0.01, 0.12, expose(value));
+    paperMask *= smoothstep(0.002, 0.04, expose(value));          // the heart of the rock is black
+    paperMask = mix(paperMask, max(paperMask, min(1.0, expose(value) * 1.35 + 0.05)), bd.y * seen);
+    paperMask *= 1.0 - bd.x * 0.9 * smoothstep(0.02, 0.14, depthIn);
     // buried things: cut into the rock in finer lines of their own, lit and fading with depth exactly as the rock is
     if (bury * sc.a > 0.004) {
-      let vb = sc.r * 1.95 * exp(-depthIn * 0.5) * lum(light) * 1.6;
+      let vb = sc.r * 1.95 * exp(-depthIn * 0.5) * lum(lr) * 1.6;
       let phB = dirPhase(px, 0.6, sp * 0.62) + wob * 0.3;
       let phB2 = dirPhase(px, -0.6, sp * 0.62) + wob * 0.3;
       paperMask = mix(paperMask, engrave(expose(vb), phB, phB2, 1.1 / (sp * 0.62), 1.0), bury * sc.a * smoothstep(0.1, 0.25, depthIn) * 0.9);
     }
     // the very face of the rock: a crisp inked edge
     paperMask *= smoothstep(0.6, 1.8, abs(d) * ppm);
-    tint = light / max(lum(light), 1e-3);
+    tint = mix(vec3f(0.92, 0.96, 1.08), lr / max(lum(lr), 1e-3), clamp(lum(lr) * 30.0, 0.0, 1.0));
   } else {
     // ── backdrops (engraved paintings behind the play plane) ──────────
     var bgTone = 0.0; var bgLight = 0.0;
     let spB = sp * 1.3;
-    var ph1 = dirPhase(px, 0.0, spB) + wobBg;
-    var ph2 = dirPhase(px, 0.85, spB * 1.05) + wobBg;
+    // the lines hang in the cave behind her (they drift with it as she goes), and sag and swell like drawn ones
+    let back = u.cam * 0.42 + (p - u.cam);
+    let bend = (fbm(back * 0.06 + vec2f(u.time * 0.005, 0.0)) - 0.5) * 17.0 + (vnoise(back * 0.45) - 0.5) * 0.9;
+    let drift = u.cam.y * 0.42 * (u.res.y / 17.0) / spB;
+    var ph1 = dirPhase(px, 0.0, spB) - drift + wobBg + bend;
+    var ph2 = dirPhase(px, 0.85, spB * 1.05) + wobBg + bend * 0.6;
     let nb = i32(u.nBg);
     var cover = 0.0;
     for (var k = 0; k < 4; k++) {
@@ -236,9 +394,11 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
       let qn = c + (u.cam - c) * min(1.0, pr.x * 1.45) + (p - u.cam) * 1.0;
       let tuv = (qf - c) / r.zw + 0.5;
       let nuv = (qn - c) / r.zw + 0.5;
-      let edge = smoothstep(0.0, 0.14, tuv.x) * smoothstep(1.0, 0.86, tuv.x) * smoothstep(0.0, 0.14, tuv.y) * smoothstep(1.0, 0.86, tuv.y);
+      // (a very wide window sees past a painting's sides: it goes on a little, mirrored, and fades out)
+      let edge = smoothstep(-0.12, 0.10, tuv.x) * smoothstep(1.12, 0.90, tuv.x) * smoothstep(0.0, 0.14, tuv.y) * smoothstep(1.0, 0.86, tuv.y);
       if (edge <= 0.0) { continue; }
-      let s = textureSampleLevel(bgTex, linSamp, vec2f(tuv.x, 1.0 - tuv.y), i32(pr.y), 0.0);
+      let mx = select(select(tuv.x, 2.0 - tuv.x, tuv.x > 1.0), -tuv.x, tuv.x < 0.0);
+      let s = textureSampleLevel(bgTex, linSamp, vec2f(mx, 1.0 - tuv.y), i32(pr.y), 0.0);
       let sn = textureSampleLevel(bgTex, linSamp, vec2f(clamp(nuv.x, 0.0, 1.0), 1.0 - clamp(nuv.y, 0.0, 1.0)), i32(pr.y), 0.0);
       // far tone and the near layer (alpha matte) blend; depth tells how far behind
       let farT = s.r * 0.55;
@@ -251,9 +411,26 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
       ph1 += s.r * 1.1 * a;
       ph2 += sn.g * 0.7 * a;
     }
-    bgLight = lum(lightSoft) * 0.75 + lum(light) * 0.25;
-    value = bgTone * bgLight * 1.25 + 0.012;
-    tint = lightSoft / max(lum(lightSoft), 1e-3);
+    // further caves: two flats of rock behind each other, slower the further off, with a thin haze drifting between them
+    let under = smoothstep(-3.0, -12.0, p.y);
+    if (under > 0.0) {
+      let qa = u.cam * 0.30 + (p - u.cam) * 0.8; let qb = u.cam * 0.55 + (p - u.cam) * 0.92;
+      let na = fbm(vec2f(qa.x * 0.085, qa.y * 0.05) + 40.0) + (vnoise(qa * 0.6) - 0.5) * 0.06;
+      let nb = fbm(vec2f(qb.x * 0.11, qb.y * 0.06) + 11.0) + (vnoise(qb * 0.9) - 0.5) * 0.06;
+      let fa = smoothstep(0.50, 0.53, na); let fb = smoothstep(0.53, 0.56, nb);
+      let haze = smoothstep(0.34, 0.72, fbm(vec2f(p.x * 0.06 - u.time * 0.013, p.y * 0.14 + u.time * 0.004)));
+      let far = mix(mix(0.30, 0.15, fa), 0.07, fb) + (smoothstep(0.46, 0.50, na) - fa) * 0.10 + (smoothstep(0.50, 0.53, nb) - fb) * 0.16;
+      let own = lum(u.ambient.rgb);
+      bgTone = mix(bgTone, max(bgTone, far * 0.55), 0.6 * under);
+      bgTone += haze * 0.05 * under;
+      bgLight = own * 2.1 * under;                       // (kept for below)
+      ph1 += (fa * 0.8 + fb * 1.5) * under;
+    }
+    bgLight += lum(lightSoft) * 0.75 + lum(light) * 0.25;
+    value = bgTone * bgLight * 1.25 + 0.004;
+    // a line in the dark is a broken one
+    value *= mix(0.35 + 1.3 * vnoise(vec2f(back.x * 0.8, floor(ph1) * 7.3)), 1.0, smoothstep(0.02, 0.2, value));
+    tint = mix(vec3f(0.92, 0.96, 1.08), lightSoft / max(lum(lightSoft), 1e-3), clamp(lum(lightSoft) * 25.0, 0.0, 1.0));
 
     // ── the ink mere: black liquid that mirrors the light above it ─────
     let ip = u.inkPool;
@@ -277,7 +454,9 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     // soft, wide anti-aliasing and no cross-hatching on the paintings; they sit back as a quiet grey
     let bgAA = select(aa, 2.4 / spB, cover > 0.0);
     paperMask = engrave(expose(value), ph1, ph2, bgAA, cover * 0.35);
-    paperMask = mix(paperMask, 0.5 * expose(value), cover * 0.45);
+    let dim = expose(value);
+    paperMask *= mix(smoothstep(0.004, 0.075, dim), 1.0, step(0.5, f32(cover <= 0.0 && u.inkPool.w > 0.5 && p.y < u.inkPool.z)));      // and in the black there are none
+    paperMask = mix(paperMask, 0.5 * dim, max(cover * 0.55, 0.5));
     bgDim = cover;
   }
 

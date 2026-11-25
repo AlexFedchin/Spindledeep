@@ -14,7 +14,7 @@ export function loadSprites() {
     // decoded up front and kept as a bitmap: the first draw of a big picture must not hitch in the middle of a scare
     im.onload = () => createImageBitmap(im).then((b) => { out[n] = b; res(); }, () => { out[n] = im; res(); });
     im.onerror = () => res();
-    im.src = 'assets/art/sprites/' + n + '.png';
+    im.src = 'assets/art/sprites/' + n + '.webp';
   }))).then(() => out);
 }
 

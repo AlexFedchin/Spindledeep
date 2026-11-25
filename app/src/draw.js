@@ -10,6 +10,8 @@ import { drawBuried, placeBuried } from './buried.js';
 import { READY } from './props3d.js';
 import { drawRig } from './drawrig.js';
 import { drawRooms } from './drawrooms.js';
+import { Life } from './life.js';
+import { drawPlaces, drawKnots } from './drawkindle.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -27,6 +29,8 @@ export class Drawer {
       return top;
     });
     this.tuft = { a: 0, v: 0 };
+    this.life = new Life(world);
+    this.pose = { slope: 0, teeter: 0, stumble: 0, sit: 0, idle: 0, cup: 0, fear: 0, push: 0, turn: 0, vy: 0, g: true };
     this.lore = world.lore;
     this.wind = 4; this.gust = 0; this.out = 1;
     this.fog = makeFog();
@@ -60,11 +64,15 @@ export class Drawer {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     this.time = time; this.dtLast = dt;
     this.ambientFx(dt);
+    this.life.update(dt, this);
+    this.grit(dt);
     drawBuried(this, ctx);
     this.drawFog(ctx, false);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
     drawRooms(this, ctx);
+    drawPlaces(this, ctx, ectx);
+    this.life.draw(this, ctx, ectx);
     drawLore(this, ctx, ectx);
     drawHusks(this, ctx, ectx);
     drawShelves(this, ctx, ectx);
@@ -79,6 +87,7 @@ export class Drawer {
     this.drawMemories(ctx, ectx);
     drawDeep(this, ctx, ectx);
     this.drawDrips(ctx);
+    drawKnots(this, ctx, ectx);
     this.drawFx(ctx, ectx, dt, false);
     for (const m of w.moths) if (this.vis(m.x, m.y)) this.drawMoth(ctx, ectx, m);
     this.drawDoll(ctx, ectx, dt);
@@ -100,7 +109,8 @@ export class Drawer {
     const f = p.facing;
     const swing = th.locked && !p.grounded;
     const moving = p.grounded && Math.abs(p.vx) > 0.4;
-    const sq = p.squash;
+    const P0 = this.doll(dt, moving, swing);
+    const sq = p.squash + P0.stumble * 0.16;
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
     // springs: the yarn tuft and the ribbon tails lag behind the motion
     this.tuft.v += (-p.vx * 0.08 - this.wind * this.out * 0.035 * (1 + Math.sin(this.time * 9) * 0.3) - this.tuft.a * 30) * dt - this.tuft.v * 6 * dt;
@@ -112,7 +122,9 @@ export class Drawer {
     let tilt = 0;
     if (swing) { const P = th.pivots[th.pivots.length - 1]; tilt = Math.atan2(p.bx - P.x, -(p.by - P.y)) * 0.6; }
     else if (!p.grounded) tilt = clamp(p.vx * 0.03, -0.25, 0.25);
-    else tilt = clamp(p.vx * 0.02, -0.1, 0.1);
+    else tilt = clamp(p.vx * 0.02, -0.1, 0.1) - P0.slope * 0.32 + f * (P0.stumble * 0.42 - P0.teeter * (0.16 + 0.1 * Math.sin(this.time * 7.3)) + P0.push * 0.16 + P0.sit * 0.04 * Math.sin(this.time * 0.7));
+    const shiver = P0.fear * Math.sin(this.time * 47) * 0.012 * k;
+    ctx.translate(shiver, 0);
     ctx.rotate(tilt);
     ctx.scale(sxk * f, syk);
     const u = k; // 1 m in px
@@ -137,12 +149,17 @@ export class Drawer {
     const legA = moving ? Math.sin(legPh) * 0.12 : !p.grounded ? 0.07 : 0;
     for (const side of [-1, 1]) {
       const lx = side * 0.08 * u, ly = 0.04 * u;
-      const fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.25 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
+      let fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.25 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
+      // each foot finds the ground under itself; sitting, they go out in front of her and swing a little
+      if (p.grounded && !wi) { const off = clamp(P0.foot[side < 0 ? 0 : 1], -0.14, 0.2); fy -= off * u / Math.max(0.5, s); fx += Math.sin(P0.slope) * off * 0.3 * u; }
+      if (P0.sit > 0.01) { fx += (0.2 * u + side * 0.02 * u - fx + lx) * P0.sit; fy += ((0.2 + Math.sin(this.time * 1.6 + side * 1.4) * 0.03) * u - fy) * P0.sit; }
+      if (P0.teeter > 0.01) fy -= Math.max(0, Math.sin(this.time * 7.3 + side)) * 0.05 * u * P0.teeter;
       yarn(lx, ly, (lx + fx) / 2, (ly + fy) / 2, fx, fy, 0.05 * u, side > 0 ? 0.7 : 0.6);
       ctx.beginPath(); ctx.ellipse(fx + 0.025 * u, fy + 0.02 * u, 0.06 * u, 0.035 * u, 0, 0, TAU);
       ctx.fillStyle = g(0.2); ctx.fill(); stroke(0.03, fine * 1.4);
     }
 
+    ctx.translate(0, P0.sit * 0.1 * u);
     // ── body: a knitted sack ──
     const body = () => {
       ctx.beginPath();
@@ -202,6 +219,10 @@ export class Drawer {
       const ax0 = side * 0.17 * u, ay0 = -0.14 * u;
       let ex, ey;
       if (armUp) { ex = side * 0.1 * u + 0.05 * u; ey = -0.42 * u; }
+      else if (P0.cup > 0.05 || P0.fear > 0.4) { const q = Math.max(P0.cup, (P0.fear - 0.4) * 1.6); ex = (side * 0.22 * (1 - q) + (0.08 + side * 0.05) * q) * u; ey = (-0.03 * (1 - q) - (0.12 + 0.01 * Math.sin(this.time * 3)) * q) * u; }
+      else if (P0.teeter > 0.05 || P0.stumble > 0.05) { const a = this.time * 11 + side * 1.6, q = Math.max(P0.teeter, P0.stumble); ex = side * (0.28 + 0.06 * Math.cos(a) * q) * u; ey = (-0.2 + 0.14 * Math.sin(a) * q) * u; }
+      else if (P0.push > 0.3) { ex = (0.24 + side * 0.02) * u; ey = (-0.14 - side * 0.05) * u; }
+      else if (P0.sit > 0.4) { const a = this.time * 1.9; ex = (0.1 + side * 0.07 + Math.cos(a) * 0.02) * u; ey = (-0.03 + Math.sin(a + side) * 0.025) * u; }      // winding yarn in her lap
       else if (p.tieT > 0) { ex = 0.22 * u; ey = (-0.08 + Math.sin(this.time * 30 + side) * 0.03) * u; }
       else if (moving) { ex = ax0 + side * 0.06 * u + Math.sin(legPh + (side > 0 ? Math.PI : 0)) * 0.08 * u; ey = -0.02 * u; }
       else if (!p.grounded) { ex = side * 0.3 * u; ey = (p.vy > 0 ? -0.26 : -0.1) * u; }
@@ -212,8 +233,9 @@ export class Drawer {
     }
 
     // ── head ── (turns on the neck to look up or down: W/S while standing)
-    const look = p.look || 0;
+    const look = (p.look || 0) + P0.nod;
     ctx.save();
+    if (P0.turn) ctx.scale(-1, 1);             // a look over her shoulder
     if (Math.abs(look) > 0.01) { ctx.translate(0.02 * u, -0.27 * u); ctx.rotate(-look * (look > 0 ? 0.42 : 0.36)); ctx.translate(-0.02 * u, 0.27 * u); }
     const hy = -0.47 * u, hr = 0.22 * u;
     const head = () => { ctx.beginPath(); ctx.ellipse(0.01 * u, hy, hr * 1.04, hr, 0, 0, TAU); };
@@ -276,8 +298,67 @@ export class Drawer {
     ctx.restore();
     // a red cross-stitch heart that glows a little (the only colour the doll owns)
     const hx = X + f * 0.06 * u * sxk, hyy = Y - 0.12 * u * syk;
-    ectx.fillStyle = `rgba(255,40,30,${0.55 * s})`;
+    ectx.fillStyle = `rgba(255,40,30,${0.55 * s * (1 - 0.6 * P0.cup)})`;
     heart(ectx, hx, hyy, 0.045 * u * s);
+  }
+
+  // how she carries herself: feet on a slope, the edge of a drop, a hard landing, a wall, the dark, and what she does when left alone
+  doll(dt, moving, swing) {
+    const w = this.w, p = w.player, T = w.T, Q = this.pose, f = p.facing, to = (k, v, r) => { Q[k] += (v - Q[k]) * Math.min(1, dt * r); };
+    const rest = w.rest || { k: 0 }, quiet = p.grounded && !moving && !swing && !w.thread.locked && !p.dead && !(w.intro && !w.intro.done);
+    if (p.grounded && !Q.g) { const v = -Q.vy; if (v > 13) { Q.stumble = clamp((v - 10) / 8, 0.4, 1); this.shake(p.x, p.y, v); } }
+    Q.g = p.grounded; Q.vy = p.vy;
+    to('slope', p.grounded ? Math.atan2(-p.nx, p.ny) * -1 : 0, 10);
+    Q.stumble = Math.max(0, Q.stumble - dt * 2.2);
+    const gap = (dx) => T.d(p.x + dx, p.y - 0.2) > 0.12 && T.ground(p.x + dx, p.y, 1.3) === null;
+    to('teeter', quiet && gap(f * 0.42) && Math.abs(p.vx) < 0.5 ? 1 : 0, 6);
+    to('push', p.grounded && Math.abs(p.vx) < 0.3 && this.axis && T.d(p.x + this.axis * 0.36, p.y) < 0.1 ? 1 : 0, 7);
+    to('cup', (w.dim || 0) > 0.05 ? 1 : 0, 6);
+    // afraid: something in the earth has stirred, it is on the thread, or they have turned round
+    const hand = p.y < -262 && p.y > -342 && w.deep.hands.some((h) => h.st !== 'wait' && h.st !== 'back' && Math.hypot(h.ax - p.x, h.ay - p.y) < 9), c = w.deep.crawler;
+    to('fear', hand || (c.on && c.gap < 9) || (p.y < -528 && w.deep.called.some((q) => q.turned && Math.abs(q.x - p.x) < 5)) ? 1 : 0, hand ? 7 : 1.2);
+    // left alone
+    Q.idle = quiet && Q.fear < 0.3 && !(w.dim > 0.1) && !this.axis ? Q.idle + dt : 0;
+    const deep = p.y < -262, safe = !deep && Q.teeter < 0.2;
+    const sit = rest.at ? 1 : Q.idle > 11 && safe ? 1 : 0;
+    to('sit', sit, sit ? 3 : 9);
+    const u = (this.time * 0.13 + 0.3) % 1;
+    Q.turn = Q.idle > 2.5 && Q.idle < 11 && (deep ? u > 0.6 && u < 0.78 : u > 0.82 && u < 0.92);
+    const nod = Q.idle > 2.5 && Q.sit < 0.3 ? (u > 0.2 && u < 0.42 ? 0.55 : u > 0.44 && u < 0.56 && !deep ? -0.6 : 0) : Q.sit > 0.5 ? -0.35 + (u > 0.3 && u < 0.5 ? 0.8 : 0) : 0;
+    Q.nod = (Q.nod || 0) + (nod - (Q.nod || 0)) * Math.min(1, dt * 4);
+    // where the ground is under each foot, against the flat she would stand on
+    Q.foot = [-1, 1].map((sd, i) => {
+      const x = p.x + f * sd * 0.1, d = T.d(x, p.y - 0.3), prev = Q.foot ? Q.foot[i] : 0;
+      const v = p.grounded ? clamp(-d * 1.0, -0.14, 0.2) : 0;
+      return prev + (v - prev) * Math.min(1, dt * 18);
+    });
+    return Q;
+  }
+
+  // ── the rock answers ── grit off a landing, off a running foot, off the thread as it is plucked; dust out of the roof
+  grit(dt) {
+    const w = this.w, T = w.T;
+    for (const v of w.thread.waves) if (v.fx !== undefined && this.vis(v.fx, v.fy, 1) && T.d(v.fx, v.fy) < 0.16 && Math.random() < dt * 26) this.spawn('grit', v.fx, v.fy, 1, { speed: 0.8, vy: 0.9, life: 1.6, r: 0.8 });
+  }
+  shake(x, y, v) {
+    const w = this.w, T = w.T, n = clamp((v - 8) * 0.9, 2, 14) | 0;
+    this.life.loud = 1;
+    if (w.areaId !== 'brink') for (let i = 0; i < n; i++) this.spawn('grit', x + (Math.random() - 0.5) * 0.5, y - 0.22, 1, { speed: 1.6, vy: 1.6, life: 1.8, r: 0.7 + Math.random() * 0.8 });
+    this.sift(x, y, v > 14 ? 5 : 2, 5);
+  }
+  // a little of the roof comes down near (x, y)
+  sift(x, y, n, wide) {
+    const T = this.w.T;
+    if (this.w.areaId === 'brink') return;
+    for (let i = 0; i < n; i++) {
+      const sx = x + (Math.random() - 0.5) * 2 * wide;
+      let t = y + 0.6;
+      if (T.d(sx, t) < 0.1) continue;
+      for (let k = 0; k < 60 && T.d(sx, t) > 0.02; k++) t += Math.max(0.1, T.d(sx, t) * 0.8);
+      if (t - y > 16) continue;
+      for (let q = 0; q < 5; q++) this.fx.push({ kind: 'grit', x: sx + (Math.random() - 0.5) * 0.3, y: t - 0.1 - Math.random() * 0.1, vx: (Math.random() - 0.5) * 0.3, vy: -Math.random() * 0.6, life: 2.4, t: -Math.random() * 0.7, r: 0.4 + Math.random() * 0.8, rot: 0 });
+      this.fx.push({ kind: 'puff', x: sx, y: t - 0.2, vx: 0, vy: -0.5, life: 1.2, t: 0, r: 0.7, rot: 0 });
+    }
   }
 
   // ── moths ─────────────────────────────────────────────────────────────
@@ -864,6 +945,15 @@ export class Drawer {
           p.x += (p.vx + Math.sin(this.time * 0.5 + p.rot) * 0.08) * dt; p.y += p.vy * dt;
           ctx.fillStyle = g(0.92, a * 0.7);
           ctx.beginPath(); ctx.arc(this.sx(p.x), this.sy(p.y), Math.max(0.8, p.r * (p.kind === 'spore' ? 0.035 : 0.02) * k), 0, TAU); ctx.fill();
+          break;
+        }
+        case 'grit': {
+          if (p.t < 0) break;
+          p.vy -= 13 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+          const T = this.w.T, d = T.d(p.x, p.y);
+          if (d < 0.03) { const [gx, gy] = T.grad(p.x, p.y), vn = p.vx * gx + p.vy * gy; p.x += gx * (0.03 - d); p.y += gy * (0.03 - d); if (vn < 0) { p.vx -= gx * vn * 1.35; p.vy -= gy * vn * 1.35; } p.vx *= 0.8; }
+          const X = this.sx(p.x), Y = this.sy(p.y), q = Math.max(1, 0.03 * k * p.r);
+          ctx.fillStyle = g(0.85, a); ctx.fillRect(X - q / 2, Y - q / 2, q, q);
           break;
         }
         case 'puff': {

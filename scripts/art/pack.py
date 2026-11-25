@@ -1,7 +1,7 @@
 """Spindledeep: turn chosen backdrop paintings into the renderer's packed tone maps.
 
     python scripts/art/pack.py            # every pick in PICKS
-Each output app/assets/art/<zone>.png is 1024x1024 RGBA:
+Each output app/assets/art/<zone>.webp is 1024x1024 RGBA:
   R = far tone (foreground painted out)   G = full tone
   B = near matte (depth-split, soft)       A = depth (1 = nearest)
 The engraving shader draws the far layer and the near layer with different parallax and line work.
@@ -73,8 +73,8 @@ def pack(zone, rel, q):
     far = (rgb * (1 - k) + fill * k).astype(np.uint8)
     out = np.dstack([tone(far), tone(rgb), m, d])
     os.makedirs(OUT, exist_ok=True)
-    Image.fromarray((out * 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, zone + '.png'), optimize=True)
-    print(zone, os.path.getsize(os.path.join(OUT, zone + '.png')) // 1024, 'KB', flush=True)
+    Image.fromarray((out * 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, zone + '.webp'), lossless=True, quality=100, method=6, exact=True)
+    print(zone, os.path.getsize(os.path.join(OUT, zone + '.webp')) // 1024, 'KB', flush=True)
 
 
 if __name__ == '__main__':

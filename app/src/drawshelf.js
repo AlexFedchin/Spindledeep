@@ -45,6 +45,12 @@ export function drawShelves(D, ctx, ectx) {
     const tall = s.hang[0].ty;
     if (!D.vis(s.c, (s.y + tall) / 2, (tall - s.y) / 2 + 3)) continue;
     if (s.kind === 'root') {
+      // the stone itself: a flat slab, worn at the ends
+      ctx.fillStyle = g(0.46); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, 0.022 * k);
+      ctx.beginPath(); ctx.moveTo(X(s.x0 + 0.04), Y(s.y - 0.2)); ctx.quadraticCurveTo(X(s.x0 + 0.04), Y(s.y), X(s.x0 + 0.3), Y(s.y)); ctx.lineTo(X(s.x1 - 0.3), Y(s.y)); ctx.quadraticCurveTo(X(s.x1 - 0.04), Y(s.y), X(s.x1 - 0.04), Y(s.y - 0.2));
+      ctx.quadraticCurveTo(X(s.x1 - 0.1), Y(s.y - 0.5), X(s.x1 - 0.5), Y(s.y - 0.5)); ctx.lineTo(X(s.x0 + 0.4), Y(s.y - 0.54)); ctx.quadraticCurveTo(X(s.x0 + 0.06), Y(s.y - 0.5), X(s.x0 + 0.04), Y(s.y - 0.2)); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = g(0.16); ctx.lineWidth = Math.max(0.7, 0.012 * k);
+      for (let q = 0; q < 3; q++) { const yy = s.y - 0.14 - q * 0.13; ctx.beginPath(); ctx.moveTo(X(s.x0 + 0.1 + q * 0.17), Y(yy)); ctx.quadraticCurveTo(X(s.c), Y(yy - 0.03), X(s.x1 - 0.5 + q * 0.14), Y(yy + 0.02)); ctx.stroke(); }
       for (const h of s.hang) {
         const mx = (h.bx + h.tx) / 2 + h.b + Math.sin(t * 0.4 + h.bx) * 0.05, my = (h.by + h.ty) / 2;
         for (const [lw, tone] of [[h.w * 2 + 0.05, 0.04], [h.w * 2, 0.3], [h.w * 0.5, 0.48]]) {

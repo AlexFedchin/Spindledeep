@@ -108,7 +108,7 @@ async function boot() {
     await step('engraving the dark…', 0.45);
     const layers = await Promise.all(L.BACKDROPS.map(async (b) => {
       try {
-        const r = await fetch('assets/art/' + b.img + '.png');
+        const r = await fetch('assets/art/' + b.img + '.webp');
         if (!r.ok) throw new Error('missing');
         return await createImageBitmap(await r.blob(), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
       } catch {
@@ -280,6 +280,7 @@ function startGame(cont, walkOut = false, mode = '') {
   SD.W = W;
   if (!cont) { W.run = 0; W.fair = true; } else W.fair = !!(loadSave(true) || {}).fair;
   if (walkOut) beginWalkOut(); else { A.fadeMaster(A.volume, 0.6); camSnap = true; }
+  SEC = newSection(W.checkpoint.i);
   save();            // a new run replaces the old save at once; a continued one is re-written as is
 }
 // her thread laid the whole way to a pole, along the old woman's
@@ -348,7 +349,7 @@ function save() {
   const th = W.thread;
   const n = th.fixedN;
   const data = {
-    v: 3, mode: W.mode, fair: !!W.fair, lost: W.lost || 0, time: +(W.run || 0).toFixed(1), rig: W.rig ? W.rig.save() : null, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0) + (s.open ? 4 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
+    v: 3, mode: W.mode, fair: !!W.fair, lost: W.lost || 0, time: +(W.run || 0).toFixed(1), rig: W.rig ? W.rig.save() : null, kindle: W.kindle.save(), cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0) + (s.open ? 4 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
     husks: W.husks.map((h) => [+h.x.toFixed(2), +h.y.toFixed(2), h.kind, h.flip, h.seed]),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
@@ -379,6 +380,7 @@ function applySave(s) {
   th.n = th.fixedN = th.liveStart = n; th.anchored = true;
   W.run = s.time || 0; W.lost = s.lost || 0;
   if (W.rig && s.rig) W.rig.load(s.rig);
+  W.kindle.load(s.kindle);
   W.checkpoint = W.pegs[s.cp];
   // a run from before the rooms under the Hall: some of where its thread lay is rock now, so it is laid again
   if ((s.v || 0) < 3 && W.checkpoint.y < -255) layThread(W.checkpoint);
@@ -415,6 +417,21 @@ function updateUI(dt) {
   if (ps !== lastPrompt) { lastPrompt = ps; if (ps) setText($('prompt'), ps, true); show($('prompt'), !!ps); }
 }
 
+// ── what each stretch between two poles was like (session log; scripts/checks/logs.py adds them up) ──
+let SEC = newSection(0);
+function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, knots: 0, dims: 0, low: 999, rest: 0 }; }
+function sectionDone(to) {
+  const s = SEC;
+  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · lowest yarn ${s.low.toFixed(0)} of ${W.maxYarn.toFixed(0)} · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · knots ${s.knots} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
+  SEC = newSection(to);
+}
+function sectionTick(dt) {
+  const s = SEC, p = W.player;
+  s.t += dt; s.low = Math.min(s.low, W.budgetLeft());
+  if (Math.hypot(p.vx, p.vy) < 0.3) s.still += dt;
+  if (W.rest.at) s.rest += dt;
+}
+
 // ── events from the world ────────────────────────────────────────────────
 function handleEvents() {
   const p = W.player;
@@ -422,22 +439,33 @@ function handleEvents() {
     switch (e.k) {
       case 'step': SC.step(W); break;
       case 'jump': SC.jump(W); break;
-      case 'land': SC.land(W, e.v); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
+      case 'land': SC.land(W, e.v); D.life.loud = Math.max(D.life.loud || 0, 0.4); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
       case 'grip': A.play('grip', { vol: 0.35, vary: 0.1, x: p.x, y: p.y }); break;
       case 'release': case 'letgo': A.play('release', { vol: 0.3, vary: 0.1, x: p.x, y: p.y }); break;
       case 'taut': if (time - (W._tautT ?? -99) > 8) { W._tautT = time; A.play('tie', { vol: 0.2, rate: 0.8, x: p.x, y: p.y }); } if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
       case 'snag': A.play('snag', { vol: 0.5, vary: 0.12, x: p.x, y: p.y + 2 }); SC.snag(W); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
       case 'tie':
-        log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
+        log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`); sectionDone(W.checkpoint.i);
         A.play('tie', { vol: 0.7, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.75, x: e.x, y: e.y });
         D.spawn('spark', e.x, e.y + 0.5, 18, { speed: 2.5, life: 1.0 }); D.spawn('ring', e.x, e.y + 0.5, 1, { speed: 0, life: 0.9 });
         save();
         break;
       case 'mend': A.play('tie', { vol: 0.55, rate: 1.2, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { life: 0.7 }); break;
       case 'pluck':
-        SC.pluck(W, A.pluck(e.tension, e.x, e.y));
+        SC.pluck(W, A.pluck(e.tension, e.x, e.y)); SEC.plucks++;
+        if (Math.random() < 0.5) D.sift(p.x, p.y, 1, 4);
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
+      // the thread's light (kindle.js)
+      case 'knot': SEC.knots++; A.play('tie', { vol: 0.4, rate: 1.5, x: e.x, y: e.y }); A.play('chime', { vol: 0.16, rate: 1.1, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.1, 10, { speed: 1.2, life: 0.8 }); break;
+      case 'knotBack': A.play('release', { vol: 0.25, rate: 1.3, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.1, 6, { speed: 1, life: 0.5 }); break;
+      case 'knotOut': case 'knotTaken': A.play('cut', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); if (e.k === 'knotTaken') A.any('dirt', { vol: 0.5, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 6, { speed: 1.4, life: 0.9 }); break;
+      case 'knotNo': A.play('release', { vol: 0.12, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'dim': SEC.dims++; A.any('st_soft', { vol: 0.3, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'dimSpent': A.any('st_soft', { vol: 0.35, rate: 1.1, x: e.x, y: e.y }); break;
+      case 'sit': log(`sits at ${e.x.toFixed(0)},${e.y.toFixed(0)}`); A.any('st_soft', { vol: 0.3, rate: 0.7, x: e.x, y: e.y }); A.play('bowl', { vol: 0.2, rate: 0.5, verb: 1.4, bus: 'ui' }); break;
+      case 'place': log(`found ${e.name}`); card(e.name); A.play('chime', { vol: 0.2, rate: 0.7, x: e.x, y: e.y }); save(); break;
+      case 'stalk': A.any('crumbs', { vol: 0.22 + 0.2 * e.k, rate: 0.75, vary: 0.2, x: e.x, y: e.y, verb: 0.4 }); D.spawn('grit', e.x, e.y + 0.05, 4, { speed: 0.8, vy: 0.9, life: 1.2, r: 0.8 }); break;
       case 'bell': A.bellNote(e.i, e.x, e.y); SC.bell(W, e); D.spawn('pale', e.x + 0.3, e.y + 1.1, 1, { speed: 0, life: 1.6 }); save(); break;
       case 'gate': A.play('gate', { vol: 0.9, x: e.x, y: e.y }); if (state === 'play') cam.shake = 0.35; toast('the veil remembers its song and parts', 3); break;
       case 'chew': A.play('chew', { vol: 0.28, vary: 0.25, x: e.x, y: e.y, verb: 0.2 }); break;
@@ -451,7 +479,7 @@ function handleEvents() {
         break;
       case 'dissolve': A.play('splash', { vol: 0.6, x: e.x, y: e.y }); A.play('cut', { vol: 0.5, rate: 0.8, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 8, { speed: 1.5, life: 1.2 }); toast('the ink ate the thread', 2.5); break;
       case 'death':
-        log(`death · ${e.cause} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`);
+        log(`death · ${e.cause} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`); SEC.deaths.push(e.cause); SEC.tries++;
         A.play('tear', { vol: 0.9, x: e.x, y: e.y });
         if (e.cause === 'ink') A.play('splash', { vol: 0.9, rate: 0.7, x: e.x, y: e.y });
         D.spawn('fiber', e.x, e.y, 40, { speed: 3, life: 2 });
@@ -466,7 +494,7 @@ function handleEvents() {
       case 'shelf': if (!SHOW && state === 'play') openShelf('door'); break;
       case 'allfound': toast('all of them · she sews on the second eye', 5); A.play('bowl', { vol: 0.3, rate: 0.75, verb: 1.4, bus: 'ui' }); break;
       // what the thread works (rig.js)
-      case 'doorUp': A.play('gate', { vol: 0.55, rate: 0.85, x: e.x, y: e.y }); if (Math.hypot(e.x - p.x, e.y - p.y) < 20) cam.shake = Math.max(cam.shake, 0.12); break;
+      case 'doorUp': D.sift(e.x, e.y, 3, 2); A.play('gate', { vol: 0.55, rate: 0.85, x: e.x, y: e.y }); if (Math.hypot(e.x - p.x, e.y - p.y) < 20) cam.shake = Math.max(cam.shake, 0.12); break;
       case 'doorDown': A.play('gate', { vol: 0.7, rate: 0.6, x: e.x, y: e.y }); D.spawn('puff', e.x, e.y + 0.2, 8, { speed: 1.2, vy: 0.5, life: 0.6 }); break;
       case 'ratchet': A.any('ratch', { vol: 0.34, vary: 0.08, x: e.x, y: e.y }); break;
       case 'latched': A.play('gate', { vol: 0.6, rate: 1.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { speed: 1.6, life: 0.7 }); save(); break;
@@ -507,6 +535,7 @@ function handleEvents() {
       case 'stamp':
         A.play('land', { vol: 0.9, rate: e.kind === 'needle' ? 1.6 : 0.4, x: e.x, y: e.y, verb: 1.2 });
         SC.impact(W, e, e.kind !== 'needle');
+        if (Math.hypot(e.x - p.x, e.y - p.y) < 14) D.sift(e.x, e.y, 2, 3);
         if (e.kind !== 'needle') { A.any('timber', { vol: 0.4, x: e.x, y: e.y }); A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
         break;
       case 'rise':
@@ -516,7 +545,7 @@ function handleEvents() {
         cam.shake = 0.7;
         if (e.first) toast('climb', 4);
         break;
-      case 'surgeWarn': A.any('heave', { vol: 0.75, rate: 0.8, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.2); break;
+      case 'surgeWarn': D.sift(p.x, p.y, 4, 9); A.any('heave', { vol: 0.75, rate: 0.8, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.2); break;
       case 'surge': A.any('heave', { vol: 1.0, rate: 1.1, x: e.x, y: e.y, verb: 1.2 }); A.play('thud', { vol: 0.9, rate: 0.6, x: e.x, y: e.y, verb: 1.4 }); A.any('groan', { vol: 0.5, rate: 0.55, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.7); D.spawn('fiber', p.x, p.y - 4, 26, { speed: 3, vy: 5, life: 1.4 }); break;
       case 'crawlNear': A.play('inhale', { vol: 0.8, rate: 0.8, x: e.x, y: e.y }); if (!W._nearSeen) { W._nearSeen = true; toast('it is on your thread · pluck', 3); } break;
       case 'crawlShake': A.any('palm', { vol: 1.0, rate: 0.8, x: e.x, y: e.y }); A.any('groan', { vol: 0.35, rate: 1.2, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 8, { speed: 2, life: 0.8 }); break;
@@ -550,6 +579,7 @@ function finishRun() {
   settings.ended = { ...settings.ended, [k]: true };
   if (t > 30 && W.fair && (!settings.best[k] || t < settings.best[k])) settings.best = { ...settings.best, [k]: +t.toFixed(1) };
   window.host?.setSettings?.(settings);
+  sectionDone('choice');
   log(`run over · ${clock(t)}${W.fair ? '' : ' (not from the start)'}${W.mode ? ' · ' + W.mode : ''}`);
 }
 function endCards(lines, done) {
@@ -718,7 +748,7 @@ function startReveal(e) {
   for (let k = 0; k < n; k++) order[k] /= far;
   const s = W.secrets[e.i];
   s.rev = { x: e.x, y: e.y, r: 0 };
-  reveals.push({ s, far, P, order, t: 0, out: new Float32Array(n) });
+  reveals.push({ s, far, P, order, t: 0, out: new Float32Array(n * 2) });
   log(`hidden room opens · ${s.name}`);
   SC.reveal(e.x, e.y);
   D.spawn('puff', e.x, e.y, 14, { speed: 1.6, life: 1.2, r: 1.2 });
@@ -729,9 +759,9 @@ function revealStep(dt) {
     const P = r.P;
     r.t += dt;
     const k = Math.min(1, r.t / REVEAL) * 1.16, done = r.t >= REVEAL;
-    for (let i = 0; i < r.out.length; i++) { const u = clamp((k - r.order[i]) / 0.16, 0, 1); r.out[i] = P.a[i] + (P.b[i] - P.a[i]) * u * u * (3 - 2 * u); }
+    for (let i = 0; i < r.order.length; i++) { let u = done ? 1 : clamp((k - r.order[i]) / 0.16, 0, 1); u *= u * (3 - 2 * u); r.out[2 * i] = P.a[i] + (P.b[i] - P.a[i]) * u; r.out[2 * i + 1] = P.ga[i] + (P.gb[i] - P.ga[i]) * u; }
     r.s.rev = done ? null : { ...r.s.rev, r: Math.max(0, (k - 0.16) * r.far - 1.7) };
-    R.patchSDF({ x: P.x, y: P.y, w: P.w, h: P.h, data: T.half(done ? P.b : r.out) });
+    R.patchSDF({ x: P.x, y: P.y, w: P.w, h: P.h, data: T.half(r.out) });
     r.done = done;
   }
   reveals = reveals.filter((r) => !r.done);
@@ -874,6 +904,7 @@ function openness(x, y) {
 }
 let camOpen = Math.log(OPEN.mid);      // smoothed log openness
 function snapOpen() { camOpen = openness(W.player.x, W.player.y + 1.2); }   // after a teleport/respawn: no slow drift from the old room
+let fallCam = 0;                       // how far the view has gone ahead of a fall
 let lookT = 0, lookCam = 0;            // look up/down: how long it's been held, and the eased camera pan (-1..1)
 function updateCamera(dt) {
   const p = W.player, a = W.area();
@@ -893,9 +924,17 @@ function updateCamera(dt) {
   } else {
     tx = p.x + clamp(p.vx * 0.35, -3, 3);
     ty = p.y + 1.2 + clamp(p.vy * 0.12, -2.5, 1);
+    // a long way down: the view goes ahead of her, so she sees what she is falling to (and steers)
+    const air = !p.grounded && !p.climb && !W.thread.locked && p.vy < -6, under = air ? W.T.ray(p.x, p.y, p.x, p.y - 40) : 0, drop = under < 0 ? 40 : under * 40;
+    fallCam = damp(fallCam, air ? smooth(4, 14, drop) * smooth(6, 16, -p.vy) : 0, air ? 3.4 : 1.6, dt);
     camOpen = damp(camOpen, openness(p.x, p.y + 1.2), 0.8, dt);
     const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
     vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
+    // a very wide window sees far to the sides already: it comes a little nearer instead, so she is not lost in it
+    const asp = R.w / R.h; if (asp > 1.95) vh *= Math.pow(1.95 / asp, 0.42);
+    // sitting: the place opens out round her
+    if (W.rest) { const q = W.rest.k * W.rest.k * (3 - 2 * W.rest.k); vh = lerp(vh, Math.min(OPEN.vhMax, vh * 1.22 + 2), q); ty += q * 0.9; }
+    ty -= fallCam * vh * 0.24;
     if (a.id === 'loom' && p.y > -452) { const q = smooth(25, 17, p.x); vh = 10.5 - 4.0 * q; tx -= 1.3 * q; }         // at the top of the Loom: close, so little of the place is seen
     if (a.id === 'loom' && p.y < -528 && !W.deep.rise.woke) vh = Math.min(vh, 11);     // among the called
     if (SHOW) {
@@ -914,7 +953,8 @@ function updateCamera(dt) {
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
   cam.shake = Math.max(0, cam.shake - dt);
   const amb = state === 'ending' && E.mode ? (E.pulse ? areaAt(cam.x, cam.y).amb : a.amb) : a.amb;
-  ambient = ambient.map((v, i) => damp(v, amb[i] * (state === 'ending' ? 1 - E.black : 1), 1.5, dt));
+  const eyes = 1 + 1.5 * (W.dim || 0);      // (eyes get used to the dark)
+  ambient = ambient.map((v, i) => damp(v, amb[i] * eyes * (state === 'ending' ? 1 - E.black : 1), W.dim > 0.1 ? 0.9 : 1.5, dt));
   moon = damp(moon, state === 'ending' && E.pulse ? areaAt(cam.x, cam.y).moon : a.moon, 1.5, dt);
 }
 
@@ -929,7 +969,7 @@ function buildPts(viewW, viewH, k) {
   const wLive = Math.max(1.5, k * 0.024);
   // the knitter's grey thread
   const g = W.grey;
-  const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1);      // the threads go out with the picture
+  const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1), low = 1 - 0.82 * (W.dim || 0);      // the threads go out with the picture
   const redTo = E && E.pulse ? E.pulse.total : -1;
   for (let i = 0; i < g.n; i++) {
     const x = g.x[i]; let y = g.y[i];
@@ -979,7 +1019,7 @@ function buildPts(viewW, viewH, k) {
     else { r = 0.9; gg = 0.1; b = 0.09; }
     if (W.deep.rise.level > W.deep.rise.y0 + 0.5 && y < W.deep.rise.level && y > -560) { r *= 0.22; gg = 0.03; b = 0.04; a *= 0.6; }
     if (wear > 0) { const q = clamp(wear, 0, 1); r = lerp(r, 0.18, q); gg = lerp(gg, 0.05, q); w *= 1 - q * 0.55; }
-    a *= lit;
+    a *= lit * low;
     put(x, y, w, a, r, gg, b); open = true;
   }
   brk();
@@ -1027,7 +1067,7 @@ function tick(now) {
     revealStep(gdt);
   }
   watchSpeed(dt);
-  if (state === 'play' && !paused && !SHOW && !busy && !(W.intro && !W.intro.done)) W.run = (W.run || 0) + dt;
+  if (state === 'play' && !paused && !SHOW && !busy && !(W.intro && !W.intro.done)) { W.run = (W.run || 0) + dt; sectionTick(dt); }
   const tk = settings.timer && (state === 'play' || state === 'ending');
   show($('clock'), tk); if (tk) { const tx = clock(W.run || 0); if (tx !== $('clock').textContent) $('clock').textContent = tx; }
   updateUI(dt);
@@ -1040,6 +1080,8 @@ function tick(now) {
     let md = 99; for (const m of W.moths) md = Math.min(md, Math.hypot(m.x - cam.x, m.y - cam.y));
     const snd = { W, state, paused, show: !!SHOW, cam: [cam.x, cam.y], moth: paused ? 0 : clamp(1 - md / 12, 0, 1) * 0.35, voice: voicePlaying > 0 || !!SHOW, out: state === 'title' ? 1 : state === 'ending' || state === 'coda' || state === 'credits' ? 0 : D.out, gust: D.gust, under: W.area().id === 'throat' ? 1 : 0 };
     SC.update(dt, snd); A.update(dt, snd);
+    for (const q of D.life.sounds) if (state === 'play' && !paused) A.any(q.group, { vol: q.vol, rate: q.rate, x: q.x, y: q.y });
+    D.life.sounds.length = 0;
   }
 
   // render
@@ -1047,13 +1089,14 @@ function tick(now) {
   const cx = cam.x + (Math.random() - 0.5) * shake, cy = cam.y + (Math.random() - 0.5) * shake;
   const viewW = cam.viewH * R.w / R.h;
   D.setView([cx, cy], cam.viewH, R.w, R.h);
+  D.axis = state === 'play' && !paused && !busy && !SHOW && !(W.intro && !W.intro.done) ? Math.sign(I.axisX || 0) : 0;
   D.draw(R.sctx, R.ectx, gdt, time);
   const k = R.h / cam.viewH;
   const nPts = buildPts(viewW, cam.viewH, k);
   const bg = [];
   L.BACKDROPS.forEach((b, i) => {
     const qx = b.cx + (cx - b.cx) * b.par, qy = b.cy + (cy - b.cy) * b.par;
-    if (Math.abs(qx - b.cx) < b.w / 2 + viewW / 2 && Math.abs(qy - b.cy) < b.h / 2 + cam.viewH / 2) bg.push({ ...b, layer: i, alpha: 1 });
+    if (Math.abs(qx - b.cx) < b.w * 0.62 + viewW / 2 && Math.abs(qy - b.cy) < b.h / 2 + cam.viewH / 2) bg.push({ ...b, layer: i, alpha: 1 });
   });
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;

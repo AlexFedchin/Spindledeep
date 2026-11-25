@@ -7,6 +7,8 @@ import { buildLore, loreLights } from './props.js';
 import { Deep } from './deep.js';
 import { Rig } from './rig.js';
 import { hug } from './route.js';
+import { Kindle } from './kindle.js';
+import { growGlows } from './life.js';
 
 const BASE_YARN = 92, SKEIN_YARN = 14, FRAYED = 0.8;
 export const SHELF = { x: 15.4, y: 0.55 };      // by her door: what has been brought home
@@ -73,6 +75,8 @@ export class World {
     this.husks = [];        // the dolls you lost on the way down stay where they fell
     this.deep = new Deep(this);
     this.rig = new Rig(this);
+    this.glows = T.glows ||= growGlows(T);        // (the same in every world made of this rock)
+    this.kindle = new Kindle(this);
     this.reset();
   }
 
@@ -86,7 +90,7 @@ export class World {
   get maxYarn() { const y = BASE_YARN + this.skeinCount * SKEIN_YARN; return this.mode === 'frayed' ? Math.max(BASE_YARN - 1, y * FRAYED) : y; }     // (the fall into the Loom needs nearly all of a bare ball)
   // all eight keepsakes in this run: she has sewn on the second eye, and sees further
   get whole() { return this.secrets.every((s) => s.taken); }
-  budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt; }
+  budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt - (this.kindle ? this.kindle.cost : 0); }
   yarnFrac() { return clamp(this.budgetLeft() / this.maxYarn, 0, 1); }
 
   area() {
@@ -105,12 +109,13 @@ export class World {
     const ctx = { slow: this.slow ?? 1, budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt); this.rig.pre();
-    p.update(dt, controls && !p.dead && !this.ending ? inp : blank, th, ctx);
+    p.update(dt, controls && !p.dead && !this.ending && !(this.rest.at && !inp.axisX && !inp.pressed.jump && !inp.held.grip) ? inp : blank, th, ctx);
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, this.budgetLeft(), false);
     th.buildPoly(p.bx, p.by);
 
     if (!p.dead && !this.ending && controls) this._interact(inp, dt);
+    this.kindle.update(dt, controls ? inp : blank, controls && !p.dead && !this.ending);
     this._bells(dt);
     this._gates(dt);
     this.still = Math.hypot(p.vx, p.vy) < 0.6 && !th.locked ? (this.still || 0) + dt : 0;
@@ -146,9 +151,10 @@ export class World {
     if (atShelf) { this.prompt = { a: 'act', t: 'Look at her shelf' }; if (inp.pressed.act) { this.emit('shelf', {}); return; } }
     else if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
     else if (nearMend) this.prompt = { a: 'act', t: 'Mend the thread' };
+    else if (this.kindle.seat()) this.prompt = { a: 'act', t: 'Sit a while' };
     // reaching a peg ties the thread to it by itself, so a fall always sends you back to the last peg you passed
     const autoTie = peg && !nearFinale && p.grounded && !th.locked;
-    if (autoTie) this.prompt = null;
+    if (autoTie || this.rest.at) this.prompt = null;
     if (inp.pressed.act || autoTie) {
       if (peg) {
         th.tie(peg.x, peg.y + 0.35);
@@ -156,6 +162,7 @@ export class World {
         p.tieT = 0.6;
         this.emit('tie', { x: peg.x, y: peg.y });
       } else if (nearMend) { th.mend(); this.emit('mend', { x: p.x, y: p.y }); }
+      else if (inp.pressed.act) this.kindle.act();
     }
     if (inp.pressed.pluck && (this.pluckCD || 0) <= 0) {
       this.deep.onPluck();
@@ -223,7 +230,8 @@ export class World {
       let tx = m.nest.x + Math.cos(m.t * 0.7 + m.seed) * m.nest.r * 0.6, ty = m.nest.y + Math.sin(m.t * 1.1 + m.seed) * 2.5;
       if (m.st === 'land') {
         // chewing the thread
-        if (m.idx < th.liveStart || m.idx >= th.n || th.dead[m.idx] || m.flee > 0) { m.st = 'wander'; m.idx = -1; }
+        m.dark = this.dim > 0.6 ? (m.dark || 0) + dt : 0;                  // (in the dark it loses the thread it sits on)
+        if (m.idx < th.liveStart || m.idx >= th.n || th.dead[m.idx] || m.flee > 0 || m.dark > 1.1) { m.st = 'wander'; m.idx = -1; m.near = 0; }
         else {
           m.x = th.x[m.idx] + Math.sin(m.t * 3) * 0.02; m.y = th.y[m.idx] + 0.08;
           th.wear[m.idx] += dt / (this.mode === 'frayed' ? 2.8 : 4.2);
@@ -236,7 +244,7 @@ export class World {
         }
       }
       if (m.st === 'doll') {
-        if (m.flee > 0 || p.dead) m.st = 'wander';
+        if (m.flee > 0 || p.dead || (this.dim > 0.6 && Math.random() < dt * 1.5)) m.st = 'wander';
         else {
           m.x = p.x + Math.cos(m.seed) * 0.25; m.y = p.y + 0.15 + Math.sin(m.seed) * 0.2;
           this.hurt += dt * 0.9;
@@ -245,7 +253,11 @@ export class World {
         }
       }
       // pick a target: the warm thread or the doll, if near and not guarded by a bell
-      if (m.flee <= 0 && m.st !== 'flee') {
+      // a knot of light is warmer than either: they go round it and leave the rest alone
+      const kn = m.flee <= 0 && m.st !== 'flee' ? this.kindle.nearest(m.x, m.y, 9) : null;
+      if (kn) { m.st = 'seek'; m.near = 0; tx = kn.x + Math.cos(m.t * 3.1 + m.seed) * 0.8; ty = kn.y + 0.5 + Math.sin(m.t * 4.3 + m.seed) * 0.45; }
+      else if (m.flee <= 0 && m.st !== 'flee' && this.dim > 0.6) m.st = 'wander';
+      else if (m.flee <= 0 && m.st !== 'flee') {
         let best = -1, bd = 9;
         const step = 3;
         for (let i = th.liveStart; i < th.n; i += step) {
@@ -344,7 +356,7 @@ export class World {
     p.reset(c.x + 0.6, c.y + 0.6);
     this.hurt = 0;
     for (const m of this.moths) { m.st = 'wander'; m.idx = -1; m.flee = 1.5; m.x = m.nest.x; m.y = m.nest.y; }
-    this.deep.onRespawn(); this.rig.onRespawn();
+    this.deep.onRespawn(); this.rig.onRespawn(); this.kindle.onRespawn();
     this.emit('respawn', { x: p.x, y: p.y });
   }
 
@@ -392,13 +404,13 @@ export class World {
     const out = [];
     const mx = viewW / 2 + 6, my = viewH / 2 + 6;
     const vis = (x, y) => Math.abs(x - cam[0]) < mx && Math.abs(y - cam[1]) < my;
-    const t = this.time, p = this.player, th = this.thread;
+    const t = this.time, p = this.player, th = this.thread, low = 1 - 0.9 * (this.dim || 0), eyes = 1 + 0.9 * (this.dim || 0);
     for (const l of this.lamps) if (vis(l.x, l.y)) {
       const fl = 1 + (Math.sin(t * 13 + l.x) * 0.05 + Math.sin(t * 7.3) * 0.06) * l.flicker;
-      out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl, c: l.c, soft: 10 });
+      out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl * eyes, c: l.c, soft: 10 });
     }
     // the doll's own warmth
-    if (!p.dead && !this.hideDoll && !(this.snuff > 0.98)) out.push({ x: p.x, y: p.y + 0.3, r: this.whole ? 6.8 : 4.6, i: (this.whole ? 1.05 : 0.9) * p.scale * (1 - (this.snuff || 0)), c: [1.0, 0.5, 0.4], soft: 12 });
+    if (!p.dead && !this.hideDoll && !(this.snuff > 0.98)) out.push({ x: p.x, y: p.y + 0.3, r: this.whole ? 6.8 : 4.6, i: (this.whole ? 1.05 : 0.9) * p.scale * (1 - (this.snuff || 0)) * low, c: [1.0, 0.5, 0.4], soft: 12 });
     // the thread: a light every ~0.9 m along the visible polyline
     const P = th.poly, n = th.polyN;
     let acc = 0, budget = 96, lx = P[0], ly = P[1];
@@ -410,7 +422,7 @@ export class World {
       if (acc < 0.95) continue;
       acc = 0;
       if (!vis(x, y) || (y < this.deep.rise.level && y > -545 && this.deep.rise.level > this.deep.rise.y0 + 0.5)) continue;
-      const lit = (st === 0 ? 0.34 : 0.6) * (1 - (this.snuff || 0));
+      const lit = (st === 0 ? 0.34 : 0.6) * (1 - (this.snuff || 0)) * low;
       if (lit < 0.01) continue;
       const d = this.T.d(x, y);
       let ox = x, oy = y;
@@ -441,6 +453,8 @@ export class World {
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
     for (const s of this.secrets) if (!s.taken && s.open && vis(s.x, s.y) && !this.hiddenAt(s.x, s.y + 0.2)) out.push({ x: s.x, y: s.y + 0.35, r: 2.2, i: 0.42 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
+    for (const q of this.glows) if (vis(q.x, q.y) && out.length < 150 && !this.hiddenAt(q.x, q.y)) out.push({ x: q.x + q.nx * 0.3, y: q.y + q.ny * 0.3, r: q.r * (0.8 + 0.2 * Math.min(2, q.b)), i: q.i * Math.min(2.6, q.b) * (1 - (this.snuff || 0)), c: q.c, soft: 8 });
+    out.push(...this.kindle.lights(vis, t));
     if (this.extraLights) out.push(...this.extraLights);
     // a found item held up in the showcase: a warm light on it (and on her face below it)
     if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.3 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
@@ -455,6 +469,9 @@ function buildGrey(T) {
   const W = L.GREY.map(([x, y]) => {
     let px = x, py = y;
     for (let k = 0; k < 6; k++) { const d = T.d(px, py); if (d > 0.08) break; const [gx, gy] = T.grad(px, py); px += gx * (0.1 - d); py += gy * (0.1 - d); }
+    // (a point laid on the ground lies on the ground)
+    const g = T.ground(px, py, 0.75);
+    if (g !== null && T.d(px, py) > 0.08 && T.grad(px, g)[1] > 0.8) py = g + 0.02;
     return [px, py];
   });
   const pts = [], pins = [];
@@ -476,11 +493,11 @@ function buildGrey(T) {
       const wa = pins[i - 1] ? 0 : 0.5, wb = pins[i] ? 0 : 0.5, s = wa + wb || 1;
       x[i - 1] += dx * diff * wa / s; y[i - 1] += dy * diff * wa / s; x[i] -= dx * diff * wb / s; y[i] -= dy * diff * wb / s;
     }
-    for (let i = 0; i < n; i++) { if (pins[i]) continue; const d = T.d(x[i], y[i]); if (d < 0.09) { const [gx, gy] = T.grad(x[i], y[i]); x[i] += gx * (0.09 - d); y[i] += gy * (0.09 - d); } }
+    for (let i = 0; i < n; i++) { if (pins[i]) continue; const d = T.d(x[i], y[i]); if (d < 0.06) { const [gx, gy] = T.grad(x[i], y[i]); x[i] += gx * (0.06 - d); y[i] += gy * (0.06 - d); } }
   }
   // laid along the rock's face wherever a span between two points would still cut through it
   const X = [x[0]], Y = [y[0]];
-  for (let i = 1; i < n; i++) { hug(T, x[i - 1], y[i - 1], x[i], y[i], (hx, hy) => { X.push(hx); Y.push(hy); }, 0.08, true, 16); X.push(x[i]); Y.push(y[i]); }
+  for (let i = 1; i < n; i++) { hug(T, x[i - 1], y[i - 1], x[i], y[i], (hx, hy) => { X.push(hx); Y.push(hy); }, 0.055, true, 16); X.push(x[i]); Y.push(y[i]); }
   return { x: Float32Array.from(X), y: Float32Array.from(Y), n: X.length };
 }
 function nearestOn(g, px, py) {
@@ -527,7 +544,10 @@ function makeHints() {
     { x0: 4, x1: 13, y0: -284, y1: -268, when: (w) => w.rig.pulls[0].f < 1, keys: ['jump', 'grip', 'up'], text: 'catch the handle in the air · land, still holding · wind in', until: (w) => w.player.x > 24 },
     { x0: 26, x1: 68, y0: -305, y1: -294, text: 'the spindles turn where your thread runs past them · the door wants both', until: (w) => w.player.x < 27 },
     { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it pass · it will foul on your thread', until: (w) => w.player.x < 62 },
-    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck', until: (w) => w.player.x > 62 },
+    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck, but not too often', until: (w) => w.player.x > 62 },
+    { x0: 55, x1: 98, y0: -92, y1: -76, keys: ['dim'], text: 'hold to dim the thread · your eyes get used to the dark', until: (w) => w.dim > 0.9 },
+    { x0: 14, x1: 34, y0: -62, y1: -50, keys: ['act'], text: 'knot a light into the thread and leave it burning · walk back past it to take it up', until: (w) => w.kindle.knots.length > 0 || w.player.y < -63 },
+    { x0: 66, x1: 98, y0: -327, y1: -314, keys: ['dim', 'act'], text: 'in the dark they feel less of you · a knotted light draws them off', until: (w) => w.player.x < 66 },
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
     { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },

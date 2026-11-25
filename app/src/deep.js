@@ -13,7 +13,9 @@ const T_ground = (T, x, y) => T.ground(x, y + 1.5, 4);
 // what follows her up the Loom comes hand over hand along the thread she has laid behind her. A pluck shakes it back down it, and
 // the more often it is done the less far
 export const CRAWL = { from: 24, v: 4.3, move: 0.95, per: 2.0, near: 7.5, grab: 1.1, shake: 10, less: 0.82, stun: 1.0, cost: 2.5, peg: 11 };
-export const HAND = { stir: 0.5, stirLow: 0.8, gap: 0.9, lunge: 15, steer: 2.6, grope: 0.8, gropeV: 4.6, back: 6, cool: 1.0, hold: 1.0, drag: 3.2, stun: 1.7, stunAgain: 1.1, at: 9, grab: 0.5, cost: 9, lull: 1.15, most: 2 };
+export const HAND = { stir: 0.5, stirLow: 0.8, gap: 0.9, lunge: 15, steer: 2.6, grope: 0.8, gropeV: 4.6, back: 6, cool: 1.0, hold: 0.9, drag: 3.2, stun: 1.7, stunAgain: 1.1, at: 9, grab: 0.5, cost: 9, lull: 1.0, most: 2,
+  // every pluck down here rouses the earth (it forgets slowly): roused, it is quicker, reaches further, comes three at a time, and one that missed moves along the rock after her
+  rouse: 0.26, calm: 0.055, quick: 0.3, far: 0.16, hunt: 3.4 };
 const REST = 0.42, SHAKE = 0.64, SLAM = 0.69, HOLD = 0.8;
 
 export class Deep {
@@ -59,11 +61,16 @@ export class Deep {
     const since = this.W.time - this.lastPluck, again = since < 3, hammer = since < 0.7;
     this.lastPluck = this.W.time;
     const p = this.W.player;
+    if (p.y < -262 && p.y > -342) this.roused = Math.min(1, (this.roused || 0) + HAND.rouse);
     let hit = false;
     for (const h of this.hands) {
       if (h.st === 'wait' || (Math.hypot(h.ax - p.x, h.ay - p.y) > HAND.at && Math.hypot(h.tx - p.x, h.ty - p.y) > 4)) continue;
       if (hammer && !h.grab) continue;
-      if (h.grab) this.W.hurt += HAND.cost;
+      if (h.grab) {
+        this.W.hurt += HAND.cost;
+        // roused, it has a better hold: the first pluck only loosens it
+        if (--h.grip > 0) { h.t = Math.max(0, h.t - 0.55); this.W.emit('recoil', { x: h.tx, y: h.ty }); hit = true; continue; }
+      }
       if (h.ext > 0.3) this.W.emit('recoil', { x: h.tx, y: h.ty });
       h.st = 'back'; h.grab = false; h.cool = again ? HAND.stunAgain : HAND.stun; hit = true;
     }
@@ -77,7 +84,8 @@ export class Deep {
   }
 
   onRespawn() {
-    for (const h of this.hands) { h.ext = 0; h.grab = false; h.st = 'wait'; h.cool = 1; }
+    for (const h of this.hands) { h.ext = 0; h.grab = false; h.st = 'wait'; h.cool = 1; h.lure = null; if (h.ox !== undefined) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } }
+    this.roused = 0;
     const r = this.rise;
     this.crawler.on = false;
     this.crawler.s = -1;
@@ -94,40 +102,61 @@ export class Deep {
     // they feel her through the ground: where she is going, while she moves. Dead still, they only have the last they felt
     const sp = Math.hypot(p.vx, p.vy);
     if (sp > 1.4) { this.felt = [p.vx, p.vy]; this.quiet = 0; } else this.quiet = (this.quiet || 0) + dt;
+    const ro = this.roused = Math.max(0, (this.roused || 0) - HAND.calm * dt), dim = W.dim || 0;
+    // it follows her under the ground while it is awake: crumbs fall behind her
+    if (ro > 0.2 && free && sp > 1.4 && p.y < -262 && p.y > -342) {
+      this.stalk = (this.stalk || 0) - dt * (0.6 + ro);
+      if (this.stalk <= 0) { this.stalk = 1.3; const bx = p.x - Math.sign(p.vx || 1) * 2.2, gy = W.T.ground(bx, p.y + 1, 4); if (gy !== null) W.emit('stalk', { x: bx, y: gy, k: ro }); }
+    }
     for (const h of this.hands) {
+      if (h.ox === undefined) { h.ox = h.ax; h.oy = h.ay; h.onx = h.nx; h.ony = h.ny; h.moved = 0; }
       const dx = p.x - h.ax, dy = p.y + 0.1 - h.ay, d = Math.hypot(dx, dy);
-      if (d > 26) { h.st = 'wait'; h.ext = 0; h.grab = false; continue; }
+      if (d > 26) { h.st = 'wait'; h.ext = 0; h.grab = false; h.lure = null; if (h.moved) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } continue; }
       h.t += dt; h.cool = Math.max(0, h.cool - dt);
       const nearBell = lit.some((b) => Math.hypot(b.x - h.ax, b.y + 1 - h.ay) < 6 || Math.hypot(b.x - p.x, b.y + 1 - p.y) < 4.5);
       if ((nearBell || !free) && h.st !== 'wait' && !(h.grab && p.dead)) { h.st = 'back'; h.grab = false; }
       const go = (st) => { h.st = st; h.t = 0; };
       if (h.st === 'wait') {
-        if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + HAND.gap && out < HAND.most && d < h.reach + 0.8 && dx * h.nx + dy * h.ny > 0) { go('stir'); out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
+        const reach = h.reach * (1 + HAND.far * ro) * (1 - 0.45 * dim) + 0.8, gap = HAND.gap * (1 - 0.4 * ro) * (1 + 0.8 * dim);
+        // a knot of light in reach is as good as she is
+        const kn = free && !nearBell && h.cool <= 0 && d < 18 ? W.kindle.nearest(h.ax, h.ay, h.reach + 0.6) : null;
+        if (kn && (kn.x - h.ax) * h.nx + (kn.y - h.ay) * h.ny > -0.2 && out < HAND.most + 1 && W.time > (this.lastLure || 0) + 1.2 && d > 1.4 && W.T.ray(h.ax + h.nx * 0.3, h.ay + h.ny * 0.3, kn.x, kn.y + 0.1, -0.1) < 0) { h.lure = kn; go('stir'); out++; this.lastLure = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
+        else if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + gap && out < HAND.most + (ro > 0.55 ? 1 : 0) && d < reach && dx * h.nx + dy * h.ny > 0) { go('stir'); h.lure = null; out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
       } else if (h.st === 'stir') {
-        if (h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir)) {
+        if (h.lure && h.t > 0.7) {
+          const kx = h.lure.x - h.ax, ky = h.lure.y + 0.1 - h.ay, l = Math.hypot(kx, ky) || 1;
+          h.dx = kx / l; h.dy = ky / l; h.ext = 0.1; h.aimD = l; h.deaf = false;
+          go('lure'); W.emit('reach', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny });
+        } else if (!h.lure && h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir) * (1 - HAND.quick * ro)) {
           // aim where she will be when it gets there
           let ax = p.x, ay = p.y + 0.1;
           for (let k = 0; k < 3; k++) { const tt = Math.hypot(ax - h.ax, ay - h.ay) / HAND.lunge; ax = p.x + p.vx * tt; ay = p.y + 0.1 + (p.grounded ? 0 : clamp(p.vy * tt, -2, 2)); }
           // she stopped: it strikes where she was heading
           h.deaf = this.quiet > 0.03 && !!this.felt;
           if (h.deaf) { const fx = clamp(this.felt[0] * 0.5, -2.6, 2.6); ax = p.x + (Math.abs(fx) < 1.7 ? Math.sign(fx || p.facing) * 1.7 : fx); ay = p.y; }
+          // in the dark it goes for where she was
+          h.blind = !h.deaf && dim > 0.55;
+          if (h.blind) { ax = p.x - p.vx * 0.34; ay = p.y; }
           h.aimD = Math.min(h.reach + 0.4, Math.hypot(ax - h.ax, ay - h.ay) + 0.3);
           const l = Math.hypot(ax - h.ax, ay - h.ay) || 1;
           h.dx = (ax - h.ax) / l; h.dy = (ay - h.ay) / l; h.ext = 0.1;
           go('lunge');
           W.emit('reach', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny });
         }
+      } else if (h.st === 'lure') {
+        h.ext = Math.min(h.aimD, h.ext + dt * HAND.lunge * 0.8);
+        if (h.ext >= h.aimD) { if (W.kindle.knots.includes(h.lure)) W.kindle.out(h.lure, 'knotTaken'); h.lure = null; h.st = 'back'; h.t = 0; h.cool = 5; }
       } else if (h.st === 'lunge' || h.st === 'grope') {
         const lunge = h.st === 'lunge';
         if (h.deaf && this.quiet <= 0) h.deaf = false;
         if (lunge) h.ext = Math.min(h.aimD, h.ext + dt * HAND.lunge);
         // it bends toward her: a little while it flies, more as it gropes
-        const ux = dx / (d || 1), uy = dy / (d || 1), turn = h.deaf ? 0 : (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
+        const ux = dx / (d || 1), uy = dy / (d || 1), turn = h.deaf || h.blind ? 0 : (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
         const cr = h.dx * uy - h.dy * ux, an = clamp(Math.atan2(cr, h.dx * ux + h.dy * uy), -turn, turn), cs = Math.cos(an), sn = Math.sin(an);
         [h.dx, h.dy] = [h.dx * cs - h.dy * sn, h.dx * sn + h.dy * cs];
-        if (!lunge && !h.deaf) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
+        if (!lunge && !h.deaf && !h.blind) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
         if (lunge && h.ext >= h.aimD) go('grope');
-        else if (!lunge && h.t > HAND.grope) { go('back'); h.cool = h.deaf ? 4.5 : HAND.cool; }       // one that closed on nothing gives up for a while
+        else if (!lunge && h.t > HAND.grope) { go('back'); h.cool = h.deaf ? 4.5 - 2 * ro : HAND.cool; h.hunt = ro > 0.3 && !h.deaf && h.moved < 2; }       // one that closed on nothing gives up for a while
       } else if (h.st === 'hold') {
         // dragged to the rock it came out of
         h.ext = Math.max(0.7, h.ext - HAND.drag * dt);
@@ -135,13 +164,13 @@ export class Deep {
       } else {
         h.ext = Math.max(0, h.ext - dt * (h.cool > 0.3 ? HAND.back * 1.6 : HAND.back));
         h.dx += (h.nx - h.dx) * Math.min(1, dt * 2); h.dy += (h.ny - h.dy) * Math.min(1, dt * 2);
-        if (h.ext <= 0) go('wait');
+        if (h.ext <= 0) { go('wait'); if (h.hunt) { h.hunt = false; this._shift(h); } }
       }
       const l = Math.hypot(h.dx, h.dy) || 1;
       h.tx = h.ax + h.dx / l * h.ext; h.ty = h.ay + h.dy / l * h.ext;
       if (h.st === 'hold' && free) { p.x += (h.tx - p.x) * Math.min(1, dt * 14); p.y += (h.ty - p.y) * Math.min(1, dt * 14); p.vx = p.vy = 0; p.climb = null; p._collide(W.gates); }
-      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : HAND.grab)) {
-        h.grab = true; go('hold');
+      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : h.blind ? 0.34 : HAND.grab)) {
+        h.grab = true; h.grip = ro > 0.55 ? 2 : 1; go('hold');
         W.emit('seize', { x: p.x, y: p.y });
       }
     }
@@ -203,6 +232,19 @@ export class Deep {
     } else if (r.done) r.level = Math.max(r.y0, r.level - dt * 3);
   }
 
+  // under the rock, along its face, to come out nearer to her
+  _shift(h) {
+    const W = this.W, T = W.T, p = W.player, tx = -h.ny, ty = h.nx, s = Math.sign((p.x - h.ax) * tx + (p.y - h.ay) * ty) || 1;
+    let x = h.ax, y = h.ay, nx = h.nx, ny = h.ny;
+    for (let q = 0; q < HAND.hunt; q += 0.2) {
+      x += -ny * s * 0.2; y += nx * s * 0.2;
+      const d = T.d(x, y); [nx, ny] = T.grad(x, y); x -= nx * (d - 0.02); y -= ny * (d - 0.02);
+    }
+    if (Math.abs(T.d(x, y)) > 0.1 || Math.hypot(p.x - x, p.y - y) < 1.8) return;
+    h.ax = x; h.ay = y; h.nx = nx; h.ny = ny; h.moved++; h.cool = Math.max(h.cool, 0.8);
+    W.emit('stalk', { x, y, k: 0.6 });
+  }
+
   // along the thread, from far behind her up to her: still, then quick, then still
   _crawl(dt) {
     const W = this.W, p = W.player, c = this.crawler, th = W.thread, P = th.poly, n = th.polyN, r = this.rise;
@@ -215,7 +257,7 @@ export class Deep {
     c.t += dt; c.stun = Math.max(0, c.stun - dt);
     const u = c.t % CRAWL.per, moving = u < CRAWL.move && c.stun <= 0 && !p.dead;
     c.jerk = moving ? 1 : c.stun > 0 ? 1.6 : 0;
-    if (moving) c.s += CRAWL.v * dt;
+    if (moving) c.s += CRAWL.v * (1 - 0.35 * (W.dim || 0)) * dt;
     c.s = Math.max(total - 34, Math.min(c.s, total));
     c.gap = total - c.s;
     const st = Math.floor(u / 0.3);

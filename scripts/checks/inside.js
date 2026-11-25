@@ -7,7 +7,7 @@ const W=window.__SD.W,T=W.T,D=new M.Drawer(W);
 const w=1280,h=720,c=new OffscreenCanvas(w,h),x=c.getContext('2d',{willReadFrequently:true}),e=new OffscreenCanvas(w/2,h/2),ex=e.getContext('2d',{willReadFrequently:true});
 D.time=3;D.dtLast=1/60;D.wind=0;
 for(const s of W.secrets){s.open=window.__OPEN||false;s.rev=null;s.fade=1}
-const layers={trees:()=>D.drawTrees(x),lore:()=>P.drawLore(D,x,ex),shelves:()=>DS.drawShelves(D,x,ex),thorns:()=>D.drawThorns(x,ex),gates:()=>D.drawGates(x,ex),hooks:()=>D.drawHooks(x,ex),pegs:()=>D.drawPegs(x,ex),bells:()=>D.drawBells(x,ex),skeins:()=>D.drawSkeins(x,ex),keeps:()=>P.drawKeepsakes(D,x,ex),mem:()=>D.drawMemories(x,ex),deep:()=>DD.drawDeep(D,x,ex),drips:()=>D.drawDrips(x),cottage:()=>D.drawCottage(x,ex)};
+const DK=await import(new URL('src/drawkindle.js',location.href));const layers={places:()=>DK.drawPlaces(D,x,ex),life:()=>D.life.draw(D,x,ex),trees:()=>D.drawTrees(x),lore:()=>P.drawLore(D,x,ex),shelves:()=>DS.drawShelves(D,x,ex),thorns:()=>D.drawThorns(x,ex),gates:()=>D.drawGates(x,ex),hooks:()=>D.drawHooks(x,ex),pegs:()=>D.drawPegs(x,ex),bells:()=>D.drawBells(x,ex),skeins:()=>D.drawSkeins(x,ex),keeps:()=>P.drawKeepsakes(D,x,ex),mem:()=>D.drawMemories(x,ex),deep:()=>DD.drawDeep(D,x,ex),drips:()=>D.drawDrips(x),cottage:()=>D.drawCottage(x,ex)};
 const depth=(X,Y)=>{let d=T.d(X,Y);if(!window.__OPEN)for(const s of W.secrets){const q=s.hide;const i=Math.min(X-q[0],q[2]-X,Y-q[1],q[3]-Y);if(i>0)d=Math.min(d,-i)}return d};
 const out=[];
 const VH=24;

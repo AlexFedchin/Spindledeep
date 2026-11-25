@@ -26,7 +26,11 @@ async function mips(src) {
 async function load(name) {
   const base = 'assets/props/' + name, r = await fetch(base + '.bin');
   if (!r.ok) throw new Error('no prop ' + name);
-  const buf = await r.arrayBuffer(), hl = new DataView(buf).getUint32(0, true), h = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
+  // (packed by scripts/props3d/slim.py)
+  let buf = await r.arrayBuffer();
+  const b2 = new Uint8Array(buf, 0, 2);
+  if (b2[0] === 0x1f && b2[1] === 0x8b) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const hl = new DataView(buf).getUint32(0, true), h = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
   const img = async (u) => mips(await createImageBitmap(await (await fetch(u)).blob(), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }));
   return { ...h, prop: true, vb: new Uint8Array(buf, 4 + hl, h.nv * h.stride), ib: new Uint8Array(buf, 4 + hl + h.nv * h.stride, h.ni * 4), tex: await img(base + '.webp'), nrm: await img(base + '_n.jpg') };
 }

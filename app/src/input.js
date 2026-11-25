@@ -2,7 +2,7 @@
 const MAP = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   jump: ['Space', 'KeyZ'], grip: ['ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX'], pluck: ['KeyF', 'KeyJ', 'KeyC'],
-  act: ['KeyE', 'Enter', 'KeyL'], pause: ['Escape', 'KeyP'],
+  act: ['KeyE', 'Enter', 'KeyL'], dim: ['KeyQ', 'KeyV', 'KeyH'], pause: ['Escape', 'KeyP'],
 };
 // these work whatever else is chosen, so no choice of keys can lock anyone out of the menus
 const ALWAYS = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', act: 'Enter', pause: 'Escape' };
@@ -50,7 +50,7 @@ export class Input {
       const ax = Math.abs(p.axes[0]) > 0.25 ? p.axes[0] : 0, ay = Math.abs(p.axes[1]) > 0.35 ? -p.axes[1] : 0;
       const pad = {
         left: ax < -0.25 || b(14), right: ax > 0.25 || b(15), up: ay > 0.35 || b(12), down: ay < -0.35 || b(13),
-        jump: b(0), grip: b(7) || b(6) || b(5) || b(4), pluck: b(2), act: b(3) || b(1), pause: b(9),
+        jump: b(0), grip: b(7) || b(6) || b(5), dim: b(4), pluck: b(2), act: b(3) || b(1), pause: b(9),
       };
       if (Object.values(pad).some(Boolean)) this.usingPad = true;
       for (const a in pad) now[a] = now[a] || pad[a];
@@ -62,8 +62,8 @@ export class Input {
   }
   // label for an action prompt, matching the device in use
   label(a) {
-    if (this.usingPad) return { jump: 'A', grip: 'RT', pluck: 'X', act: 'Y', pause: 'Start', up: '↑', down: '↓', left: '←', right: '→' }[a] || a;
+    if (this.usingPad) return { jump: 'A', grip: 'RT', pluck: 'X', dim: 'LB', act: 'Y', pause: 'Start', up: '↑', down: '↓', left: '←', right: '→' }[a] || a;
     if (this.custom[a]) return this.keyName(this.custom[a]);
-    return { jump: 'Space', grip: 'Shift', pluck: 'F', act: 'E', pause: 'Esc', up: 'W', down: 'S', left: 'A', right: 'D' }[a] || a;
+    return { jump: 'Space', grip: 'Shift', pluck: 'F', dim: 'Q', act: 'E', pause: 'Esc', up: 'W', down: 'S', left: 'A', right: 'D' }[a] || a;
   }
 }

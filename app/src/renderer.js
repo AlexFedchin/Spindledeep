@@ -80,7 +80,7 @@ export class Renderer {
     const none = () => d.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
     this.figNone = [none(), none()]; this.figOn = false;
     // placeholders until the world and art arrive
-    this.sdfTex = d.createTexture({ size: [4, 4], format: 'r16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+    this.sdfTex = d.createTexture({ size: [4, 4], format: 'rg16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     this.bgTex = d.createTexture({ size: [4, 4, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     this.spriteCanvas = new OffscreenCanvas(16, 16);
     this.emitCanvas = new OffscreenCanvas(16, 16);
@@ -118,14 +118,15 @@ export class Renderer {
   setWorld(terrain, world) {
     this.world = world;
     this.sdfTex.destroy();
-    this.sdfTex = this.device.createTexture({ size: [terrain.W, terrain.H], format: 'r16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+    this.sdfTex = this.device.createTexture({ size: [terrain.W, terrain.H], format: 'rg16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     this.sdfW = terrain.W; this.sdfH = terrain.H;
     this.setSDF(terrain.halfData());
     this._bind();
   }
+  // (two values a cell: the distance, and the smoothed one the engraved lines follow, terrain.js)
   // the drawn field can differ from the physics one (hidden rooms stay rock until found)
-  setSDF(data) { this.device.queue.writeTexture({ texture: this.sdfTex }, data.buffer, { bytesPerRow: this.sdfW * 2 }, [this.sdfW, this.sdfH]); }
-  patchSDF(p) { this.device.queue.writeTexture({ texture: this.sdfTex, origin: [p.x, p.y] }, p.data.buffer, { bytesPerRow: p.w * 2 }, [p.w, p.h]); }
+  setSDF(data) { this.device.queue.writeTexture({ texture: this.sdfTex }, data.buffer, { bytesPerRow: this.sdfW * 4 }, [this.sdfW, this.sdfH]); }
+  patchSDF(p) { this.device.queue.writeTexture({ texture: this.sdfTex, origin: [p.x, p.y] }, p.data.buffer, { bytesPerRow: p.w * 4 }, [p.w, p.h]); }
 
   // layers: array of ImageBitmap/canvas, each packed RGBA = (far tone, near tone, near matte, depth)
   setBackdrops(layers, size = 1024) {

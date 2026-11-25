@@ -216,6 +216,22 @@ thread.js keeps particles and spans out (spans that cross a lip go back to `lx/l
 pivots, `wrap`/`snag` bend round corners via `_corners`, `tie` lays the last bit, `buildPoly` hugs what is drawn (fixed part cached
 in `_fix`). The grey thread is hugged in `buildGrey`. Check: `fuzz.mjs` (31.4 % of frames had thread >6 cm inside rock, now 0.2 %).
 
+## Rock, lines and the dark (2026-11-25)
+
+`terrain.js` never goes through a yes/no grid: level shapes as a continuous field, `redistance` (distance to the marching-squares line), noise,
+LEVEL planes, `wear` (rounds corners; more passes cost landing lips: re-run gal/lip/play), `redistance`. The GPU texture is rg16float: distance and
+`grain` (smoothed with depth: the engraved lines and the light in rock follow it, so no seams). `shaders.js`: `fieldAt` (cubic), `kindAt/chip/body`
+= the nine kinds of rock; keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js.
+`life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: knots of light, dimming (`dim`, Q/LB), seats
+(`RESTS`), `PLACES`; drawing in `drawkindle.js`. `HAND.rouse`: plucking in the Hush rouses the earth. `Drawer.doll()` = her pose, `sift`/`shake` = grit.
+Two quiet places off the way: the Orchard (pole 49), the Long Room (pole 50). Skeins and poles go at the end of their lists (saves index them).
+Art and props are packed small: paintings/sprites lossless `.webp`, `scripts/props3d/slim.py` after `pack.py`. The films can't be re-encoded smaller.
+
+Checks: `scripts/checks/all.mjs <folder>` (every route check at once), `quiet.mjs` (the two places, the light), `pics.py` (38 views, working tree vs
+any commit through `--src`; use it for before/after shots, `--size=2560x1080` too), `logs.py` (the player's logs by stretch). Teleports (`__SD.go`)
+leave the thread through rock: for pictures use `from(pole)` and walk with key events. Multi-line shell heredocs with quotes can fail here: write
+scripts with the Write tool.
+
 ## Builds
 
 `build.cmd` writes `release/Spindledeep-1.0.0-portable.exe` and `-setup.exe`.

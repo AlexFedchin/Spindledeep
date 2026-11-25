@@ -56,6 +56,13 @@ export const OPS = [
   ['carve', E(25, -76.5, 16, 6.6)],            // G2
   ['carve', T([[39, -80, 1.7], [41.5, -86, 1.7], [37, -93, 1.8], [31, -99, 2.0], [29, -105, 2.2]])], // down to the Gallery
   ['fill', E(25, -84.2, 9, 2.6)],              // G2 floor hump
+  // the Orchard (2026-11-25): off the way down, a quiet place nothing happens in
+  ['carve', T([[41.6, -85.4, 1.75], [47, -86.2, 1.6], [54, -86.4, 1.7], [61, -86, 2.2]])],
+  ['carve', E(76, -83, 19, 6.8)],
+  ['carve', E(88, -82, 8, 5)],
+  ['fill', B(57, -96, 97, -88.4, 0.9)],
+  ['fill', B(42.3, -91, 48.5, -87.5, 0.6)],
+  ['fill', E(70, -89.6, 6, 1.7)], ['fill', E(84, -89.8, 5, 1.5)],
 
   // ── the Bell Gallery ───────────────────────────────────────────────────────
   ['carve', E(60, -127, 55, 21.5)],
@@ -79,7 +86,7 @@ export const OPS = [
   ['fill', B(96.5, -200, 120, -194.2, 1.2)],   // east shore
   ['fill', B(0, -200, 22.4, -194.2, 0.5)],     // west shore (it reached to 21 and the last jump was lost there more often than anywhere)
   ['fill', P([[84.6, -201], [86, -193.0], [91.4, -193.0], [92.8, -201]])],   // I1
-  ['fill', P([[72.6, -201], [74, -192.0], [80, -192.0], [81.4, -201]])],   // I2 (bell)
+  ['fill', P([[72.6, -201], [74, -192.0], [80.3, -192.0], [81.6, -201]])],   // I2 (bell)
   ['fill', P([[59.1, -201], [60.5, -190.4], [68.7, -190.4], [70.1, -201]])],   // I3 (peg, memory)
   ['fill', P([[46.1, -201], [47.5, -192.0], [54.5, -192.0], [55.9, -201]])],   // I4
   ['fill', P([[33.6, -201], [35, -193.0], [41.5, -193.0], [42.9, -201]])],   // I5 (bell)
@@ -136,6 +143,12 @@ export const OPS = [
 
   // ── the Treadles ──────────────────────────────────────────────────────────
   ['carve', T([[26.5, -324.6, 1.05], [26, -329, 1.5], [25, -338, 2.2], [20, -352, 2.4], [20, -362, 2.4]])],   // a narrow mouth: a running jump clears it
+  // the Long Room (2026-11-25): another, off the shaft into the Treadles
+  ['carve', T([[25.6, -337.4, 1.8], [33, -338.2, 1.8], [42, -339.2, 1.9], [52, -339.4, 2.2]])],
+  ['carve', E(76, -338.2, 26, 4.2)],
+  ['fill', B(26.3, -342.5, 33, -339.5, 0.5)],   // a lip in the shaft to catch
+  ['fill', B(48, -347, 104, -341.4, 0.8)],
+  ['fill', P([[60, -333], [61, -335.6], [62.6, -333]])], ['fill', P([[88, -333], [89.6, -336.2], [91, -333]])],
   ['carve', E(40, -372, 30, 18)],              // T1
   ['fill', B(8, -392, 26, -366, 0.8)],         // west ledge
   ['fill', P([[31.2, -392], [32, -366.5], [38, -366.5], [38.8, -392]])],   // pillar
@@ -329,6 +342,8 @@ export const PEGS = [
   { x: 82.6, y: -484 },     // 46: N4
   { x: 83.6, y: -471.4 },   // 47: the machine
   { x: 56.4, y: -471.4 },   // 48: past the bobbin
+  { x: 62, y: -87.6 },      // 49: the Orchard
+  { x: 57, y: -341.2 },     // 50: the Long Room
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
@@ -353,6 +368,10 @@ export const HOOKS = [
   { x: 52.2, y: -469.0, sink: { dist: 1.0, gate: 'w5' } },
   { x: 88.7, y: -417.5, sink: { dist: 1.1, gate: 'w3' } },
 ];
+
+// Seats, where she can sit a while [x, y, which way she faces], and the quiet places' names [ellipse].
+export const RESTS = [[69.6, -33.2, -1], [28.5, -60.6, -1], [78, -87.8, 1], [107, -194, -1], [15.0, -194, 1], [80, -341, -1], [49.0, -420.8, 1]];
+export const PLACES = [{ name: 'The Orchard', x: 76, y: -84, rx: 18, ry: 6 }, { name: 'The Long Room', x: 76, y: -338.4, rx: 25, ry: 4.4 }];
 
 // Bell flowers: a pluck travelling past rings them; rung bells light the dark and keep moths off.
 export const BELLS = [
@@ -415,6 +434,7 @@ export const SECRETS = [
 export const SKEINS = [
   { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 100.6, y: -121.4 }, { x: 26, y: -193.4 },
   { x: 18.6, y: -259 }, { x: 31, y: -303 }, { x: 44, y: -405 },       // in the rooms the thread opens
+  { x: 91, y: -87.8 }, { x: 97, y: -341 },                             // at the far ends of the quiet places
 ];
 
 export const NESTS = [
@@ -517,6 +537,8 @@ export const LIGHTS = [
   { x: 18, y: -276, r: 9, i: 0.3, c: [0.7, 0.72, 0.82], flicker: 0 }, { x: 9, y: -272, r: 9, i: 0.34, c: [0.7, 0.72, 0.82], flicker: 0 }, { x: 25, y: -273, r: 9, i: 0.36, c: [0.7, 0.72, 0.82], flicker: 0 },
   { x: 95, y: -399, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 70, y: -398.5, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 46, y: -398.5, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 38, y: -413, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 64, y: -413, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 92, y: -413, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 64, y: -81, r: 12, i: 0.26, c: [0.66, 0.8, 0.76], flicker: 0 }, { x: 77, y: -80, r: 14, i: 0.3, c: [0.66, 0.8, 0.76], flicker: 0 }, { x: 89, y: -81, r: 12, i: 0.26, c: [0.66, 0.8, 0.76], flicker: 0 },      // the Orchard
+  { x: 62, y: -336.4, r: 11, i: 0.24, c: [0.74, 0.74, 0.82], flicker: 0 }, { x: 78, y: -336.4, r: 11, i: 0.24, c: [0.74, 0.74, 0.82], flicker: 0 }, { x: 93, y: -337, r: 11, i: 0.24, c: [0.74, 0.74, 0.82], flicker: 0 },      // the Long Room
   { x: 16, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 62, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 88, y: -352, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },

@@ -71,13 +71,13 @@ const M = {
     return false;
   },
   // over the lip in direction d holding the thread, down to y, a swing back under, and let go toward `to`
-  rappel(d, y, to, below, v = 2.4) {
+  rappel(d, y, to, below, v = 2.4, out = 2.4) {
     let ph = 0, n = 0, tj = 0;
     while (n++ < 26 * 120) {
       if (died) return false;
       const i = inp0(); i.held.grip = ph < 2;
       if (ph === 0) { i.axisX = p.grounded ? d * 0.5 : 0; if (!p.grounded && th.locked) { i.axisY = -1; i.axisX = 0; if (p.y < y) { ph = 1; tj = t; } } }
-      else if (ph === 1) { i.axisX = Math.abs(p.vx) < 0.3 ? -d : Math.sign(p.vx); if (-d * p.vx > v && -d * (p.x - th.pivots[th.pivots.length - 1].x) > 2.4) { ph = 2; i.pressed.jump = i.held.jump = i.held.grip = true; tj = t; } if (p.grounded) ph = 2; }
+      else if (ph === 1) { i.axisX = Math.abs(p.vx) < 0.3 ? -d : Math.sign(p.vx); if (-d * p.vx > v && -d * (p.x - th.pivots[th.pivots.length - 1].x) > out) { ph = 2; i.pressed.jump = i.held.jump = i.held.grip = true; tj = t; } if (p.grounded) ph = 2; }
       else { i.held.jump = t - tj < 0.4; i.axisX = Math.abs(p.x - to) > 0.3 ? Math.sign(to - p.x) : 0; if (p.grounded) return p.y < below + 3 && p.y > below - 3; }
       step(i);
     }
@@ -85,14 +85,17 @@ const M = {
   },
   pluck() { const i = inp0(); i.pressed.pluck = true; lastPluck = t; step(i); settle(0.8); return !died; },
   wait(s) { settle(s); return !died; },
+  // let go when the arc from here comes down on the far side (a small error of judgement, different each try: `rel`)
   ring(d, edge, rel, land) {
+    const gy = T.ground(land + d * 0.5, p.y + 4, 14) ?? p.y, err = (rel - 2.4) * 0.12;
+    const reaches = (d, x) => { const v0 = Math.max(p.vy, 0) + 5, vx = Math.max(2.5, Math.min(5, Math.abs(p.vx + p.facing) * 0.5 + 2.5)), tt = (d * (x + d * 0.25 - p.x)) / vx; return tt <= 0 || p.y + v0 * tt - 15 * tt * tt > gy + 0.3 + err; };
     let ph = 0, tj = 0, n = 0;
     while (n++ < 14 * 120) {
       if (died) return false;
       const i = inp0(); i.axisX = d;
       if (ph === 0 && d * (p.x - edge) > -0.35 && p.coyote > 0.02) { i.pressed.jump = i.held.jump = true; ph = 1; tj = t; }
       else if (ph === 1) { i.held.jump = t - tj < 0.3; if (t - tj > 0.1) i.held.grip = true; if (hooked()) { ph = 2; tj = t; } else if (p.grounded && t - tj > 0.4) return d * (p.x - land) > 0; }
-      else if (ph === 2) { i.held.grip = true; const P = th.pivots[th.pivots.length - 1]; if (!P || !P.hook) { if (p.grounded) return d * (p.x - land) > 0; } else if (t - tj > rel && d * p.vx > 0 && d * (p.x - P.x) > 0.2) { i.pressed.jump = i.held.jump = true; ph = 3; tj = t; } }
+      else if (ph === 2) { i.held.grip = true; const P = th.pivots[th.pivots.length - 1]; if (!P || !P.hook) { if (p.grounded) return d * (p.x - land) > 0; } else if (t - tj > Math.min(rel, 1.2) && d * p.vx > -0.4 && d * (p.x - P.x) > 0.2 && (reaches(d, land) || t - tj > rel + 5)) { i.pressed.jump = i.held.jump = true; ph = 3; tj = t; } }
       else if (ph === 3) { i.held.jump = t - tj < 0.3; if (p.grounded && t - tj > 0.1) return d * (p.x - land) > -0.3; }
       step(i);
     }
@@ -207,7 +210,7 @@ const LEGS = [
   [11, () => M.walk(38.6)],
   [12, () => (p.y < -6 || M.drop(45, -7)) && M.leap(1, 52.4, 59.5, -15) && M.leap(-1, 57.6, 52.5, -24) && M.walk(51.5)],
   [1, () => M.walk(54.7, 9, { drop: 1, air: 1, slow: 1 }) && M.drop(51, -38) && M.walk(50.6)],
-  [2, () => (p.y < -42 || (M.rappel(1, -48.5, 45, -51, 1.2))) && M.walk(36.5, 14, { drop: 1 }) && M.drop(33, -58) && M.walk(33.5)],
+  [2, (k) => (p.y < -42 || (M.rappel(1, -48.5 + 0.4 * (k % 4), 45, -51, 1.2 + 0.5 * (k % 3), 2.4 + 0.35 * (k % 5)))) && M.walk(36.5, 14, { drop: 1 }) && M.drop(33, -58) && M.walk(33.5)],
   [3, () => M.walk(13.4, 16, { deep: 3 }) && M.drop(13, -70) && M.drop(15, -78) && M.walk(12.5)],
   [4, () => (W.bells[0].lit > 0 || (M.walk(33.4) && M.pluck() && M.wait(2.5))) && M.walk(40.4) && M.drop(39, -90) && M.drop(25, -116) && M.walk(19.5)],
   [5, (k) => (p.x > 34 ? true : ring(k, 1, 29.5, 35.4)) && M.walk(42.6) && M.pluck() && ring(k, 1, 44.8, 51) && M.walk(55)],

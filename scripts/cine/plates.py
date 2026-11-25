@@ -93,7 +93,7 @@ def smooth(a, b, x):
 
 
 def sprite(name, h, rot=0.0, flip=False):
-    im = cv2.imread(os.path.join(SPR, name + '.png'), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+    im = cv2.imread(os.path.join(SPR, name + '.webp'), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
     s = h / im.shape[0]
     im = cv2.resize(im, None, fx=s, fy=s, interpolation=cv2.INTER_AREA if s < 1 else cv2.INTER_CUBIC)
     if flip:

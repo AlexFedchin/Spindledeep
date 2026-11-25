@@ -36,6 +36,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 28. Further: six rooms and the thread's machinery, Mere shore, moths and hands, shelf, options, Frayed, clock, build (`further/`, open) | https://claude.ai/artifact/JVz86QFmxLkkRDhP4QLHUn |
 | 29. Drawn: 2.5D collectibles, the Loom chase, story and sound of the rooms, playthrough bot, release 1.1.0 and trailer (`drawn/`, plot sealed) | https://claude.ai/artifact/2MbbE57vopQ11jGfd8ZGi4 |
 | The trailer, to watch (`trailer/`) | https://claude.ai/artifact/5uSdDNUyBLywtGkXhW31me |
+| 30. Worn: smooth rock and its kinds, the dark, the thread's light, the Hush, quiet places, her and the beasts, picture check, logs, 1.2.0 (`worn/`, one place sealed) | https://claude.ai/artifact/KqKHAJhVneDr7eihafk6BM |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
