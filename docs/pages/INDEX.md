@@ -35,6 +35,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 27. Things: keepsakes and skeins as real models (`things/`, five sealed) | https://claude.ai/artifact/1Nw7Pg3WD3HzuWupWjqqWn |
 | 28. Further: six rooms and the thread's machinery, Mere shore, moths and hands, shelf, options, Frayed, clock, build (`further/`, open) | https://claude.ai/artifact/JVz86QFmxLkkRDhP4QLHUn |
 | 29. Drawn: 2.5D collectibles, the Loom chase, story and sound of the rooms, playthrough bot, release 1.1.0 and trailer (`drawn/`, plot sealed) | https://claude.ai/artifact/2MbbE57vopQ11jGfd8ZGi4 |
+| The trailer, to watch (`trailer/`) | https://claude.ai/artifact/5uSdDNUyBLywtGkXhW31me |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
