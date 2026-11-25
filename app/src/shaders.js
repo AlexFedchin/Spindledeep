@@ -202,6 +202,11 @@ fn cells(p: vec2f) -> vec3f {
   } }
   return vec3f(sqrt(a), sqrt(b) - sqrt(a), id);
 }
+// how rough a line this stone takes
+fn roughOf(kind: f32) -> f32 {
+  let r = array<f32, 9>(0.75, 1.15, 1.15, 1.0, 0.7, 1.0, 1.0, 1.2, 0.8);
+  return r[u32(clamp(kind + 0.5, 0.0, 8.0))];
+}
 // how the face is broken (metres, small: the thread and her feet go by the smooth one)
 fn chip(kind: f32, p: vec2f) -> f32 {
   if (kind < 0.5) { return (fbm(p * 2.2) - 0.5) * 0.12; }
@@ -345,7 +350,11 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     let rim = lum(u.ambient.rgb) * (1.5 * exp(-depthIn * 5.5) + 0.75 * exp(-depthIn * 1.1));
     value = tone * lum(lr) * 1.6 + rim;
     let inner = fld.y + detail * smoothstep(0.7, 0.0, depthIn);
-    let ph1 = (inner * ppm) / (sp * 1.05) + wob + bd.w;
+    // a hand with a burin on stone: the lines waver and catch, crowd and spread, swell and thin, and now and then break off
+    let rg = mix(roughOf(kd.x), roughOf(kd.y), kd.z);
+    let grit = (fbm(p * vec2f(1.7, 2.2)) - 0.5) * 2.6 + (vnoise(p * 6.5) - 0.5) * 0.62 + (vnoise(p * 18.0) - 0.5) * 0.16;
+    value *= 1.0 + rg * ((vnoise(p * vec2f(4.2, 5.6) + 3.0) - 0.5) * 0.5 + (vnoise(p * 13.0) - 0.5) * 0.2);
+    let ph1 = (inner * ppm) / (sp * 1.05) + wob + bd.w + grit * rg;
     let ph2 = dirPhase(px, 1.05, sp * 1.1) + wob * 0.6;
     paperMask = engrave(expose(value), ph1, ph2, aa, 1.0);
     // the middle of a ledge, where the contours have nothing to follow: the lines run level there instead
@@ -354,10 +363,11 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
       let gv = vec2f(grainAt(p + vec2f(gh, 0.0)) - grainAt(p - vec2f(gh, 0.0)), grainAt(p + vec2f(0.0, gh)) - grainAt(p - vec2f(0.0, gh))) / (2.0 * gh);
       let level = smoothstep(0.62, 0.25, length(gv)) * smoothstep(0.12, 0.3, depthIn);
       if (level > 0.0) {
-        let phF = (p.y * ppm) / (sp * 1.05) + wob + bd.w;
+        let phF = (p.y * ppm) / (sp * 1.05) + wob + bd.w + grit * rg;
         paperMask = mix(paperMask, engrave(expose(value), phF, ph2, aa, 1.0), level);
       }
     }
+    paperMask *= 1.0 - 0.6 * rg * smoothstep(0.76, 0.88, vnoise(vec2f(p.x * 5.0 + floor(ph1) * 7.7, p.y * 5.0))) * smoothstep(0.03, 0.2, depthIn);
     // cracks and holes are cut as ink; roots, pebbles and fibres stand light
     let seen = smoothstep(0.01, 0.12, expose(value));
     paperMask *= smoothstep(0.002, 0.04, expose(value));          // the heart of the rock is black

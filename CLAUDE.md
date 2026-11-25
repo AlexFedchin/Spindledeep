@@ -221,7 +221,7 @@ in `_fix`). The grey thread is hugged in `buildGrey`. Check: `fuzz.mjs` (31.4 % 
 `terrain.js` never goes through a yes/no grid: level shapes as a continuous field, `redistance` (distance to the marching-squares line), noise,
 LEVEL planes, `wear` (rounds corners; more passes cost landing lips: re-run gal/lip/play), `redistance`. The GPU texture is rg16float: distance and
 `grain` (smoothed with depth: the engraved lines and the light in rock follow it, so no seams). `shaders.js`: `fieldAt` (cubic), `kindAt/chip/body`
-= the nine kinds of rock; keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js.
+= the nine kinds of rock, `roughOf` how rough their lines are (the user finds smooth parallel lines too clean; twice the present strength hides the cracks); keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js.
 `life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: knots of light, dimming (`dim`, Q/LB), seats
 (`RESTS`), `PLACES`; drawing in `drawkindle.js`. `HAND.rouse`: plucking in the Hush rouses the earth. `Drawer.doll()` = her pose, `sift`/`shake` = grit.
 Two quiet places off the way: the Orchard (pole 49), the Long Room (pole 50). Skeins and poles go at the end of their lists (saves index them).
