@@ -5,3 +5,5 @@ __pycache__/
 *.log
 # made from a model that is not ours to hand out (scripts/figures/export.py)
 app/assets/figures/
+# clips on changes pages (published with the page)
+docs/pages/*/vid/

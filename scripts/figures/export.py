@@ -43,6 +43,8 @@ def part(n):
     return 1 if n == 'Eyes' else 2 if re.search('Teeth|Tongue', n) else 3 if n in ('Tops', 'Bottoms', 'Hats', 'Shoes') else 0
 
 
+HEAD = ('head', 'jaw', 'eyeL', 'eyeR')
+BODYCLOTH = ('Tops', 'Bottoms', 'Shoes')
 OL = os.path.join(ROOT, '..', 'old-lady-fbx')
 MODELS = {'knitter': dict(
     fbx=os.path.join(OL, 'source', 'Old Lady_rig_Pro.fbx'), diffuse=os.path.join(OL, 'textures', 'Old_Lady_4_packed0_diffuse.png'),
@@ -108,9 +110,14 @@ def run(name):
                 if j == 'neck':                      # the old neck: below the cut it stays with the chest, above with the head
                     j = 'sp3' if P[v.index][1] < cut else 'head'
                 acc[j] = acc.get(j, 0) + g.weight
-            if 'sp3' in acc and 'head' in acc:       # nothing may hang between the two
-                k = 'sp3' if P[v.index][1] < cut else 'head'
-                acc[k] += acc.pop('head' if k == 'sp3' else 'sp3')
+            # nothing may hang between the body and the head (it would stretch into rags when the neck grows): a point
+            # belongs wholly to one side, and her clothes always to the body
+            hd = {j: w for j, w in acc.items() if j in HEAD}
+            if hd and len(hd) < len(acc):
+                bd = {j: w for j, w in acc.items() if j not in HEAD}
+                acc = hd if sum(hd.values()) > sum(bd.values()) else bd
+            if hd and o.name in BODYCLOTH:
+                acc = {j: w for j, w in acc.items() if j not in HEAD} or {'sp3': 1}
             if not acc:
                 acc = {'head' if pt in (1, 2) else 'root': 1}
             t = sorted(acc.items(), key=lambda x: -x[1])[:4]
@@ -118,7 +125,7 @@ def run(name):
             wt.append([(idx[a], b / s) for a, b in t])
             if pt == 0 and abs(P[v.index][1] - cut) < 0.02 and abs(P[v.index][0]) < 0.09:
                 ring.append(P[v.index])
-        up = [any(names[a] in ('head', 'jaw', 'eyeL', 'eyeR') and b > .5 for a, b in w) for w in wt]
+        up = [names[w[0][0]] in HEAD for w in wt]
         for lt in me.loop_triangles:
             ids = list(lt.vertices)
             if len({up[i] for i in ids}) > 1:

@@ -1,4 +1,4 @@
-<title>Spindledeep · A Real Body</title>
+<title>Spindledeep · The Ending</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -92,123 +92,161 @@ footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-fam
 
 <div class="wrap">
   <style>
-    details.seal { margin: 34px 0 10px; border: 1px solid var(--rule); background: var(--ink-2); }
-    details.seal > summary { cursor: pointer; list-style: none; padding: 22px 24px; text-align: center;
-      font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--red); }
-    details.seal > summary::-webkit-details-marker { display: none; }
-    details.seal > summary span { display: block; margin-top: 8px; font-family: var(--fell); font-style: italic;
-      text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--paper-dim); }
-    details.seal[open] > summary { border-bottom: 1px solid var(--rule); }
-    details.seal .inner { padding: 4px 24px 26px; }
+    .clip { margin: 8px 0 26px; }
+    .clip video { display: block; width: 100%; height: auto; aspect-ratio: 1280 / 696; border: 1px solid var(--rule); background: var(--ink-2); }
+    .clip video:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+    .clip figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); margin-top: 10px; }
+    .said { font-family: var(--fell); font-style: italic; font-size: 19px; color: var(--paper-dim); text-align: center; margin: 4px 0 20px; text-wrap: balance; }
+    .wide { max-width: 900px; margin: 0 auto; }
     table.windows td, table.windows th { vertical-align: top; white-space: normal; }
   </style>  <header class="hero">
     <div class="eyebrow">Spindledeep &middot; the ending</div>
-    <h1>A Real Body</h1>
-    <p class="tag">No more pictures<span></span>it can turn its head</p>
+    <h1>The Ending</h1>
+    <p class="tag">She is holding out<span></span>the end of her thread</p>
   </header>
 
+  <p class="ask">You can now not hide how the ending looks, make me a proper artifact</p>
   <div class="col summary">
-    <p>The monster was photographs cut out and moved about. It is now a 3D model with a skeleton, posed and lit inside the game every frame and then engraved like everything else. It is using a model we already had; any model you give me can replace it.</p>
+    <p>Both endings, scene by scene, recorded from the game as it is now. The monster is a 3D figure with a skeleton, posed and lit inside the game. The clips have the game&rsquo;s sound and one loud moment; the subtitles and the choice itself are not in the recordings, so the lines are written out here.</p>
   </div>
 
-  <h2>Can a 3D model make it better</h2>
+  <h2>On the way up</h2>
+  <div class="col">
+    <p>Before the top, in the rising dark, it comes up the far wall after you: three quick steps, then still, with its head turned right round to look. The clip is set up by hand so that it stays in view; in play you are climbing away from it.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-chase" controls playsinline preload="none" poster="img/p_chase.jpg" src="vid/chase.mp4"></video><figcaption>the rising dark &middot; 12 seconds</figcaption></figure></div>
+
+  <h2>The choice</h2>
+  <div class="col">
+    <p class="said">&ldquo;There you are. Oh, little one, you came all this way. I&rsquo;m so cold. Tie your thread to mine, and pull me up. Please. Please.&rdquo;</p>
+    <p>The candle, and what is left of the real knitter under her shawl. Past the light, the knitter kneels with the end of the grey thread held out in both hands. It has her voice and her face.</p>
+    <p>It is the monster. The longer you stay, the nearer she leans, on a neck that is never quite the length it was. You hold one key to tie your thread to hers, or another to bite your own in two.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-choice" controls playsinline preload="none" poster="img/p_choice.jpg" src="vid/choice.mp4"></video><figcaption>walking up to her &middot; 24 seconds</figcaption></figure></div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/choice_before.jpg" alt="Before: the legs of a giant picture of a person">
+      <img class="after" src="img/choice_after.jpg" alt="Now: the knitter kneels, holding out the thread">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-choice" min="0" max="100" value="20" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Tied</h2>
+  <div class="col">
+    <p class="said">&ldquo;Thank you, little one. Now we can all come up.&rdquo;</p>
+    <p>The candle goes out. For a few seconds there is nothing but the doll and the red thread, and in the dark she grows.</p>
+    <p>Then a light from nowhere shows her still kneeling, still holding the thread, and a neck that goes up out of sight. The head comes down over the doll a joint at a time, the wrong way up, and turns over when it gets there. It thanks you. One second in which nothing happens. Then it calls.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-tie" controls playsinline preload="none" poster="img/p_tie.jpg" src="vid/tie.mp4"></video><figcaption>loud at the end &middot; 24 seconds</figcaption></figure></div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/reveal_before.jpg" alt="Before: a still picture on all fours">
+      <img class="after" src="img/reveal_after.jpg" alt="Now: the neck arches up and comes down over the doll">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-reveal" min="0" max="100" value="20" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/talk_before.jpg" alt="Before: a picture of a face">
+      <img class="after" src="img/talk_after.jpg" alt="Now: her head, speaking">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-talk" min="0" max="100" value="20" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>It climbs out</h2>
+  <div class="col">
+    <p>Five places you came through, each seen from a camera that does not move: the Hall of Chairs, the Ink Mere, the Bell Gallery, the Throat, home. The thread lies there. Then it comes along it hand over hand, and every light it passes goes out.</p>
+    <p>Each hand and foot takes one place on the thread and holds it while the rest goes by. The arms stretch as far as they must. Once in every place it looks out at you. At the cottage it stops, raises its head, and the window goes dark. The film follows, and that has not changed.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-climb" controls playsinline preload="none" poster="img/p_climb.jpg" src="vid/climb.mp4"></video><figcaption>the whole way up &middot; 44 seconds</figcaption></figure></div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/climb_before.jpg" alt="Before: arms out of a dark patch">
+      <img class="after" src="img/climb_after.jpg" alt="Now: a whole body going along the thread">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-climb" min="0" max="100" value="20" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/home_before.jpg" alt="Before: arms out of a dark patch by the cottage">
+      <img class="after" src="img/home_after.jpg" alt="Now: it arrives at the cottage">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-home" min="0" max="100" value="20" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Bitten</h2>
+  <div class="col">
+    <p class="said">&ldquo;What have you done?&rdquo;</p>
+    <p>The red goes out of the thread, from her teeth upward. It asks what you have done, twice, the second time not in her voice. It leans in, and breathes the candle out.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-bite" controls playsinline preload="none" poster="img/p_bite.jpg" src="vid/bite.mp4"></video><figcaption>the thread bitten &middot; 18 seconds</figcaption></figure></div>
+
+  <h2>In the dark</h2>
+  <div class="col">
+    <p class="said">&ldquo;Little one? That isn&rsquo;t a name. What is your name?&rdquo;</p>
+    <p>Hands on the floor, looking for her. Then half a second of light and no sound: the face beside the doll. It is only listening. The clip is black until then, and black after.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-dark" controls playsinline preload="none" poster="img/p_dark.jpg" src="vid/dark.mp4"></video><figcaption>eight seconds of black, then the light &middot; 14 seconds</figcaption></figure></div>
+
+  <h2>Fixed while recording</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Rags at her throat.</b> Part of her collar was tied to the head, so it stretched into spikes when the neck grew. No point of the body hangs on the head any more.</li>
+      <li><b>The Throat.</b> It crossed that place too fast to see. It takes 4.4 seconds now instead of 3.2.</li>
+      <li><b>The face in the half second of light</b> was small and turned away. It is larger and turned to you.</li>
+    </ul>
+  </div>
+
+  <h2>Why it looked like that before</h2>
+  <p class="ask">why when I get asked to either bite the thread or tie it there is this weird picture of human climbing? Shouldn't it be our knitter aka the monster pretending to be the knitter? And why when it climbs out it is just a pale gradient with a bunch of hands?</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>The human</b> was one still picture of a person on all fours, twelve metres tall, standing over the place. You were meant to take its limbs for pillars. The camera showed most of it, so it read as someone climbing.</li>
+      <li><b>The hands</b> were one picture of an arm, bent nine ways and cut off at the back. The round patch of dark was there to hide the cut ends, and against a dark cave or a light sky you saw the patch itself.</li>
+    </ul>
+  </div>
+
+  <h2>If you give me a model</h2>
   <p class="ask">Do you think you can make it better if I give you some 3d model so that you don't have to manipulate images?</p>
   <div class="col">
-    <p>Yes, and the part of the game that draws one is built. What it needs from a model:</p>
+    <p>Yes. This one is younger in close-up than the voice is, and her knitted cap looks modern. Best would be to keep the knitter for the pretending and have a second model for what comes out of her.</p>
     <div class="tablebox">
       <table class="windows">
         <thead><tr><th>What</th><th>Why</th></tr></thead>
         <tbody>
-          <tr><td>Rigged: FBX, GLB or .blend, with a skeleton for arms, legs, spine, neck and head</td><td>Without bones it can only stand there. Fingers and a jaw that opens matter most for this one.</td></tr>
+          <tr><td>Rigged: FBX, GLB or .blend</td><td>Arms, legs, spine, neck and head at least. Fingers and a jaw that opens matter most here.</td></tr>
           <tr><td>Up to about 60,000 triangles</td><td>It is drawn live. The present one is 25,000 and the game stays at 60 frames a second.</td></tr>
-          <tr><td>A colour texture, and a normal map if there is one</td><td>Only the light and dark of it is used. Wrinkles, veins and ribs in the normal map show well in the engraving.</td></tr>
+          <tr><td>A colour texture, and a normal map if there is one</td><td>Only its light and dark is used. Wrinkles, veins and ribs show well in the engraving.</td></tr>
           <tr><td>Animations: not needed</td><td>The movement is made in the game, so it can hold the thread and fit the rock.</td></tr>
-          <tr><td>A licence that allows use in a game</td><td>The repository on GitHub is public, so the model files stay out of it and only go into the built game.</td></tr>
+          <tr><td>A licence that allows use in a game</td><td>The repository is public, so model files stay out of it and only go into the built game.</td></tr>
         </tbody>
       </table>
     </div>
-  </div>
-
-  <h2>The scenes</h2>
-  <div class="col"><details class="seal">
-    <summary>What was wrong, and before and after<span>The end of the game. Anyone who has not been there should play first.</span></summary>
-    <div class="inner">
-  <p class="ask">Also why when I get asked to either bite the thread or tie it there is this weird picture of human climbing? Shouldn't it be our knitter aka the monster pretending to be the knitter? And why when it climbs out it is just a pale gradient with a bunch of hands?</p>
-    <ul class="what">
-      <li><b>The human at the choice</b> was one still picture of a person on all fours, twelve metres tall, standing over the place. You were meant to take its limbs for pillars. The camera showed most of it, so it read as someone climbing. You are right about who it should be, and now it is.</li>
-      <li><b>The hands</b> were one picture of an arm, bent nine ways and cut off at the back, coming out of a round patch of dark. The patch had to be darker than the cave to hide the cut ends. Wherever the cave was already dark, or the sky was light, you saw the patch itself, and the arms were drawn over the rock.</li>
-      <li><b>Her face.</b> This model is younger in close-up than the voice is, and she has a knitted cap. That is the model, and a reason to replace it.</li>
-    </ul>
-    <div class="reveal">
-      <img src="img/choice_before.jpg" alt="The old picture">
-      <img class="after" src="img/choice_after.jpg" alt="The knitter kneels, holding out the thread">
-      <span class="lbl l">Before</span><span class="lbl r">After</span>
-      <div class="bar" aria-hidden="true"></div>
-      <input type="range" id="rv-choice" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
-    </div>
-    <p class="reveal-cap">Drag the thread to compare</p>
-
-    <p>The choice. She kneels at the edge of the dark with the end of her thread held out. The longer you stay, the nearer she leans, on a neck that is not quite the length it was.</p>
-    <div class="reveal">
-      <img src="img/reveal_before.jpg" alt="The old picture">
-      <img class="after" src="img/reveal_after.jpg" alt="The neck arches up and comes down over the doll">
-      <span class="lbl l">Before</span><span class="lbl r">After</span>
-      <div class="bar" aria-hidden="true"></div>
-      <input type="range" id="rv-reveal" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
-    </div>
-    <p class="reveal-cap">Drag the thread to compare</p>
-
-    <p>Tied. Still kneeling, still holding the thread, larger; the neck goes up into the dark and comes down over the doll a joint at a time, head the wrong way up.</p>
-    <div class="reveal">
-      <img src="img/talk_before.jpg" alt="The old picture">
-      <img class="after" src="img/talk_after.jpg" alt="The knitter&rsquo;s face, speaking">
-      <span class="lbl l">Before</span><span class="lbl r">After</span>
-      <div class="bar" aria-hidden="true"></div>
-      <input type="range" id="rv-talk" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
-    </div>
-    <p class="reveal-cap">Drag the thread to compare</p>
-
-    <p>The mouth is a jaw that opens, not six pictures crossfaded. It opens a good deal further at the end.</p>
-    <div class="reveal">
-      <img src="img/climb_before.jpg" alt="Arms out of a dark patch">
-      <img class="after" src="img/climb_after.jpg" alt="A whole body going along the thread">
-      <span class="lbl l">Before</span><span class="lbl r">After</span>
-      <div class="bar" aria-hidden="true"></div>
-      <input type="range" id="rv-climb" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
-    </div>
-    <p class="reveal-cap">Drag the thread to compare</p>
-
-    <p>The way up. A whole body: each hand and foot takes one place on the thread and holds it while the rest goes past. The arms stretch as far as they must, the head stays out of the rock, and once in every place it looks out at you.</p>
-    <div class="reveal">
-      <img src="img/home_before.jpg" alt="Arms out of a dark patch by the cottage">
-      <img class="after" src="img/home_after.jpg" alt="It arrives at the cottage">
-      <span class="lbl l">Before</span><span class="lbl r">After</span>
-      <div class="bar" aria-hidden="true"></div>
-      <input type="range" id="rv-home" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
-    </div>
-    <p class="reveal-cap">Drag the thread to compare</p>
-
-    <p>The same figure also comes up the far wall during the rising dark, and is there for the half second of light when you bite the thread.</p>
-    </div>
-  </details></div>
-
-  <h2>How it is drawn</h2>
-  <div class="col">
-    <ul class="what">
-      <li><b>Lit by the cave.</b> The thread, the candle and the lamps light it from where they are, so one side of a face is red and the other black.</li>
-      <li><b>Engraved round the form.</b> The lines bend with the surface, and the rock hides what is behind it.</li>
-      <li><b>Still pictures left.</b> The hands in the Hush, the people on the Loom&rsquo;s floor and the arms in the rising dark. They go the same way if you find models for them, or one model of a person.</li>
-    </ul>
-    <p>Checked by running both endings in the hidden test window, the tied one through to its film: no errors, 60 frames a second before and after. The film after the ending was not touched.</p>
+    <p style="margin-top:16px">Still pictures left in the game: the hands in the Hush, the people on the Loom&rsquo;s floor, and the arms in the rising dark. One model of a person would do for the last two.</p>
   </div>
 
   <h2>Where it lives</h2>
   <div class="col">
     <div class="files">
-      <div><b><code>app/src/figure.js</code></b><span>New. Skeleton, limbs, the neck, and the poses.</span></div>
-      <div><b><code>app/src/stage.js</code></b><span>New. Which figure is where and doing what.</span></div>
+      <div><b><code>app/src/ending.js</code></b><span>The scenes and their timing.</span></div>
+      <div><b><code>app/src/figure.js</code></b><span>Skeleton, limbs, the neck, and the poses.</span></div>
+      <div><b><code>app/src/stage.js</code></b><span>Which figure is where and doing what.</span></div>
       <div><b><code>app/src/renderer.js</code> &middot; <code>shaders.js</code></b><span>The figure pass and its engraving.</span></div>
-      <div><b><code>app/src/ending.js</code></b><span>The scenes, rewritten for a body.</span></div>
       <div><b><code>scripts/figures/export.py</code></b><span>A rigged model in, the game&rsquo;s format out.</span></div>
     </div>
   </div>

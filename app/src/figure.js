@@ -210,6 +210,7 @@ export function poseClimb(F, c, o, dt, t) {
 // a head by itself on a neck out of the dark
 export function poseReach(F, o) {
   F.reset(); F.k = o.k; F.at = o.from; F.R = euler(o.pitch || 0, o.yaw || 0, 0);
+  F.rot.armL = [0, 0, -1.3]; F.rot.armR = [0, 0, 1.3];
   F.fk();
   F.headTo(o.at, o.face, o.up, o.size ?? 1, o.bend || null, o.thick ?? 0.9);
   F.jaw(o.mouth || 0);

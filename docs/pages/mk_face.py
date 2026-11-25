@@ -1,85 +1,109 @@
-"""Changes page: the monster is a real 3D figure (`face/`). Plot sealed."""
+"""Changes page: the ending, scene by scene, with the 3D figure (`face/`). Open: the user said (2026-11-25) not to hide how the
+ending looks. The clips (`face/vid/`, not in git) are recorded from the game: canvas.captureStream + the game's own output."""
 from mkpage import page, hero, reveal
 
 PREV = (' &middot; <a href="https://claude.ai/artifact/J1avXLArMvcKdXb2hRBTGz">what is down there</a>'
         ' &middot; <a href="https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7">listen</a>')
-SEAL = '''  <style>
-    details.seal { margin: 34px 0 10px; border: 1px solid var(--rule); background: var(--ink-2); }
-    details.seal > summary { cursor: pointer; list-style: none; padding: 22px 24px; text-align: center;
-      font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--red); }
-    details.seal > summary::-webkit-details-marker { display: none; }
-    details.seal > summary span { display: block; margin-top: 8px; font-family: var(--fell); font-style: italic;
-      text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--paper-dim); }
-    details.seal[open] > summary { border-bottom: 1px solid var(--rule); }
-    details.seal .inner { padding: 4px 24px 26px; }
+CSS = '''  <style>
+    .clip { margin: 8px 0 26px; }
+    .clip video { display: block; width: 100%; height: auto; aspect-ratio: 1280 / 696; border: 1px solid var(--rule); background: var(--ink-2); }
+    .clip video:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+    .clip figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); margin-top: 10px; }
+    .said { font-family: var(--fell); font-style: italic; font-size: 19px; color: var(--paper-dim); text-align: center; margin: 4px 0 20px; text-wrap: balance; }
+    .wide { max-width: 900px; margin: 0 auto; }
     table.windows td, table.windows th { vertical-align: top; white-space: normal; }
   </style>'''
-B = 'The old picture'
-body = SEAL + hero('the ending', 'A Real Body', 'No more pictures', 'it can turn its head') + '''
+
+
+def clip(n, cap):
+    return f'''  <div class="wide"><figure class="clip"><video id="v-{n}" controls playsinline preload="none" poster="img/p_{n}.jpg" src="vid/{n}.mp4"></video><figcaption>{cap}</figcaption></figure></div>
+'''
+
+
+def sc(h, text, said=''):
+    s = f'\n  <h2>{h}</h2>\n  <div class="col">\n' + (f'    <p class="said">{said}</p>\n' if said else '')
+    return s + ''.join(f'    <p>{t}</p>\n' for t in text) + '  </div>\n'
+
+
+def rv(i, b, a):
+    return '  <div class="wide">\n' + reveal(i, i + '_before.jpg', i + '_after.jpg', b, a).replace('value="50"', 'value="20"') + '  </div>\n'
+
+
+body = CSS + hero('the ending', 'The Ending', 'She is holding out', 'the end of her thread') + '''
+  <p class="ask">You can now not hide how the ending looks, make me a proper artifact</p>
   <div class="col summary">
-    <p>The monster was photographs cut out and moved about. It is now a 3D model with a skeleton, posed and lit inside the game every frame and then engraved like everything else. It is using a model we already had; any model you give me can replace it.</p>
+    <p>Both endings, scene by scene, recorded from the game as it is now. The monster is a 3D figure with a skeleton, posed and lit inside the game. The clips have the game&rsquo;s sound and one loud moment; the subtitles and the choice itself are not in the recordings, so the lines are written out here.</p>
+  </div>
+''' + sc('On the way up', ['Before the top, in the rising dark, it comes up the far wall after you: three quick steps, then still, with its head turned right round to look. The clip is set up by hand so that it stays in view; in play you are climbing away from it.']) \
+    + clip('chase', 'the rising dark &middot; 12 seconds') \
+    + sc('The choice', ['The candle, and what is left of the real knitter under her shawl. Past the light, the knitter kneels with the end of the grey thread held out in both hands. It has her voice and her face.',
+                        'It is the monster. The longer you stay, the nearer she leans, on a neck that is never quite the length it was. You hold one key to tie your thread to hers, or another to bite your own in two.'],
+         '&ldquo;There you are. Oh, little one, you came all this way. I&rsquo;m so cold. Tie your thread to mine, and pull me up. Please. Please.&rdquo;') \
+    + clip('choice', 'walking up to her &middot; 24 seconds') \
+    + rv('choice', 'Before: the legs of a giant picture of a person', 'Now: the knitter kneels, holding out the thread') \
+    + sc('Tied', ['The candle goes out. For a few seconds there is nothing but the doll and the red thread, and in the dark she grows.',
+                  'Then a light from nowhere shows her still kneeling, still holding the thread, and a neck that goes up out of sight. The head comes down over the doll a joint at a time, the wrong way up, and turns over when it gets there. It thanks you. One second in which nothing happens. Then it calls.'],
+         '&ldquo;Thank you, little one. Now we can all come up.&rdquo;') \
+    + clip('tie', 'loud at the end &middot; 24 seconds') \
+    + rv('reveal', 'Before: a still picture on all fours', 'Now: the neck arches up and comes down over the doll') \
+    + rv('talk', 'Before: a picture of a face', 'Now: her head, speaking') \
+    + sc('It climbs out', ['Five places you came through, each seen from a camera that does not move: the Hall of Chairs, the Ink Mere, the Bell Gallery, the Throat, home. The thread lies there. Then it comes along it hand over hand, and every light it passes goes out.',
+                           'Each hand and foot takes one place on the thread and holds it while the rest goes by. The arms stretch as far as they must. Once in every place it looks out at you. At the cottage it stops, raises its head, and the window goes dark. The film follows, and that has not changed.']) \
+    + clip('climb', 'the whole way up &middot; 44 seconds') \
+    + rv('climb', 'Before: arms out of a dark patch', 'Now: a whole body going along the thread') \
+    + rv('home', 'Before: arms out of a dark patch by the cottage', 'Now: it arrives at the cottage') \
+    + sc('Bitten', ['The red goes out of the thread, from her teeth upward. It asks what you have done, twice, the second time not in her voice. It leans in, and breathes the candle out.'],
+         '&ldquo;What have you done?&rdquo;') \
+    + clip('bite', 'the thread bitten &middot; 18 seconds') \
+    + sc('In the dark', ['Hands on the floor, looking for her. Then half a second of light and no sound: the face beside the doll. It is only listening. The clip is black until then, and black after.'],
+         '&ldquo;Little one? That isn&rsquo;t a name. What is your name?&rdquo;') \
+    + clip('dark', 'eight seconds of black, then the light &middot; 14 seconds') + '''
+  <h2>Fixed while recording</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Rags at her throat.</b> Part of her collar was tied to the head, so it stretched into spikes when the neck grew. No point of the body hangs on the head any more.</li>
+      <li><b>The Throat.</b> It crossed that place too fast to see. It takes 4.4 seconds now instead of 3.2.</li>
+      <li><b>The face in the half second of light</b> was small and turned away. It is larger and turned to you.</li>
+    </ul>
   </div>
 
-  <h2>Can a 3D model make it better</h2>
+  <h2>Why it looked like that before</h2>
+  <p class="ask">why when I get asked to either bite the thread or tie it there is this weird picture of human climbing? Shouldn't it be our knitter aka the monster pretending to be the knitter? And why when it climbs out it is just a pale gradient with a bunch of hands?</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>The human</b> was one still picture of a person on all fours, twelve metres tall, standing over the place. You were meant to take its limbs for pillars. The camera showed most of it, so it read as someone climbing.</li>
+      <li><b>The hands</b> were one picture of an arm, bent nine ways and cut off at the back. The round patch of dark was there to hide the cut ends, and against a dark cave or a light sky you saw the patch itself.</li>
+    </ul>
+  </div>
+
+  <h2>If you give me a model</h2>
   <p class="ask">Do you think you can make it better if I give you some 3d model so that you don't have to manipulate images?</p>
   <div class="col">
-    <p>Yes, and the part of the game that draws one is built. What it needs from a model:</p>
+    <p>Yes. This one is younger in close-up than the voice is, and her knitted cap looks modern. Best would be to keep the knitter for the pretending and have a second model for what comes out of her.</p>
     <div class="tablebox">
       <table class="windows">
         <thead><tr><th>What</th><th>Why</th></tr></thead>
         <tbody>
-          <tr><td>Rigged: FBX, GLB or .blend, with a skeleton for arms, legs, spine, neck and head</td><td>Without bones it can only stand there. Fingers and a jaw that opens matter most for this one.</td></tr>
+          <tr><td>Rigged: FBX, GLB or .blend</td><td>Arms, legs, spine, neck and head at least. Fingers and a jaw that opens matter most here.</td></tr>
           <tr><td>Up to about 60,000 triangles</td><td>It is drawn live. The present one is 25,000 and the game stays at 60 frames a second.</td></tr>
-          <tr><td>A colour texture, and a normal map if there is one</td><td>Only the light and dark of it is used. Wrinkles, veins and ribs in the normal map show well in the engraving.</td></tr>
+          <tr><td>A colour texture, and a normal map if there is one</td><td>Only its light and dark is used. Wrinkles, veins and ribs show well in the engraving.</td></tr>
           <tr><td>Animations: not needed</td><td>The movement is made in the game, so it can hold the thread and fit the rock.</td></tr>
-          <tr><td>A licence that allows use in a game</td><td>The repository on GitHub is public, so the model files stay out of it and only go into the built game.</td></tr>
+          <tr><td>A licence that allows use in a game</td><td>The repository is public, so model files stay out of it and only go into the built game.</td></tr>
         </tbody>
       </table>
     </div>
-  </div>
-
-  <h2>The scenes</h2>
-  <div class="col"><details class="seal">
-    <summary>What was wrong, and before and after<span>The end of the game. Anyone who has not been there should play first.</span></summary>
-    <div class="inner">
-  <p class="ask">Also why when I get asked to either bite the thread or tie it there is this weird picture of human climbing? Shouldn't it be our knitter aka the monster pretending to be the knitter? And why when it climbs out it is just a pale gradient with a bunch of hands?</p>
-    <ul class="what">
-      <li><b>The human at the choice</b> was one still picture of a person on all fours, twelve metres tall, standing over the place. You were meant to take its limbs for pillars. The camera showed most of it, so it read as someone climbing. You are right about who it should be, and now it is.</li>
-      <li><b>The hands</b> were one picture of an arm, bent nine ways and cut off at the back, coming out of a round patch of dark. The patch had to be darker than the cave to hide the cut ends. Wherever the cave was already dark, or the sky was light, you saw the patch itself, and the arms were drawn over the rock.</li>
-      <li><b>Her face.</b> This model is younger in close-up than the voice is, and she has a knitted cap. That is the model, and a reason to replace it.</li>
-    </ul>
-''' + reveal('choice', 'choice_before.jpg', 'choice_after.jpg', B, 'The knitter kneels, holding out the thread') + '''
-    <p>The choice. She kneels at the edge of the dark with the end of her thread held out. The longer you stay, the nearer she leans, on a neck that is not quite the length it was.</p>
-''' + reveal('reveal', 'reveal_before.jpg', 'reveal_after.jpg', B, 'The neck arches up and comes down over the doll') + '''
-    <p>Tied. Still kneeling, still holding the thread, larger; the neck goes up into the dark and comes down over the doll a joint at a time, head the wrong way up.</p>
-''' + reveal('talk', 'talk_before.jpg', 'talk_after.jpg', B, 'The knitter&rsquo;s face, speaking') + '''
-    <p>The mouth is a jaw that opens, not six pictures crossfaded. It opens a good deal further at the end.</p>
-''' + reveal('climb', 'climb_before.jpg', 'climb_after.jpg', 'Arms out of a dark patch', 'A whole body going along the thread') + '''
-    <p>The way up. A whole body: each hand and foot takes one place on the thread and holds it while the rest goes past. The arms stretch as far as they must, the head stays out of the rock, and once in every place it looks out at you.</p>
-''' + reveal('home', 'home_before.jpg', 'home_after.jpg', 'Arms out of a dark patch by the cottage', 'It arrives at the cottage') + '''
-    <p>The same figure also comes up the far wall during the rising dark, and is there for the half second of light when you bite the thread.</p>
-    </div>
-  </details></div>
-
-  <h2>How it is drawn</h2>
-  <div class="col">
-    <ul class="what">
-      <li><b>Lit by the cave.</b> The thread, the candle and the lamps light it from where they are, so one side of a face is red and the other black.</li>
-      <li><b>Engraved round the form.</b> The lines bend with the surface, and the rock hides what is behind it.</li>
-      <li><b>Still pictures left.</b> The hands in the Hush, the people on the Loom&rsquo;s floor and the arms in the rising dark. They go the same way if you find models for them, or one model of a person.</li>
-    </ul>
-    <p>Checked by running both endings in the hidden test window, the tied one through to its film: no errors, 60 frames a second before and after. The film after the ending was not touched.</p>
+    <p style="margin-top:16px">Still pictures left in the game: the hands in the Hush, the people on the Loom&rsquo;s floor, and the arms in the rising dark. One model of a person would do for the last two.</p>
   </div>
 
   <h2>Where it lives</h2>
   <div class="col">
     <div class="files">
-      <div><b><code>app/src/figure.js</code></b><span>New. Skeleton, limbs, the neck, and the poses.</span></div>
-      <div><b><code>app/src/stage.js</code></b><span>New. Which figure is where and doing what.</span></div>
+      <div><b><code>app/src/ending.js</code></b><span>The scenes and their timing.</span></div>
+      <div><b><code>app/src/figure.js</code></b><span>Skeleton, limbs, the neck, and the poses.</span></div>
+      <div><b><code>app/src/stage.js</code></b><span>Which figure is where and doing what.</span></div>
       <div><b><code>app/src/renderer.js</code> &middot; <code>shaders.js</code></b><span>The figure pass and its engraving.</span></div>
-      <div><b><code>app/src/ending.js</code></b><span>The scenes, rewritten for a body.</span></div>
       <div><b><code>scripts/figures/export.py</code></b><span>A rigged model in, the game&rsquo;s format out.</span></div>
     </div>
   </div>
 '''
-print(page('face', 'Spindledeep · A Real Body', body, PREV))
+print(page('face', 'Spindledeep · The Ending', body, PREV))

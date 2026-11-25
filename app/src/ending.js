@@ -144,7 +144,7 @@ export class Ending {
     const near = (x, y) => { let b = 0, bd = 1e9; for (let i = 0; i <= gi; i++) { const d = Math.hypot(g.x[i] - x, g.y[i] - y); if (d < bd) { bd = d; b = i; } } return arc[b]; };
     // [camera x, y, view height, enters at, leaves at, seconds before it comes, seconds crossing]
     const P = [[31, -243.2, 13, [46.4, -262], [15, -224], 2.6, 6.5], [62.5, -188.6, 15, [84, -191.5], [42, -190], 1.8, 5.0],
-      [62, -119.2, 17, [88, -120.5], [38, -122], 1.4, 4.2], [56, -20, 19, [66, -38], [42.6, -3], 1.0, 3.2], [20.5, 3.0, 12.5, [38, 1], [18.8, 1.4], 3.0, 6.0]];
+      [62, -119.2, 17, [88, -120.5], [38, -122], 1.4, 4.2], [56, -20, 19, [66, -38], [42.6, -3], 1.0, 4.4], [20.5, 3.0, 12.5, [38, 1], [18.8, 1.4], 3.0, 6.0]];
     this.pulse = { arc, total: arc[0], gi, s: 0, slap: 0, drag: 0, k: -1, t: 0, places: P.map(([x, y, vh, a, b, wait, dur]) => ({ x, y, vh, s0: near(...a), s1: near(...b), wait, dur })) };
     const T = w.T;
     w.climber = { x: -90, y: 0, s: 0, k: 2.6, lift: 0.46, step: 0.95, spread: 0.12, neck: 0.5, head: 1.25, mouth: 0.5, twitch: 1, look: 0, quick: 7, view: [0, 0, 0.75], lights: [],
@@ -234,7 +234,7 @@ export class Ending {
     this.at(14.4, 'candle', () => { w.candleOut = w.time; w.lamps = w.lamps.filter((l) => !l.finale); A.play('release', { vol: 0.6, rate: 0.4 }); A.beds({}); });
     this.black = smooth(14.2, 16, t);
     w.snuff = this.black;
-    if (t > 15.6) { th.gone = true; w.hideDoll = true; }
+    if (t > 15.6) { th.gone = true; th.slack = true; w.hideDoll = true; }
     th.lean = lerp(this.h0, 0.95, smooth(4, 13.5, t)); th.hollow = 1; th.mouth = 0.5 * smooth(12.6, 14, t);
     this.lights.push({ x: 17.2, y: f.y + 2.2, z: 1.2, r: 6.5, i: 0.42 * (1 - this.black), c: [0.86, 0.84, 0.95], soft: 0 });
     // hands on the floor, looking for her
@@ -247,9 +247,9 @@ export class Ending {
     const fl = t > 39.6 && t < 40.15 ? 1 - Math.abs((t - 39.85) / 0.3) * 0.6 : 0;
     if (fl > 0) {
       th.gone = false; w.hideDoll = false; w.snuff = 0; th.x = p.x; th.y = p.y; th.gain = 1;
-      th.reach = { k: 1.5, from: [p.x - 4.2, p.y + 0.4, -3], yaw: 1.0, at: [p.x - 0.8, p.y + 0.62, 0.05], face: [0.9, -0.1, 0.42], up: [0.18, 1, 0], size: 1.25, mouth: 0.0, bend: [[p.x - 4.2, p.y + 3.4, -3], [p.x - 1.9, p.y + 0.3, -1.2]] };
-      th.lights = [{ x: p.x + 0.3, y: p.y + 1.3, z: 1.0, r: 2.6, i: 0.5 * fl, c: [0.95, 0.93, 1.0] }];
-      this.lights.push({ x: p.x + 0.2, y: p.y + 1.0, r: 2.5, i: 0.5 * fl, c: [0.95, 0.93, 1.0], soft: 0 });
+      th.reach = { k: 1.5, from: [p.x - 4.2, p.y + 0.4, -3], yaw: 1.0, at: [p.x - 1.02, p.y + 0.52, 0.1], face: [0.62, -0.06, 0.8], up: [0.2, 1, 0], size: 2.3, mouth: 0.0, bend: [[p.x - 4.2, p.y + 3.4, -3], [p.x - 2.1, p.y + 1.6, -2.4]] };
+      th.lights = [{ x: p.x - 0.2, y: p.y + 1.7, z: 0.8, r: 2.6, i: 0.45 * fl, c: [0.95, 0.93, 1.0] }];
+      this.lights.push({ x: p.x + 0.2, y: p.y + 1.0, z: 0.6, r: 2.5, i: 0.34 * fl, c: [0.95, 0.93, 1.0], soft: 0 });
       this.once('flash', () => log('flash'));
     } else if (t > 40.15) { th.gone = true; w.hideDoll = true; w.snuff = 1; }
     this.at(42.4, 'breath', () => A.play('inhale', { vol: 0.9, rate: 0.9, verb: 0.5 }));

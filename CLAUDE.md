@@ -68,7 +68,8 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
 ## Story (spoilers in docs/STORY.md)
 
 The plot was rewritten on 2026-11-22 to the user's brief: not straightforward, dark, ominous, unexpected, and darker
-the deeper you go. The user asked **not to be spoiled**: never put plot content in chat summaries or in the open part
+the deeper you go. On 2026-11-25 the user lifted this for **how the game's two endings look** (pages and chat may show them openly); the
+ending film and the rest of the plot stay as below. The user asked **not to be spoiled**: never put plot content in chat summaries or in the open part
 of a changes page; describe structure only and put the plot behind a sealed `<details>` block. Any new line, keepsake
 or prop must fit the escalation map in `docs/STORY.md` (nothing at a shallower depth may be grimmer than what's below).
 
