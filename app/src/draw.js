@@ -8,6 +8,8 @@ import { drawDeep } from './drawdeep.js';
 import { drawShelves } from './drawshelf.js';
 import { drawBuried, placeBuried } from './buried.js';
 import { READY } from './props3d.js';
+import { drawRig } from './drawrig.js';
+import { drawRooms } from './drawrooms.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -62,9 +64,11 @@ export class Drawer {
     this.drawFog(ctx, false);
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
+    drawRooms(this, ctx);
     drawLore(this, ctx, ectx);
     drawHusks(this, ctx, ectx);
     drawShelves(this, ctx, ectx);
+    drawRig(this, ctx, ectx);
     this.drawThorns(ctx, ectx);
     this.drawGates(ctx, ectx);
     this.drawHooks(ctx, ectx);
@@ -234,22 +238,28 @@ export class Drawer {
     }
     // button eye with four holes and the thread through them
     const blink = (Math.sin(this.time * 0.9) > 0.985) ? 0.25 : 1;
-    ctx.fillStyle = g(0.02);
-    ctx.beginPath(); ctx.ellipse(0.1 * u, hy + 0.01 * u, 0.058 * u, 0.058 * u * blink, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = g(0.5); ctx.lineWidth = fine;
-    ctx.beginPath(); ctx.ellipse(0.1 * u, hy + 0.01 * u, 0.044 * u, 0.044 * u * blink, 0, 0, TAU); ctx.stroke();
-    if (blink > 0.5) {
+    const button = (bx, q) => {
+      const by = hy + 0.01 * u;
+      ctx.fillStyle = g(0.02);
+      ctx.beginPath(); ctx.ellipse(bx * u, by, 0.058 * q * u, 0.058 * q * u * blink, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = g(0.5); ctx.lineWidth = fine;
+      ctx.beginPath(); ctx.ellipse(bx * u, by, 0.044 * q * u, 0.044 * q * u * blink, 0, 0, TAU); ctx.stroke();
+      if (blink < 0.5) return;
       ctx.fillStyle = g(0.75);
-      for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc((0.1 + a * 0.016) * u, hy + (0.01 + b * 0.016) * u, 0.008 * u, 0, TAU); ctx.fill(); }
+      for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc((bx + a * 0.016 * q) * u, by + b * 0.016 * q * u, 0.008 * u, 0, TAU); ctx.fill(); }
       ctx.strokeStyle = g(0.75); ctx.lineWidth = fine * 1.2;
-      ctx.beginPath(); ctx.moveTo(0.084 * u, hy - 0.006 * u); ctx.lineTo(0.116 * u, hy + 0.026 * u); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo((bx - 0.016 * q) * u, by - 0.016 * q * u); ctx.lineTo((bx + 0.016 * q) * u, by + 0.016 * q * u); ctx.stroke();
       // a glint of the thread's light in the button
-      ctx.fillStyle = g(0.97); ctx.beginPath(); ctx.arc(0.083 * u, hy - 0.02 * u, 0.011 * u, 0, TAU); ctx.fill();
-    }
-    // stitched X eye
-    ctx.strokeStyle = g(0.02); ctx.lineWidth = Math.max(1.2, 0.022 * u);
+      ctx.fillStyle = g(0.97); ctx.beginPath(); ctx.arc((bx - 0.017 * q) * u, by - 0.03 * q * u, 0.011 * u, 0, TAU); ctx.fill();
+    };
+    button(0.1, 1);
+    // the other: stitched shut, until she has all eight keepsakes and sews the spare button on
     const ex2 = -0.04 * u, ey2 = hy + 0.01 * u, e = 0.035 * u;
-    ctx.beginPath(); ctx.moveTo(ex2 - e, ey2 - e); ctx.lineTo(ex2 + e, ey2 + e); ctx.moveTo(ex2 + e, ey2 - e); ctx.lineTo(ex2 - e, ey2 + e); ctx.stroke();
+    if (this.w.whole) button(-0.045, 0.92);
+    else {
+      ctx.strokeStyle = g(0.02); ctx.lineWidth = Math.max(1.2, 0.022 * u);
+      ctx.beginPath(); ctx.moveTo(ex2 - e, ey2 - e); ctx.lineTo(ex2 + e, ey2 + e); ctx.moveTo(ex2 + e, ey2 - e); ctx.lineTo(ex2 - e, ey2 + e); ctx.stroke();
+    }
     // a small stitched mouth
     ctx.strokeStyle = g(0.1); ctx.lineWidth = Math.max(0.9, 0.012 * u);
     ctx.setLineDash([0.02 * u, 0.012 * u]);
@@ -419,6 +429,12 @@ export class Drawer {
     ectx.fillStyle = slant;     // a long slant of window light across the snow
     ectx.beginPath(); ectx.moveTo(X(wx), Y(wy)); ectx.lineTo(X(wx + ww), Y(wy)); ectx.lineTo(X(wx + ww + 2.2), Y(gy - 0.1)); ectx.lineTo(X(wx - 0.6), Y(gy - 0.1)); ectx.closePath(); ectx.fill();
 
+    // ── her shelf: two boards on the wall between the window and the door ──
+    for (const y of [1.84, 2.26]) {
+      poly([[14.62, y], [16.18, y], [16.2, y - 0.07], [14.6, y - 0.07]], 0.42, 0.02, 0.02);
+      for (const x of [14.75, 16.05]) line(x, y - 0.07, x + 0.02, y - 0.2, 0.06, 0.03);
+      line(14.65, y - 0.02, 16.15, y - 0.015, 0.6, 0.008);
+    }
     // ── door: planks, strap hinges, the knob, a worn step and an unlit lantern ──
     const dx = gx + 5.3, dw = 1.35, dh = 2.45;
     poly([[dx - 0.12, base], [dx - 0.12, base + dh + 0.14], [dx + dw + 0.12, base + dh + 0.14], [dx + dw + 0.12, base]], 0.5, 0.03);
@@ -630,7 +646,7 @@ export class Drawer {
   drawGates(ctx, ectx) {
     const k = this.k;
     for (const gt of this.w.gates) {
-      if (gt.open >= 1 || !this.vis(gt.x0, gt.y0, 6)) continue;
+      if (gt.rig || gt.id === 'mat' || gt.open >= 1 || !this.vis(gt.x0, gt.y0, 6)) continue;
       const o = gt.open;
       ctx.strokeStyle = g(0.02); ctx.lineWidth = Math.max(1, 0.035 * k);
       if (gt.floor) {

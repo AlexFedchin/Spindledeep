@@ -90,7 +90,9 @@ export class Renderer {
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let w = Math.round(this.canvas.clientWidth * dpr), h = Math.round(this.canvas.clientHeight * dpr);
-    const cap = 1440 / h; if (cap < 1) { w = Math.round(w * cap); h = 1440; }
+    const cap = Math.min(1440 / h, 1) * (this.detail || 1); if (cap < 1) { w = Math.round(w * cap); h = Math.round(h * cap); }
+    // very wide windows: no texture past what the machine can make
+    const big = this.device.limits.maxTextureDimension2D; if (w > big) { h = Math.round(h * big / w); w = big; }
     w = Math.max(w, 320); h = Math.max(h, 180);
     if (w === this.w && h === this.h) return;
     this.w = w; this.h = h;
@@ -110,6 +112,8 @@ export class Renderer {
     this.figT?.forEach((t) => t.destroy()); this.figT = null; this.figOn = false;
     this._bind();
   }
+
+  setDetail(k) { if (k === this.detail) return; this.detail = k; this.resize(); }
 
   setWorld(terrain, world) {
     this.world = world;
@@ -241,7 +245,7 @@ export class Renderer {
     u[8] = W.x0; u[9] = W.y0; u[10] = W.w; u[11] = W.h;
     u[12] = f.ambient[0]; u[13] = f.ambient[1]; u[14] = f.ambient[2]; u[15] = f.moon || 0;
     u[16] = 0.045; u[17] = 0.04; u[18] = 0.06; u[19] = 1;          // ink
-    u[20] = 0.91; u[21] = 0.86; u[22] = 0.75; u[23] = 1;           // paper
+    u[20] = 0.91; u[21] = 0.86; u[22] = 0.75; u[23] = this.gamma || 1;           // paper
     u[24] = Math.max(3.2, this.h / 235); u[25] = Math.min(f.lights.length, MAX_LIGHTS); u[26] = f.flash || 0; u[27] = Math.min(f.bg.length, 4);
     const ip = f.inkPool; u[28] = ip ? ip.x0 : 0; u[29] = ip ? ip.x1 : 0; u[30] = ip ? ip.y : 0; u[31] = ip ? 1 : 0;
     u[32] = this.lw; u[33] = this.lh; u[34] = f.hush || 0; u[35] = f.red ?? 1;

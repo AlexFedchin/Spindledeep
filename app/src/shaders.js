@@ -336,6 +336,8 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   // the canvas arrives un-premultiplied: weight by coverage so faint halo tails fade out instead of ending hard
   col += e.rgb * sqrt(e.a) * 1.3;
 
+  // the player's own brightness
+  col = pow(max(col, vec3f(0.0)), vec3f(1.0 / u.paper.w)) * mix(1.0, u.paper.w, 0.35);
   col += vec3f(u.flash);
   col = mix(col, u.ink.rgb * 0.6, u.fade);
   return vec4f(col, 1.0);

@@ -1,6 +1,7 @@
 // Spindledeep — boot, loop, camera, events → sound/fx/ui, menus, saves, the ending.
 import { Renderer } from './renderer.js';
 import { Items, WORLD_K, SHOW_K } from './props3d.js';
+import { DEFAULTS, optionsMenu, clock } from './options.js';
 import { Stage } from './stage.js';
 import { buildTerrain } from './terrain.js';
 import { World } from './world.js';
@@ -81,7 +82,7 @@ let time = 0;
 const pts = new Float32Array(16384 * 8);
 let voicePlaying = 0;
 let subTimer = 0, cardTimer = 0, toastTimer = 0;
-let settings = { volume: 1, fullscreen: true };
+let settings = { ...DEFAULTS };
 let E = null;              // the ending (ending.js)
 let STAGE = null;          // the 3D figures (stage.js)
 let ITEMS = null;          // what she picks up (props3d.js)
@@ -93,6 +94,10 @@ async function boot() {
   const step = async (t, p) => { msg.textContent = t; bar.style.width = (p * 100).toFixed(0) + '%'; await new Promise((r) => setTimeout(r, 30)); };
   try {
     settings = { ...settings, ...((await window.host?.getSettings?.()) || {}) };
+    // what the last save had found counts as found (saves from before the shelf)
+    const old = loadSave(true);
+    if (old && old.keeps) L.SECRETS.forEach((s, i) => { if ((old.keeps[i] || 0) & 2 && !settings.found.includes(s.kind)) settings.found.push(s.kind); });
+    if (old && old.cp >= 28 && !Object.keys(settings.ended).length) settings.ended = { once: true };
     await step('kindling the lamp…', 0.05);
     R = new Renderer();
     await R.init($('view'));
@@ -123,7 +128,7 @@ async function boot() {
     D = new Drawer(W);
     I = new Input();
     A = new Audio(); SC = new Sound(A);
-    A.setVolume(settings.volume ?? 1);
+    applySettings();
     makeEnding();
     await A.load((p) => { bar.style.width = (60 + p * 38).toFixed(0) + '%'; });
     await step('', 1);
@@ -145,11 +150,34 @@ async function boot() {
   requestAnimationFrame(tick);
 }
 
+// ── options ──────────────────────────────────────────────────────────────
+function applySettings() {
+  A.setVolume(settings.volume); A.mix = { voice: settings.voice, music: settings.music, effects: settings.effects }; A.applyMix();
+  I.load(settings.keys);
+  R.gamma = settings.brightness;
+  R.setDetail(settings.detail === 'auto' ? autoDetail : settings.detail);
+  document.documentElement.style.setProperty('--subs', settings.subs);
+}
+function setSetting(key, v) { settings[key] = v; applySettings(); window.host?.setSettings?.(settings); log(`option ${key} = ${JSON.stringify(v)}`); }
+// on `automatic` the picture gets a little coarser when the machine cannot keep up, and never jumps back and forth
+let autoDetail = 1, slow = { t: 0, n: 0 };
+function watchSpeed(dt) {
+  if (settings.detail !== 'auto' || state !== 'play' || paused || document.hidden) { slow = { t: 0, n: 0 }; return; }
+  slow.t += dt; slow.n++;
+  if (slow.t < 4) return;
+  const fps = slow.n / slow.t; slow = { t: 0, n: 0 };
+  if (fps < 44 && autoDetail > 0.5) { autoDetail = Math.max(0.5, +(autoDetail - 0.15).toFixed(2)); R.setDetail(autoDetail); log(`detail ${autoDetail} (${fps.toFixed(0)} fps)`); }
+}
+const optCtx = (back) => ({ settings, set: setSetting, menu, fullscreen: toggleFullscreen, I, back });
+
 // ── title & menus ────────────────────────────────────────────────────────
-function menu(nav, items) {
+function menu(nav, items, sel = 0, back = null) {
   nav.innerHTML = '';
   nav._items = items;
+  nav._back = back;
   nav._sel = 0;
+  nav.classList.toggle('long', items.length > 8);
+  $('title').classList.toggle('sub', nav.id === 'menu' && !!back);
   items.forEach((it, i) => {
     const b = document.createElement('button');
     b.textContent = it.label;
@@ -159,7 +187,7 @@ function menu(nav, items) {
     b.onclick = () => { if (!menuLive(nav)) { log(`ignored click on "${it.label}" (state ${state})`); return; } log(`menu "${it.label}" (mouse)`); A?.resume(); it.fn(); };
     nav.appendChild(b);
   });
-  selectItem(nav, 0);
+  selectItem(nav, sel);
 }
 // a menu only acts while its own screen is up: the title menu on the title, the pause menu while paused
 function menuLive(nav) { return !busy && (nav.id === 'menu' ? state === 'title' : paused); }
@@ -170,6 +198,9 @@ function selectItem(nav, i) {
 function navInput(nav) {
   if (I.pressed.up) { selectItem(nav, nav._sel - 1); A.play('step1', { vol: 0.2, verb: 0.2 }); }
   if (I.pressed.down) { selectItem(nav, nav._sel + 1); A.play('step2', { vol: 0.2, verb: 0.2 }); }
+  const cur = nav._items[nav._sel];
+  if (cur.adj && (I.pressed.left || I.pressed.right)) { A.play('step1', { vol: 0.2, verb: 0.2 }); cur.adj(I.pressed.right ? 1 : -1); return; }
+  if (I.pressed.pause && nav._back) { I.pressed.pause = false; nav._back(); return; }
   if (I.pressed.act || I.pressed.jump) { log(`menu "${nav._items[nav._sel].label}" (keys)`); A.resume(); nav._items[nav._sel].fn(); }
 }
 
@@ -183,12 +214,24 @@ function enterTitle() {
   log(`title screen · save ${has ? 'present' : 'none'}`);
   const items = [];
   if (has) items.push({ label: 'Continue', fn: () => passage(() => startGame(true), { caption: `back down to ${saveArea()}…`, hold: 1.6, back: 1.6 }) });
-  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => passage(async () => { await wait(1.1); playCine('intro', () => startGame(false, true)); return 'keep'; }, { caption: 'the snow is coming…', out: 1.3 }) });
+  const begin = (mode) => passage(async () => { await wait(1.1); playCine('intro', () => startGame(false, true, mode)); return 'keep'; }, { caption: 'the snow is coming…', out: 1.3 });
+  const again = Object.keys(settings.ended).length > 0;
+  items.push({ label: has ? 'Begin anew' : 'Begin', fn: () => {
+    if (!again) return begin('');
+    const best = (m) => (settings.best[m || 'plain'] ? ` · ${clock(settings.best[m || 'plain'])}` : '');
+    menu($('menu'), [
+      { label: 'As she made you' + best(''), fn: () => begin('') },
+      { label: 'Frayed · less yarn, and nothing hangs still' + best('frayed'), fn: () => begin('frayed') },
+      { label: 'Back', fn: titleMenu },
+    ], 0, titleMenu);
+  } });
   const from = Q.has('from') ? L.PEGS[+Q.get('from')] : null;      // --from=N (to-the-loom.cmd): start at a pole
   if (from) items.push({ label: 'Go to the Loom', fn: () => passage(() => startFrom(+Q.get('from')), { caption: 'down to the Loom…', hold: 1.2, back: 1.6 }) });
-  items.push({ label: 'Fullscreen', fn: toggleFullscreen });
+  if (settings.found.length) items.push({ label: 'Her shelf', fn: () => passage(() => openShelf('title'), { out: 0.8, back: 1.0 }) });
+  items.push({ label: 'Options', fn: () => optionsMenu($('menu'), optCtx(titleMenu)) });
   items.push({ label: 'Leave', fn: leave });
-  menu($('menu'), items);
+  const titleMenu = () => menu($('menu'), items);
+  titleMenu();
   show($('title'), true);
   A.stormStop(); A.fadeMaster(A.volume, 0.6); A.endMusic = false;
   ambient = L.AREAS[0].amb.slice(); moon = L.AREAS[0].moon;
@@ -218,13 +261,15 @@ function toggleFullscreenNow() {
 }
 function areaAt(x, y) { return L.AREAS.find((a) => y <= a.y1 && y > a.y0 && (a.x0 === undefined || x >= a.x0) && (a.x1 === undefined || x <= a.x1)) || L.AREAS.find((a) => y <= a.y1 && y > a.y0) || L.AREAS[0]; }
 function clearShow() { if (SHOW) { SHOW = null; show($('show'), false); } }
-function startGame(cont, walkOut = false) {
+function startGame(cont, walkOut = false, mode = '') {
   clearShow();
   show($('title'), false);
-  W = new World(T);
+  if (cont) mode = (loadSave(true) || {}).mode || '';
+  W = new World(T, mode);
   D = new Drawer(W);
   if (cont) applySave(loadSave()); else clearSave();
-  log(cont ? `continue run from pole ${W.checkpoint.i}` : 'NEW RUN (save replaced)');
+  log(cont ? `continue run from pole ${W.checkpoint.i}` : `NEW RUN${mode ? ' · ' + mode : ''} (save replaced)`);
+  W.found = settings.found;
   R.setSDF(T.visualHalf(W.secrets.filter((k) => !k.open).map((k) => k.hide)));
   E.reset(); CODA = false;
   state = 'play';
@@ -232,18 +277,26 @@ function startGame(cont, walkOut = false) {
   A.endMusic = false;
   cam.x = W.player.x; cam.y = W.player.y + 1; snapOpen();
   SD.W = W;
+  if (!cont) { W.run = 0; W.fair = true; } else W.fair = !!(loadSave(true) || {}).fair;
   if (walkOut) beginWalkOut(); else { A.fadeMaster(A.volume, 0.6); camSnap = true; }
   save();            // a new run replaces the old save at once; a continued one is re-written as is
+}
+// her thread laid the whole way to a pole, along the old woman's
+function layThread(pg) {
+  const th = W.thread, g = W.grey;
+  let b = 0, bd = 1e9;
+  for (let i = 0; i < g.n; i++) { const d = Math.hypot(g.x[i] - pg.x, g.y[i] - pg.y); if (d < bd) { bd = d; b = i; } }
+  th.reset(W.pegs[0].x, W.pegs[0].y + 0.35);
+  let lx = th.x[0], ly = th.y[0];
+  for (let i = 0; i <= b; i++) if (Math.hypot(g.x[i] - lx, g.y[i] - ly) > 0.3) { lx = g.x[i]; ly = g.y[i]; th._push(lx, ly); }
+  th.tie(pg.x, pg.y + 0.35);
 }
 // start at pole n with the thread laid the whole way behind her (along the old woman's) and every knot above it heard
 function startFrom(n) {
   startGame(false);
-  const th = W.thread, pg = W.pegs[n], g = W.grey;
-  let b = 0, bd = 1e9;
-  for (let i = 0; i < g.n; i++) { const d = Math.hypot(g.x[i] - pg.x, g.y[i] - pg.y); if (d < bd) { bd = d; b = i; } }
-  let lx = th.x[0], ly = th.y[0];
-  for (let i = 0; i <= b; i++) if (Math.hypot(g.x[i] - lx, g.y[i] - ly) > 0.3) { lx = g.x[i]; ly = g.y[i]; th._push(lx, ly); }
-  th.tie(pg.x, pg.y + 0.35);
+  W.fair = false;
+  const pg = W.pegs[n];
+  layThread(pg);
   W.checkpoint = pg; pg.tied = true;
   for (const m of W.memories) if (m.y > pg.y + 8) m.heard = true;
   for (const a of L.AREAS) if (a.y0 > pg.y) W.areaSeen.add(a.id);
@@ -258,8 +311,7 @@ function setPaused(on) {
   if (on) {
     menu($('pmenu'), [
       { label: 'Resume', fn: () => setPaused(false) },
-      { label: 'Fullscreen', fn: toggleFullscreen },
-      { label: `Volume · ${Math.round((settings.volume ?? 1) * 100)}%`, fn: () => { const v = [1, 0.7, 0.45, 0.2, 0][([1, 0.7, 0.45, 0.2, 0].indexOf(settings.volume ?? 1) + 1) % 5]; settings.volume = v; A.setVolume(v); window.host?.setSettings?.(settings); setPaused(true); } },
+      { label: 'Options', fn: () => optionsMenu($('pmenu'), optCtx(() => setPaused(true))) },
       { label: 'Return to the cottage', fn: () => passage(() => { save(); unpauseQuiet(); enterTitle(); }, { caption: 'back up to the cottage…', hold: 1.2, back: 1.6 }) },
       { label: 'Leave', fn: leave },
     ]);
@@ -295,7 +347,7 @@ function save() {
   const th = W.thread;
   const n = th.fixedN;
   const data = {
-    v: 2, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0) + (s.open ? 4 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
+    v: 3, mode: W.mode, fair: !!W.fair, lost: W.lost || 0, time: +(W.run || 0).toFixed(1), rig: W.rig ? W.rig.save() : null, cp: W.checkpoint.i, skeins: W.skeins.map((s) => s.taken), keeps: W.secrets.map((s) => (s.taken ? 2 : 0) + (s.seen ? 1 : 0) + (s.open ? 4 : 0)), mem: W.memories.map((m) => m.heard), bells: W.bells.map((b) => b.lit > 0),
     areas: [...W.areaSeen], pegs: W.pegs.map((p) => p.tied),
     husks: W.husks.map((h) => [+h.x.toFixed(2), +h.y.toFixed(2), h.kind, h.flip, h.seed]),
     tx: Array.from(th.x.subarray(0, n), (v) => +v.toFixed(2)), ty: Array.from(th.y.subarray(0, n), (v) => +v.toFixed(2)),
@@ -324,7 +376,11 @@ function applySave(s) {
   const n = s.tx.length;
   for (let i = 0; i < n; i++) { th.x[i] = th.ox[i] = s.tx[i]; th.y[i] = th.oy[i] = s.ty[i]; th.dead[i] = s.dead[i]; }
   th.n = th.fixedN = th.liveStart = n; th.anchored = true;
+  W.run = s.time || 0; W.lost = s.lost || 0;
+  if (W.rig && s.rig) W.rig.load(s.rig);
   W.checkpoint = W.pegs[s.cp];
+  // a run from before the rooms under the Hall: some of where its thread lay is rock now, so it is laid again
+  if ((s.v || 0) < 3 && W.checkpoint.y < -255) layThread(W.checkpoint);
   W.player.reset(W.checkpoint.x + 0.6, W.checkpoint.y + 0.6);
 }
 
@@ -406,6 +462,19 @@ function handleEvents() {
         startShow({ kind: 'skein', x: e.x, y: e.y + 0.22, name: 'A skein of her red yarn', desc: 'Wound tight, the colour of the thread. It will reach further now.',
           count: e.n >= W.skeins.length ? `the last skein · all ${W.skeins.length} found` : `skein ${e.n} of ${W.skeins.length}` });
         break;
+      case 'shelf': if (!SHOW && state === 'play') openShelf('door'); break;
+      case 'allfound': toast('all eight · she sews on the second eye', 5); A.play('bowl', { vol: 0.3, rate: 0.75, verb: 1.4, bus: 'ui' }); break;
+      // what the thread works (rig.js)
+      case 'doorUp': A.play('gate', { vol: 0.55, rate: 0.85, x: e.x, y: e.y }); if (Math.hypot(e.x - p.x, e.y - p.y) < 20) cam.shake = Math.max(cam.shake, 0.12); break;
+      case 'doorDown': A.play('gate', { vol: 0.7, rate: 0.6, x: e.x, y: e.y }); D.spawn('puff', e.x, e.y + 0.2, 8, { speed: 1.2, vy: 0.5, life: 0.6 }); break;
+      case 'ratchet': A.any('timber', { vol: 0.16, rate: 1.7, x: e.x, y: e.y }); break;
+      case 'latched': A.play('gate', { vol: 0.6, rate: 1.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { speed: 1.6, life: 0.7 }); save(); break;
+      case 'spindle': A.play('chime', { vol: 0.4, rate: 0.85 + e.i * 0.18, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1.4, life: 0.7 }); break;
+      case 'spindleOff': A.play('release', { vol: 0.25, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'foul': A.play('snag', { vol: 0.7, rate: 0.7, x: e.x, y: e.y }); A.any('timber', { vol: 0.5, rate: 0.7, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.18); D.spawn('fiber', e.x, e.y - 1, 10, { speed: 1.6, life: 1.2 }); break;
+      case 'bobFree': A.play('release', { vol: 0.5, rate: 0.6, x: e.x, y: e.y }); A.any('timber', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'bobRoll': A.any('timber', { vol: 0.22, rate: 0.75, x: e.x, y: e.y }); break;
+      case 'bobTurn': A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y }); break;
       case 'secretOpen': startReveal(e); break;
       case 'secret': card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
       case 'keepsake':
@@ -413,6 +482,7 @@ function handleEvents() {
         D.spawn('spark', e.x, e.y + 0.2, 10, { speed: 1.2, life: 1 });
         startShow({ kind: e.kind, x: e.x, y: e.y + 0.15, name: e.what.charAt(0).toUpperCase() + e.what.slice(1), desc: e.text,
           count: e.n >= e.of ? `keepsake ${e.n} of ${e.of} · the last of them` : `keepsake ${e.n} of ${e.of}` });
+        if (!settings.found.includes(e.kind)) { settings.found.push(e.kind); window.host?.setSettings?.(settings); }
         save();
         break;
       case 'memory': playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 }); save(); break;
@@ -461,11 +531,19 @@ let CODA = false;
 function makeEnding() {
   E = new Ending({
     W: () => W, D: () => D, A, cam, I: () => I, $, show, log, playLine, voiceBusy: () => voicePlaying > 0, sub: subtitle,
-    setState: (s) => { state = s; },
+    setState: (s) => { if (s === 'ending' && state === 'play') finishRun(); state = s; },
     // that ending's film, then what became of everyone, then the credits
     // the run's save stays at its last pole, so Continue goes back to the choice
     film: (cards, name = 'outro', cut = false) => { passage(() => { E.dark = 1; playCine(name, () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => rollCredits(cut)); }); return 'keep'; }, { out: 0.6 }); },
   });
+}
+// the run is over: how long it took, and that it has been done
+function finishRun() {
+  const k = W.mode || 'plain', t = W.run || 0;
+  settings.ended = { ...settings.ended, [k]: true };
+  if (t > 30 && W.fair && (!settings.best[k] || t < settings.best[k])) settings.best = { ...settings.best, [k]: +t.toFixed(1) };
+  window.host?.setSettings?.(settings);
+  log(`run over · ${clock(t)}${W.fair ? '' : ' (not from the start)'}${W.mode ? ' · ' + W.mode : ''}`);
 }
 function endCards(lines, done) {
   const el = $('endcard');
@@ -487,6 +565,7 @@ function rollCredits(cut, instant) {
   state = 'credits';
   const ks = W.secrets.filter((k) => k.taken);
   $('ckeeps').textContent = ks.length ? `${ks.length} of ${W.secrets.length} · ${ks.map((k) => k.what).join(' · ')}` : `none of ${W.secrets.length} · they are still down there`;
+  $('ctime').textContent = W.run > 30 ? clock(W.run) + (W.mode === 'frayed' ? ' · frayed' : '') + ` · ${W.lost || 0} dolls lost` : '';
   show($('credits'), true);
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
   setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); }, 76000);
@@ -522,7 +601,7 @@ function playCine(name, onEnd) {
   show($('title'), false);
   A.master.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
   v.src = 'assets/cine/' + name + '.mp4';
-  v.volume = Math.min(1, settings.volume ?? 1);
+  v.volume = Math.min(1, (settings.volume ?? 1) * Math.max(settings.voice, settings.effects));
   v.onended = endCine; v.onerror = () => { log(`film ${name} failed to play: ${v.error?.message || v.error?.code}`); endCine(); };
   v.play().then(() => { show(v, true); if (veiled()) veil(false, 1.4); }).catch(endCine);
 }
@@ -673,8 +752,53 @@ function startShow(o) {
   A.play('bowl', { vol: 0.35, rate: 0.5, verb: 1.4, bus: 'ui' });
   A.play('harp', { rate: 0.5, vol: 0.4, verb: 1.3, delay: 0.5, bus: 'ui' });
 }
+// her shelf: every keepsake ever found, one at a time. From the title (its own quiet screen) or from the shelf by her door.
+function openShelf(from) {
+  const list = L.SECRETS.filter((s) => settings.found.includes(s.kind));
+  if (!list.length) return;
+  list.forEach((s) => ITEMS.need(s.kind));
+  if (from === 'title') { state = 'shelf'; show($('title'), false); W.hideDoll = true; cam.x = 15.4; cam.y = 3; cam.viewH = SHOWV; }
+  SHOW = { shelf: list, si: 0, from, phase: 'in', t: 0, o: 0, kind: list[0].kind, x: 15.4, y: 3.2, at: from === 'title' ? { x: 15.4, y: 3.4 } : { x: W.player.x, y: W.player.y + 1.35 }, item: null, click: false };
+  W.showcase = SHOW;
+  log('shelf');
+  shelfItem();
+  A.play('bowl', { vol: 0.25, rate: 0.6, verb: 1.4, bus: 'ui' });
+}
+function shelfItem() {
+  const S = SHOW, s = S.shelf[S.si], el = $('show');
+  S.kind = s.kind; S.t = 0; ITEMS.need(s.kind);
+  ITEMS.turn.on = false;
+  el.querySelector('.sname').textContent = s.what.charAt(0).toUpperCase() + s.what.slice(1);
+  el.querySelector('.sdesc').textContent = s.text;
+  el.querySelector('.scount').textContent = `${S.si + 1} of ${S.shelf.length}` + (S.shelf.length < L.SECRETS.length ? ` · ${L.SECRETS.length - S.shelf.length} still down there` : '');
+  el.querySelector('.sany').textContent = `${I.label('left')}  ${I.label('right')} · the next · ${I.label('pause')} · put it back` + (I.usingPad ? '' : ' · drag to turn it');
+  el.classList.remove('sout'); el.classList.add('s1', 's2', 's3', 's4');
+  show(el, true);
+}
+function shelfUpdate(dt) {
+  const S = SHOW, el = $('show');
+  if (S.phase === 'in') {
+    S.t += dt;
+    const k = smooth(0, 0.7, S.t);
+    S.item = { kind: S.kind, x: S.at.x, y: S.at.y + Math.sin(time * 1.3) * 0.03, s: 2.4, k: SHOW_K * (0.75 + 0.25 * k), a: k };
+    const step = I.pressed.left ? -1 : I.pressed.right || S.click ? 1 : 0;
+    S.click = false;
+    if (step && S.t > 0.2 && S.shelf.length > 1) { S.si = (S.si + step + S.shelf.length) % S.shelf.length; shelfItem(); A.play('step2', { vol: 0.25, verb: 0.4, bus: 'ui' }); return; }
+    if (S.t > 0.2 && (I.pressed.pause || I.pressed.act || I.pressed.jump)) {
+      for (const k2 in I.pressed) I.pressed[k2] = false;
+      if (S.from === 'title') { passage(() => enterTitle(), { out: 0.7, back: 1.0 }); S.phase = 'wait'; return; }
+      S.phase = 'out'; el.classList.add('sout');
+    }
+  } else if (S.phase === 'out') {
+    S.o += dt;
+    if (S.item) S.item.a = Math.max(0, 1 - S.o * 2);
+    if (S.o > 0.3 && !S.hid) { S.hid = true; show(el, false); }
+    if (S.o > 0.7) { SHOW = null; W.showcase = null; }
+  }
+}
 function showUpdate(dt) {
   const S = SHOW; if (!S) return;
+  if (S.shelf) { shelfUpdate(dt); return; }
   const el = $('show'), p = W.player;
   const bob = Math.sin(time * 1.3) * 0.035;
   if (S.phase === 'in') {
@@ -753,7 +877,8 @@ function updateCamera(dt) {
   lookT = ay ? lookT + dt : 0;
   p.look = damp(p.look || 0, SHOW ? (SHOW.phase === 'in' ? 0.85 : 0) : W.intro && !W.intro.done ? W.intro.look : ay, W.intro && !W.intro.done ? 3 : 9, dt);                                   // her head turns at once
   lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
-  if (state === 'title') {
+  if (state === 'shelf') { tx = SHOW ? SHOW.at.x : cam.x; ty = SHOW ? SHOW.at.y - 0.14 * SHOWV : cam.y; vh = SHOWV; }
+  else if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
   } else if (state === 'ending' && E.view) {
     tx = E.view.x; ty = E.view.y; vh = E.view.vh;
@@ -893,6 +1018,10 @@ function tick(now) {
     updateCamera(SHOW ? dt : gdt);
     revealStep(gdt);
   }
+  watchSpeed(dt);
+  if (state === 'play' && !paused && !SHOW && !busy && !(W.intro && !W.intro.done)) W.run = (W.run || 0) + dt;
+  const tk = settings.timer && (state === 'play' || state === 'ending');
+  show($('clock'), tk); if (tk) { const tx = clock(W.run || 0); if (tx !== $('clock').textContent) $('clock').textContent = tx; }
   updateUI(dt);
   const turning = !!(SHOW && SHOW.phase === 'in' && SHOW.t > 1.6 && !I.usingPad);        // something can be turned with the mouse
   document.body.classList.toggle('nocursor', !(state === 'title' || state === 'loading' || paused || turning));
@@ -906,7 +1035,7 @@ function tick(now) {
   }
 
   // render
-  const shake = cam.shake > 0 ? cam.shake * 0.35 : 0;
+  const shake = cam.shake > 0 ? cam.shake * 0.35 * settings.shake : 0;
   const cx = cam.x + (Math.random() - 0.5) * shake, cy = cam.y + (Math.random() - 0.5) * shake;
   const viewW = cam.viewH * R.w / R.h;
   D.setView([cx, cy], cam.viewH, R.w, R.h);
@@ -926,7 +1055,7 @@ function tick(now) {
   R.frame({
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time).concat(ITEMS.frame(W, [cx, cy], viewW, cam.viewH, dt, time)) : [],
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),
-    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,
+    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.shelf ? (SHOW.phase === 'out' ? 1 - smooth(0, 0.6, SHOW.o) : SHOW.from === 'title' ? 1 : smooth(0, 0.6, SHOW.t + (SHOW.si ? 9 : 0))) : SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,
   });
   requestAnimationFrame(tick);
 }

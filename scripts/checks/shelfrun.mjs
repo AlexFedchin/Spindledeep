@@ -20,4 +20,4 @@ run('Root Gardens, up from the floor',2,[27.8,-60],[...[7,8,9,10,11].map(i=>c(G[
 const room=[[60,-239.3],[65,-239.6],[69.4,-243.8],[62,-243.9],[57,-244.1],[53.4,-245.2]];
 run('Hall of Chairs from pole 13',13,[41.6,-246],[[23.6,-246.1],...H.map(c),...room],W=>W.secrets[5].taken&&W.checkpoint.i===30,0);
 run('Hall of Chairs from pole 10, no skeins (worst for yarn)',10,[18,-245],[[23.6,-246.1],...H.map(c),...room],W=>W.secrets[5].taken&&W.checkpoint.i===30,0);
-run('...and from pole 30 down the hole to the Hush',30,[53.2,-245.2],[[50.6,-246],[46.8,-282.4],[40.4,-282.2]],W=>W.checkpoint.i===14,0);
+run('...and from pole 30 down the hole, by the mat, to the Weighing Room',30,[53.2,-245.2],[[50.6,-246],[46.8,-258.7],[39.4,-258.7]],W=>W.checkpoint.i===31,0);

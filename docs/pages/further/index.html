@@ -1,0 +1,226 @@
+<title>Spindledeep · Further</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    .wide { max-width: 900px; margin: 0 auto; }
+    .fig { margin: 8px 0 26px; }
+    .fig img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+    .fig figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); margin-top: 10px; }
+    table.windows td, table.windows th { vertical-align: top; white-space: normal; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; all eight points</div>
+    <h1>Further</h1>
+    <p class="tag">Six new rooms<span></span>and more to do with one thread</p>
+  </header>
+
+  <p class="ask">please implement all the points that you mentioned</p>
+  <div class="col summary">
+    <p>All eight are in. The way down is longer by six rooms, two under each of the Hall, the Hush and the Treadles, and each is built on something new the thread can do. Around them: a fairer Mere, moths and hands that react, a shelf for the keepsakes, options, a second way to play, and a fresh build.</p>
+  </div>
+
+  <h2>New rooms, new uses for the thread</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Sinking rings.</b> Hang from one and it goes down while a door goes up. Wait too long and you are too low to swing out; go too soon and the door is not open. It stays up for six and a half seconds.</li>
+      <li><b>Handles.</b> Catch one in the air, land still holding, and wind in: it slides toward you and pulls out a bridge or lifts a door. It stays where you leave it.</li>
+      <li><b>Spindles.</b> They turn while your thread runs past them, and their door opens only when both turn. There are two ways round each slab of rock, so you choose which way to run the thread.</li>
+      <li><b>The bobbin.</b> A wheel as tall as three dolls rolls up and down its lane. Lie low in a gutter and let it pass: it fouls on your own thread and stands for four seconds.</li>
+    </ul>
+  </div>
+  <div class="wide"><figure class="fig"><img src="img/door.jpg" alt="A pit with a ring over it and a tall door of needles on the left"><figcaption>under the Hall &middot; a sinking ring over the pit, and the door it lifts</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/pew.jpg" alt="A bridge sliding out over a trench of pins"><figcaption>under the Hall &middot; the bridge being wound out</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/slab.jpg" alt="A spindle on a slab of rock, the doll below it"><figcaption>round the Hush &middot; a spindle on the first slab</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/bob.jpg" alt="A huge bobbin wound round with the red thread, the doll in a gutter"><figcaption>below the Treadles &middot; the bobbin, fouled on the thread</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/low.jpg" alt="A handle on a rail on the left, a door of needles on the right"><figcaption>below the Treadles &middot; a handle and its door</figcaption></figure></div>
+
+  <div class="col">
+    <p>The second room of each pair brings the area&rsquo;s own danger back with rings or handles added: hands over beds of pins in the Hush, heddles and swinging rings below the Treadles. There are thirteen new poles and three new skeins. Nothing that existed has moved except the hole in the Hall, which now has a mat across it and a way round beneath, the tunnel between the Hush&rsquo;s first two caves and the well below the Treadles, which now lead through the new rooms. A bot crossed every room with the real thread, each with several or many timings:</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Room</th><th>Timings that work</th></tr></thead>
+        <tbody>
+          <tr><td>The sinking ring and its door</td><td>11 of 49</td></tr>
+          <tr><td>The handle and the bridge</td><td>9 of 9</td></tr>
+          <tr><td>The two slabs, the right way / the wrong way</td><td>5 of 9 / 0 of 3, as meant</td></tr>
+          <tr><td>The two rings over the pins</td><td>6 of 24 and 14 of 59</td></tr>
+          <tr><td>The bobbin, from gutter to gutter / just running</td><td>16 of 16 / 0 of 24, as meant</td></tr>
+          <tr><td>The lower room: swinging ring, handle, last ring</td><td>13 of 59, 9 of 9, 7 of 49</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:18px">The bots let go on the first forward swing after a set time, so a person who looks has more chances than that. The older rings of the Gallery and the Mere score between 6 and 42 in the same kind of test.</p>
+  </div>
+
+  <h2>The Mere&rsquo;s last jump</h2>
+  <div class="col">
+    <p>It was as bad as your deaths suggested. From the last island only 6 of 20 places to jump from worked, and only with the jump button held down. The shore now comes out 1.4 metres further and is level, and a lamp burns on it so you can see where to land. Now 19 of 20 work with a held jump.</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/shore_before.jpg" alt="Before: the far shore of the Mere, unlit">
+      <img class="after" src="img/shore_after.jpg" alt="Now: nearer, level, and with a lamp on it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shore" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Moths and hands</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Hands feel you move.</b> Stop dead when the earth crumbles and the hand strikes where you were heading, misses, and gives up for a while. It does not help when one comes up right under you. A bot that only ever stopped crossed the first of the new Hush rooms untouched; in the long gallery stopping alone was not enough, and it needed to pluck as well.</li>
+      <li><b>Moths try the thread first.</b> They circle it for a moment before they settle, and cannot settle on a thread that is being shaken. They come to what moves, and forget you if you stand still.</li>
+      <li><b>They get used to plucking.</b> Each fright soon after another keeps them away for less.</li>
+    </ul>
+  </div>
+
+  <h2>Her shelf</h2>
+  <div class="col">
+    <p>Every keepsake you have ever found stands on a shelf by her door, and <i>Her shelf</i> is on the title screen. Open it at either place to turn each one over and read it again; the ones in your present save are already there. Finding all eight in one run gives the doll her second eye, and she sees half as far again in the dark.</p>
+  </div>
+  <div class="wide"><figure class="fig"><img src="img/shelf.jpg" alt="The cottage wall with two small shelves of keepsakes"><figcaption>by her door</figcaption></figure></div>
+
+  <h2>Options</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Picture.</b> Brightness, screen shake, and detail, which lowers itself if the game runs slowly.</li>
+      <li><b>Sound.</b> Separate levels for voices, music and sounds.</li>
+      <li><b>Words and time.</b> Four sizes for words on screen, and a clock you can show.</li>
+      <li><b>Controls.</b> Every key can be changed. The arrows, Enter and Esc always work in menus, so you cannot lock yourself out.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/title_before.jpg" alt="Before: the title menu">
+      <img class="after" src="img/title_after.jpg" alt="Now: with her shelf and options">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-title" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Coming back</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Frayed.</b> After an ending, <i>Begin anew</i> offers a harder descent: a fifth less yarn, moths that bite through faster, and rings that swing where they used to hang still (one gap is too wide for that, and its ring stays put). All twelve ring gaps were tested with it.</li>
+      <li><b>Your time.</b> Runs are timed. The credits show the time and how many dolls you lost, and your best time stands in the menu.</li>
+    </ul>
+  </div>
+
+  <h2>Release</h2>
+  <div class="col">
+    <p>The exe files in <code>release</code> are rebuilt with everything so far. The screens were checked at wide, 4:3 and nearly square window shapes and fit in all of them. At half detail the game still held 58 frames a second, but I only have a fast graphics card here, so a slow one is untested. A save from before the new rooms was loaded and its thread was laid again clear of the rock.</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/rig.js</code></b><span>Sinking rings, handles, spindles, the bobbin.</span></div>
+      <div><b><code>app/src/level.js</code></b><span>The six rooms.</span></div>
+      <div><b><code>app/src/drawrig.js</code> <code>drawrooms.js</code></b><span>How they look.</span></div>
+      <div><b><code>app/src/options.js</code> <code>input.js</code></b><span>Options and keys.</span></div>
+      <div><b><code>app/src/deep.js</code> <code>world.js</code></b><span>Hands and moths, the Frayed run.</span></div>
+      <div><b><code>scripts/checks/rooms.mjs</code></b><span>The bots that cross the rooms.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/1Nw7Pg3WD3HzuWupWjqqWn">things</a> &middot; <a href="https://claude.ai/artifact/BC9NNRnJbHDSzwdFnwnxjF">buried</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

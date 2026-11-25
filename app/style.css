@@ -30,6 +30,11 @@ nav { display: flex; flex-direction: column; align-items: center; gap: 10px; mar
 nav button { font-family: 'Fell'; font-size: clamp(20px, 1.7vw, 27px); background: none; border: none; color: var(--paper-dim); cursor: pointer; padding: 4px 26px; position: relative; transition: color 0.25s, letter-spacing 0.35s; letter-spacing: 0.05em; text-shadow: 0 1px 8px #000; }
 nav button.sel, nav button:hover { color: var(--paper); letter-spacing: 0.1em; }
 nav button.sel::before { content: ''; position: absolute; left: -8px; right: -8px; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, var(--red) 20%, transparent 21%, transparent 79%, var(--red) 80%, transparent); box-shadow: 0 0 6px var(--red); }
+#title.sub h1, #title.sub .tag { display: none; }
+#title.sub nav { margin: auto; }
+nav.long { gap: 2px; } nav.long button { font-size: clamp(17px, 1.45vw, 23px); }
+#title.sub { background: rgba(8,7,12,0.72); }
+#clock { position: fixed; right: 2.2vw; top: 2.4vh; font-family: 'FellSC'; font-size: clamp(16px, 1.3vw, 22px); letter-spacing: 0.12em; color: var(--paper-dim); text-shadow: 0 1px 8px #000; z-index: 6; transition: opacity 0.6s; pointer-events: none; }
 #title .foot { position: absolute; bottom: 3.5vh; font-style: italic; font-size: 15px; color: rgba(232,220,196,0.35); }
 
 #card { position: fixed; left: 0; right: 0; top: 13vh; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity 1.8s; pointer-events: none; z-index: 5; }
@@ -39,9 +44,9 @@ nav button.sel::before { content: ''; position: absolute; left: -8px; right: -8p
   linear-gradient(90deg, transparent, var(--paper-dim) 35%, transparent 46%, transparent 54%, var(--paper-dim) 65%, transparent) center / 100% 1px no-repeat; }
 
 #sub { position: fixed; left: 50%; bottom: 9vh; transform: translateX(-50%); width: min(980px, 82vw); text-align: center; font-style: italic;
-  font-size: clamp(19px, 1.65vw, 27px); line-height: 1.45; color: var(--paper); text-shadow: 0 0 2px #000, 0 2px 14px #000, 0 0 30px #000; transition: opacity 1.2s; pointer-events: none; z-index: 6; }
+  font-size: calc(clamp(19px, 1.65vw, 27px) * var(--subs, 1)); line-height: 1.45; color: var(--paper); text-shadow: 0 0 2px #000, 0 2px 14px #000, 0 0 30px #000; transition: opacity 1.2s; pointer-events: none; z-index: 6; }
 
-#hint, #prompt, #toast { position: fixed; left: 50%; transform: translateX(-50%); font-size: clamp(15px, 1.15vw, 19px); color: var(--paper-dim); text-shadow: 0 1px 8px #000, 0 0 2px #000;
+#hint, #prompt, #toast { position: fixed; left: 50%; transform: translateX(-50%); font-size: calc(clamp(15px, 1.15vw, 19px) * var(--subs, 1)); color: var(--paper-dim); text-shadow: 0 1px 8px #000, 0 0 2px #000;
   transition: opacity 0.8s; pointer-events: none; white-space: nowrap; display: flex; align-items: center; gap: 10px; z-index: 6; font-style: italic; }
 #hint { bottom: 3.2vh; }
 #prompt { bottom: 17vh; color: var(--paper); }

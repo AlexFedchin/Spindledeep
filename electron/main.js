@@ -55,9 +55,10 @@ function readSettings() { try { return JSON.parse(fs.readFileSync(settingsPath()
 function createWindow() {
   const s = readSettings();
   const wa = screen.getPrimaryDisplay().workAreaSize;
-  const w = Math.min(1600, wa.width - 80), h = Math.round(w * 9 / 16);
+  let w = Math.min(1600, wa.width - 80), h = Math.round(w * 9 / 16);
+  if (SMOKE && typeof arg('size') === 'string') [w, h] = arg('size').split('x').map(Number);       // tests: another shape of window
   const win = new BrowserWindow({
-    width: w, height: h, minWidth: 960, minHeight: 540,
+    width: w, height: h, minWidth: 960, minHeight: 540, useContentSize: !!SMOKE, enableLargerThanScreen: !!SMOKE,
     backgroundColor: '#07060a', autoHideMenuBar: true, show: false, skipTaskbar: !!SMOKE, focusable: !SMOKE,
     title: 'Spindledeep', icon: path.join(__dirname, '..', 'build', 'icon.png'),
     fullscreen: !SMOKE && s.fullscreen !== false,

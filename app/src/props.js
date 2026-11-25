@@ -44,7 +44,7 @@ export const LORE = [
   ['husk', 90.6, -192, -1],             // the Ink Mere: the first island, no further
   ['huskink', 53.6, -191, 1],           // the ink got into this one
   // the deep (2026-11-23): fewer whole ones, and none of them got far
-  ['husk', 67.5, -282, -1],             // the Hush: in the tunnel, curled up as if to keep quiet
+  ['husk', 60.5, -282, -1],             // the Hush: in the tunnel, curled up as if to keep quiet
   ['husknest', 58.4, -326, 1],          // pulled half into the wall of the long gallery
   ['husk', 85.2, -358.2, 1],            // the Treadles: flattened where a heddle comes down
   ['huskhung', 53.0, -503.6, -1],       // the Loom: hung from the first warp's ledge by its own thread
@@ -55,6 +55,7 @@ export const LORE = [
   ['candles', 2.4, -116, 1], ['stool', 4.6, -116, -1],          // the Ringer's Cell
   ['letters', 117.0, -155, 1], ['boots', 115.2, -155, 1],       // the Sill
   ['baskets', 71.2, -243, 1],                                   // the Last Basket
+  ['ferrylamp', 21.0, -193, 1],                                 // the Mere's far shore: it can be seen from the last island
 ];
 
 // each prop keeps a faint cold after-glow so its outline reads from a distance; a few carry their own light

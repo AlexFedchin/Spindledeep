@@ -2,7 +2,7 @@
 const src = new URL('../../app/src/', import.meta.url).href;
 const { buildTerrain } = await import(src + 'terrain.js'); const { World } = await import(src + 'world.js'); const { mulberry } = await import(src + 'util.js');
 const T = buildTerrain(); const DT = 1 / 120;
-const RUNS = [['H1-H2', 14, 96], ['H3 E-W', 16, 34]];
+const RUNS = [['H1-drop', 14, 65.5], ['Slabs', 35, 45], ['H3 E-W', 16, 34]];
 const BOTS = {
   'walk, no effort': () => ({}),
   'pluck every 1.4 s': () => ({ every: 1.4 }),
@@ -10,6 +10,8 @@ const BOTS = {
   'react (pluck 0.35 s after a warning)': () => ({ react: 0.35 }),
   'react 0.35 s + tear free': () => ({ react: 0.35, tear: 0.35 }),
   'react late (0.8 s), tear free': () => ({ react: 0.8, tear: 0.3 }),
+  'stop dead 0.3 s after a warning, no pluck': () => ({ stop: 0.3 }),
+  'stop dead, and tear free if seized': () => ({ stop: 0.3, tear: 0.35 }),
   'never pluck until seized, then tear free': () => ({ tear: 0.35 }),
 
 };
@@ -33,8 +35,9 @@ for (const [rn, peg, goal] of RUNS) for (const [bn, mk] of Object.entries(BOTS))
       if (b.react && warnT > 0 && t - warnT > b.react + r() * 0.1) pl();
       if (W.seized) { if (seizeT < 0) { seizeT = t; seized++; } if (b.tear && t - seizeT > b.tear) pl(); } else seizeT = -1;
       if (b.dodge && active.some((h) => h.st === 'lunge' || (h.st === 'stir' && h.t > 0.4)) && Math.hypot(P.vx) > 1) inp.axisX = -dir;
+      if (b.stop && W.deep.hands.some((h) => (h.reach > 3 || Math.abs(h.ax - P.x) > 0.9) && ((h.st === 'stir' && h.t > b.stop) || h.st === 'lunge' || (h.st === 'grope')))) { inp.axisX = 0; inp.pressed.jump = inp.held.jump = false; }
       W.update(DT, inp, true); W.events.length = 0; mb = Math.min(mb, W.budgetLeft());
-      if (P.dead) { dead = true; break; }
+      if (P.dead) { dead = true; if (process.env.DBG && b.stop && k < 4) console.log('  died', P.x.toFixed(1), P.y.toFixed(1), JSON.stringify(W.deep.hands.filter((h) => h.grab).map((h) => [h.i, h.reach, h.ax.toFixed(1), h.ay.toFixed(1), h.deaf]))); break; }
       if (Math.abs(P.x - goal) < 1) { ok++; time += t; break; }
     }
     if (dead) deaths++;

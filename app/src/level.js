@@ -77,7 +77,7 @@ export const OPS = [
   ['carve', E(60, -182, 55, 22)],
   ['fill', B(0, -208, 120, -200.5, 0.6)],      // bed of the lake (ink fills to -196.6 between the shores)
   ['fill', B(96.5, -200, 120, -194.2, 1.2)],   // east shore
-  ['fill', B(0, -200, 21, -194.2, 1.2)],       // west shore
+  ['fill', B(0, -200, 22.4, -194.2, 0.5)],     // west shore (it reached to 21 and the last jump was lost there more often than anywhere)
   ['fill', P([[84.6, -201], [86, -193.0], [91.4, -193.0], [92.8, -201]])],   // I1
   ['fill', P([[72.6, -201], [74, -192.0], [80, -192.0], [81.4, -201]])],   // I2 (bell)
   ['fill', P([[59.1, -201], [60.5, -190.4], [68.7, -190.4], [70.1, -201]])],   // I3 (peg, memory)
@@ -97,13 +97,35 @@ export const OPS = [
   ['fill', B(0, -262, 43.5, -246.5, 0.5)],     // the Hall's floor, with a hole in it (her grey thread goes down)
   ['fill', B(50.5, -262, 120, -246.5, 0.5)],
 
+  // under the Hall (2026-11-25): a mat is woven across the hole; a door in its side leads round below the chairs
+  ['carve', T([[47, -257.5, 1.5], [40, -257.5, 1.5]])],
+  ['carve', B(9, -259, 42, -249.8, 1.0)],      // the Weighing Room
+  ['carve', B(24.5, -263.2, 29.4, -258, 0.4)],   // its pit, full of pins
+  ['carve', T([[11, -257.4, 1.5], [7.4, -258.2, 1.5], [6.6, -264, 1.6], [7, -271, 1.8]])],
+  ['carve', B(4, -281, 31, -267.5, 1.2)],      // the Pews
+  ['carve', B(12, -286, 24, -280.4, 0.4)],     // the trench the bridge goes over
+  ['carve', T([[29, -279.5, 1.5], [36, -280.4, 1.6]])],
+  ['fill', P([[13.6, -249], [16.6, -252.2], [19, -249]])], ['fill', P([[30.5, -249], [33.4, -253.0], [35, -249]])], ['fill', P([[37.4, -249], [38.6, -251.2], [41, -249]])],
+  ['carve', E(22, -250.5, 5, 2.6)],
+  ['fill', P([[12.4, -266.5], [14, -270.4], [16.2, -266.5]])], ['fill', P([[25, -266.5], [26.2, -269.6], [28.4, -266.5]])], ['carve', E(20, -268, 5.5, 2.4)],
+
   // ── the Hush ──────────────────────────────────────────────────────────────
   ['carve', T([[47, -246, 3.0], [47.5, -258, 2.8], [47, -270, 2.8]])],     // down the hole
   ['carve', E(47, -276, 13, 8)],               // H1, where you land
   ['fill', B(30, -292, 64, -282.5, 0.6)],
-  ['carve', T([[57, -280.4, 1.7], [66, -281.0, 1.6], [74, -280.2, 1.7], [81, -281.2, 1.8]])],
+  ['carve', T([[57, -280.4, 1.7], [66.6, -281.0, 1.7]])],
+  // the long way round (2026-11-25): down, west past the two slabs, back east over the pins, and up a rope into H2
+  ['carve', T([[66.6, -281, 1.7], [67.4, -288, 1.7], [66.6, -297, 2.0]])],
+  ['carve', B(22, -303, 70, -294.6, 1.2)],     // the Slabs
+  ['fill', B(50, -301.6, 58.4, -300.8, 0.15)], ['fill', B(58.9, -303.4, 60.6, -301.9, 0.15)],
+  ['fill', B(33.4, -301.6, 42, -300.8, 0.15)], ['fill', B(42.5, -303.4, 44.2, -301.9, 0.15)],
+  ['carve', T([[25.4, -301.5, 1.5], [22.6, -304, 1.6], [23.4, -309.6, 1.7]])],
+  ['carve', B(20, -312.2, 88, -305.6, 1.0)],   // the Pin Walk
+  ['fill', P([[30, -294], [31.4, -297.6], [33, -294]])], ['fill', P([[45.4, -294], [46.6, -298.2], [48.4, -294]])], ['fill', P([[61, -294], [62, -296.8], [63.6, -294]])],
+  ['fill', P([[26, -305], [27.2, -307.4], [29, -305]])], ['fill', P([[49.4, -305], [50.8, -308.0], [52.2, -305]])], ['fill', P([[69, -305], [70.4, -308.2], [72.4, -305]])],
   ['carve', E(90, -280, 12, 7.5)],             // H2
   ['fill', B(76, -292, 104, -285.5, 0.6)],
+  ['carve', T([[84, -309, 1.7], [84, -297, 1.6], [84, -288, 1.6], [84, -283, 1.6]])],     // the rope up
   ['carve', T([[98, -284, 1.9], [101, -295, 2.0], [99, -305, 2.1], [96, -316, 2.2]])],
   ['carve', B(16, -326, 104, -315, 2.0)],      // H3, the long dark gallery west
   ['fill', P([[86, -326.5], [87.4, -324.6], [89.6, -324.6], [91, -326.5]])],
@@ -126,7 +148,14 @@ export const OPS = [
   ['carve', T([[110, -357, 2.6], [111, -372, 3.0], [110, -390, 3.0], [110, -402, 3.0]])],
   ['carve', B(99.5, -404.6, 113, -398.5, 1.0)],
   ['fill', B(104, -412, 116, -404.6, 0.6)],
-  ['carve', T([[101.6, -403, 2.4], [101, -420, 2.8], [104, -440, 3.0], [106, -452, 3.2], [106, -462, 3.0]])],
+  // the lower Treadles (2026-11-25): west along the bobbin's lane, down, and back east to the well's foot
+  ['carve', B(34, -405, 101.5, -396.8, 1.0)],
+  ['carve', B(85.1, -406.4, 86.9, -404, 0.15)], ['carve', B(75.1, -406.4, 76.9, -404, 0.15)], ['carve', B(65.1, -406.4, 66.9, -404, 0.15)],   // gutters
+  ['carve', T([[37, -403.4, 1.6], [35.6, -408, 1.8], [36.4, -414.5, 1.9]])],
+  ['carve', B(32, -421, 99, -411, 1.2)],
+  ['carve', E(72, -397.4, 9, 2.4)], ['carve', E(94, -397.6, 5, 2.2)], ['fill', P([[60, -396], [61.6, -399.0], [64, -396]])], ['fill', P([[83, -396], [84.6, -398.8], [86, -396]])],
+  ['carve', E(58, -411.4, 7, 2.2)], ['fill', P([[40.6, -410], [42, -413.6], [44, -410]])], ['fill', P([[84, -410], [85, -413], [86.4, -410]])],
+  ['carve', T([[97.5, -419.4, 1.5], [100.4, -424, 2.2], [104, -440, 3.0], [106, -452, 3.2], [106, -462, 3.0]])],
 
   // ── the Loom ──────────────────────────────────────────────────────────────
   ['carve', E(60, -492, 56, 62)],
@@ -179,7 +208,7 @@ export const QUIET = [
   [0.5, -5.2, 12.8, 3.0], [74, -17.2, 89.6, -12.3], [0.4, -86.8, 12.6, -79.2], [1.2, -118.2, 13.2, -113.8],
   [109.8, -157.6, 119.6, -152.6], [57.6, -244.8, 73.8, -240.0],
   [0.4, -327.2, 18.6, -322.0], [0.4, -367.2, 14.6, -362.0],
-  [57.8, -241.6, 72, -238.0], [6.6, -53.2, 12.2, -49.6],
+  [57.8, -241.6, 72, -238.0], [20, -303.6, 64, -297], [63, -407, 89, -403.5], [33, -422, 98, -418.5], [10, -287, 33, -279], [6.6, -53.2, 12.2, -49.6],
   ...SHELVES.map(([x0, x1, y]) => [x0 - 0.9, y - 1.4, x1 + 0.9, y + 0.8]),
 ];
 
@@ -188,6 +217,13 @@ export const LEVEL = [
   [22.5, 29.5, -117.75],     // B0: the first ring
   [35.0, 39.0, -52.6],       // the way into the Root Gardens, over the drop (the first shelf is a jump from here)
   [51.0, 54.2, -25.4],       // L3, under the spare ring
+  [11, 24.5, -259], [29.4, 45.5, -259],                                                  // the Weighing Room
+  [5, 12.0, -281], [24.0, 30, -281],                                                     // the Pews
+  [26, 33.4, -303], [44.2, 49.9, -303], [33.4, 42.4, -303], [49.9, 58.8, -303], [60.6, 66, -303],   // the Slabs
+  [22, 88, -312.2],                                                                      // the Pin Walk
+  [39.8, 65.0, -405], [67.0, 75.0, -405], [77, 85, -405], [87, 103, -405],               // the bobbin's lane
+  [34, 99, -421],
+  [18.5, 22.1, -194.2],      // the Mere's west shore, where the last jump lands
 ];
 
 // Areas: title card on first entry, ambience/music state, camera framing.
@@ -198,6 +234,7 @@ export const AREAS = [
   { id: 'gallery', name: 'The Bell Gallery', y1: -103, y0: -150, viewH: 19, amb: [0.024, 0.023, 0.03], moon: 0 },
   { id: 'mere', name: 'The Ink Mere', y1: -150, y0: -208, viewH: 19, amb: [0.022, 0.023, 0.03], moon: 0 },
   { id: 'hall', name: 'The Hall of Chairs', y1: -208, y0: -262, viewH: 17, amb: [0.028, 0.024, 0.022], moon: 0 },
+  { id: 'hall', name: 'The Hall of Chairs', y1: -262, y0: -286.5, x0: 0, x1: 32, viewH: 17, amb: [0.022, 0.02, 0.019], moon: 0 },      // the Pews, under it
   { id: 'hush', name: 'The Hush', y1: -262, y0: -340, viewH: 16, amb: [0.012, 0.012, 0.016], moon: 0 },
   { id: 'treadles', name: 'The Treadles', y1: -340, y0: -430, viewH: 19, amb: [0.022, 0.02, 0.02], moon: 0 },
   { id: 'loom', name: 'The Loom', y1: -430, y0: -562, viewH: 23, amb: [0.03, 0.022, 0.02], moon: 0 },
@@ -213,6 +250,8 @@ export const BACKDROPS = [
   { img: 'loom', cx: 36, cy: -232, w: 52, h: 36, par: 0.5 },     // the Hall of Chairs (the old Loom painting: chairs under threads)
   { img: 'hush', cx: 60, cy: -300, w: 94, h: 56, par: 0.55 },
   { img: 'treadles', cx: 60, cy: -380, w: 94, h: 60, par: 0.55 },
+  { img: 'loom', cx: 24, cy: -264, w: 58, h: 40, par: 0.6 },
+  { img: 'treadles', cx: 64, cy: -408, w: 94, h: 44, par: 0.6 },
   { img: 'loomdeep', cx: 60, cy: -492, w: 116, h: 130, par: 0.45 },
 ]
 
@@ -252,6 +291,19 @@ export const PEGS = [
   { x: 32, y: -444 },       // 28: the breast beam (the cloth stops)
   { x: 108.5, y: -404.6 },  // 29: the ledge halfway down the well
   { x: 53.2, y: -245.6 },   // 30: the Hall, east of the hole, outside the Last Basket
+  { x: 39, y: -259 },       // 31: the Weighing Room
+  { x: 11.8, y: -259 },     // 32: past its door
+  { x: 6.6, y: -281 },      // 33: the Pews
+  { x: 28, y: -281 },       // 34: over the bridge
+  { x: 64, y: -303 },       // 35: the Slabs
+  { x: 26.9, y: -303 },     // 36: past their door
+  { x: 47, y: -312.2 },     // 37: the Pin Walk, between the beds
+  { x: 79, y: -312.2 },     // 38: under the rope
+  { x: 98, y: -405 },       // 39: before the bobbin's lane
+  { x: 60, y: -405 },       // 40: past it
+  { x: 39.5, y: -421 },     // 41: the lower room
+  { x: 66, y: -421 },       // 42: past the pulled door
+  { x: 83, y: -421 },       // 43: before the last ring
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
@@ -265,6 +317,13 @@ export const HOOKS = [
   { x: 29.1, y: -363.6, sway: [5, 0.1, 3.4, 0] }, { x: 41.0, y: -364.0, sway: [5, 0.1, 3.4, 2.1] }, { x: 53.1, y: -363.6, sway: [5, 0.1, 3.4, 4.2] },
   // the Loom: one long chain between the ledges
   { x: 43, y: -501, sway: [6, 0.12, 3.6, 0] },
+  // what the thread can work (rig.js): `sink` goes down under her and lifts a door, `pull` is wound in from where she stands
+  { x: 26.6, y: -256.2, sink: { dist: 1.2, gate: 'w1' } },
+  { x: 9.6, y: -278.4, pull: { dx: -3.6, gate: 'bridge' } },
+  { x: 38.7, y: -308.7 }, { x: 58.7, y: -308.7, sway: [2.6, 0.1, 3.2, 0.6] },
+  { x: 48.7, y: -417.5, sway: [4, 0.1, 3.2, 1.0] },
+  { x: 60.5, y: -418.4, pull: { dx: -4.0, gate: 'w2' } },
+  { x: 88.7, y: -417.5, sink: { dist: 1.1, gate: 'w3' } },
 ];
 
 // Bell flowers: a pluck travelling past rings them; rung bells light the dark and keep moths off.
@@ -277,13 +336,20 @@ export const BELLS = [
   { x: 76.5, y: -192.0, gate: null },
   { x: 37.5, y: -193.0, gate: null },
   // the Hush: lit bells keep the hands still
-  { x: 92, y: -285.5, gate: null }, { x: 80, y: -326, gate: null }, { x: 52, y: -326, gate: null }, { x: 36.5, y: -326, gate: null },
+  { x: 92, y: -285.5, gate: null }, { x: 46.5, y: -303, gate: null }, { x: 66, y: -312.2, gate: null }, { x: 80, y: -326, gate: null }, { x: 52, y: -326, gate: null }, { x: 36.5, y: -326, gate: null },
 ];
 
 // Ink veils: strands that block a passage until all their bells ring.
 export const GATES = [
   { id: 'g2', x0: 38.9, x1: 39.9, y0: -82.6, y1: -77.2 },
   { id: 'east', x0: 105.8, x1: 112.8, y0: -123.4, y1: -122.4, floor: true },
+  // worked by the thread (rig.js)
+  { id: 'mat', x0: 43.2, x1: 51.8, y0: -259.6, y1: -259, floor: true },
+  { id: 'w1', rig: true, x0: 14.2, x1: 14.9, y0: -259, y1: -250.6 },
+  { id: 'bridge', rig: true, bridge: true, len: 12.6, x0: 24.4, x1: 24.5, y0: -281.35, y1: -281, open: 1 },
+  { id: 'h1', rig: true, spindles: true, dir: -1, x0: 28.2, x1: 28.9, y0: -303, y1: -295.4 },
+  { id: 'w2', rig: true, x0: 69.6, x1: 70.3, y0: -421, y1: -411.8 },
+  { id: 'w3', rig: true, x0: 94.6, x1: 95.3, y0: -421, y1: -411.8 },
 ];
 
 // Hidden rooms (`r` is the room's ellipse, entered once for its title) and the keepsake each one hides.
@@ -309,6 +375,7 @@ export const SECRETS = [
 
 export const SKEINS = [
   { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 100.6, y: -121.4 }, { x: 26, y: -193.4 },
+  { x: 18.6, y: -259 }, { x: 31, y: -303 }, { x: 44, y: -405 },       // in the rooms the thread opens
 ];
 
 export const NESTS = [
@@ -323,11 +390,19 @@ export const NESTS = [
 // [x0, x1, yRef]: a bramble runs along the ground below yRef between x0 and x1
 export const THORNS = [
   [71, 73.2, -327], [26, 56, -385],
+  [25, 28.9, -261], [12.6, 23.4, -284], [36.8, 40.2, -311], [56.8, 60.9, -311], [46.8, 50.9, -420], [86.8, 90.0, -420],
   [47, 73, -58], [8, 34.4, -140], [45.9, 50, -140], [60.3, 64.4, -140], [72.9, 77, -140], [86.9, 90.2, -140], [95.8, 105.4, -140],
 ];
 export const INK = [{ x0: 20, x1: 99, y: -196.6 }];
 // stalactites that drip ink
 export const DRIPS = [{ x: 67.6, y: -171 }, { x: 46.2, y: -173 }, { x: 89.2, y: -168 }, { x: 23.6, y: -170 }];
+
+// Spindles: one turns while the thread runs past it within r; its gate opens when all of its spindles turn.
+export const SPINDLES = [
+  { x: 54.2, y: -300.1, r: 0.95, gate: 'h1' }, { x: 37.6, y: -302.3, r: 0.95, gate: 'h1' },
+];
+// A bobbin as big as a cart rolls between x0 and x1 on a floor at y. It fouls on a thread across its way.
+export const BOBBINS = [{ x0: 63, x1: 93.5, y: -405, r: 1.25, speed: 5.2 }];
 
 // The knitter's grey thread: from her door, down through the deep, to her chair. Knots hold her voice.
 export const GREY = [
@@ -340,12 +415,14 @@ export const GREY = [
   [104, -193.9], [99, -194], [93.4, -191.0], [88, -192.8], [82.5, -191], [76, -191.8], [71.2, -189.2], [63.5, -190.2],
   [57.5, -187.9], [50, -191.8], [44.5, -189.5], [37, -192.8], [31, -191.5], [26, -193.2], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -246.2],
   // past her chair, down the hole, through the Hush
-  [40, -246.3], [43.0, -246.6], [45.2, -252], [46.4, -266], [44, -282.3], [52, -282.3], [58, -281.6], [66, -282.4], [74, -281.6], [82, -282.8],
-  [90, -285.3], [97, -285.3], [99.5, -292], [100.6, -300], [97.5, -312], [94, -325.8], [82, -325.8], [74.2, -325.8], [70, -325.8], [60, -325.8],
+  [40, -246.3], [43.0, -246.6], [45.2, -252], [46, -258.7], [39, -258.7], [30.2, -258.7], [26.6, -256.2], [23.2, -258.7], [12, -258.7], [7.4, -259.6], [6.6, -266], [6.6, -280.8], [11.6, -280.8],
+  [24.4, -280.8], [30, -280.8], [36, -281.8], [44, -282.3], [52, -282.3], [58, -281.9], [64, -282.4], [67.2, -289], [66.2, -298], [64, -302.8],
+  [60, -301.7], [54.2, -300.6], [49.4, -302.8], [44.6, -302.8], [37.6, -302.8], [27, -302.8], [23, -305], [24, -312], [35.4, -312], [38.7, -308.7], [42.4, -312],
+  [55.4, -312], [58.7, -308.7], [62, -312], [79, -312], [84, -311], [84, -290], [84.2, -283.6], [87, -285.2], [90, -285.3], [97, -285.3], [99.5, -292], [100.6, -300], [97.5, -312], [94, -325.8], [82, -325.8], [74.2, -325.8], [70, -325.8], [60, -325.8],
   [50, -324.5], [40, -325.8], [30, -325.8], [27, -330], [25, -340], [20.5, -352], [19.6, -358], [18, -365.8],
   // the Treadles: across the rings, up the rope, along the heddle corridor and down the well
   [25.6, -365.8], [29.1, -363.6], [34, -366.3], [41.0, -364.0], [47, -365.8], [53.1, -363.6], [58, -365.8], [66, -365.8], [68.4, -358],
-  [70, -358], [90, -358], [108, -358], [110.5, -372], [110, -398], [108, -404.4], [103, -404.4], [101.2, -420], [104, -440], [106, -458], [102, -461.8], [96.6, -462],
+  [70, -358], [90, -358], [108, -358], [110.5, -372], [110, -398], [108, -404.4], [98, -404.8], [60, -404.8], [38, -404.8], [35.6, -409], [36.6, -420.8], [45.2, -420.8], [48.7, -417.5], [52.4, -420.8], [66, -420.8], [85.2, -420.8], [88.7, -417.5], [92.4, -420.8], [97.5, -420.6], [100.4, -425], [104, -440], [106, -458], [102, -461.8], [96.6, -462],
   // the Loom: down to the cloth, across it, and up the warp to her
   [93, -505], [88, -539.8], [72, -539.8], [56, -539.8], [57.2, -520], [52, -503.4], [43, -501], [35, -503.0], [31.6, -485], [36, -469.8],
   [42.8, -458], [39.4, -443.8], [28, -443.8], [16, -443.8],
@@ -386,11 +463,16 @@ export const LIGHTS = [
   { x: 13.2, y: 2.2, r: 7, i: 1.3, c: [1.0, 0.62, 0.28], flicker: 1 },   // cottage window
   { x: 22, y: -49.6, r: 6, i: 0.7, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G1
   { x: 30, y: -72.4, r: 6, i: 0.8, c: [0.75, 0.85, 0.8], flicker: 0.2 },  // fungus G2 (moths gather)
+  { x: 21.3, y: -192.4, r: 6, i: 0.55, c: [1.0, 0.66, 0.34], flicker: 1 },  // a ferry lamp left burning on the far shore of the Mere
   { x: 34.2, y: -245.4, r: 9, i: 1.25, c: [1.0, 0.6, 0.27], flicker: 1 },  // her candle by the empty chair in the Hall
   { x: 26.4, y: -443.3, r: 6.5, i: 0.9, c: [1.0, 0.6, 0.27], flicker: 1, finale: true },  // her candle at the top of the Loom
   // the deep is not quite black: a cold breath over the Hall's chairs, lamps in the Treadles, and a grey nothing in the Loom
   { x: 18, y: -238, r: 13, i: 0.3, c: [0.7, 0.72, 0.82], flicker: 0 },
   { x: 33, y: -236, r: 13, i: 0.28, c: [0.7, 0.72, 0.82], flicker: 0 },
+  { x: 36, y: -252.5, r: 10, i: 0.34, c: [0.7, 0.72, 0.82], flicker: 0 }, { x: 18, y: -252.5, r: 10, i: 0.34, c: [0.7, 0.72, 0.82], flicker: 0 },
+  { x: 18, y: -276, r: 9, i: 0.3, c: [0.7, 0.72, 0.82], flicker: 0 }, { x: 9, y: -272, r: 9, i: 0.34, c: [0.7, 0.72, 0.82], flicker: 0 }, { x: 25, y: -273, r: 9, i: 0.36, c: [0.7, 0.72, 0.82], flicker: 0 },
+  { x: 95, y: -399, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 70, y: -398.5, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 46, y: -398.5, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 38, y: -413, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 64, y: -413, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 92, y: -413, r: 8, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 16, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 62, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 88, y: -352, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },
@@ -403,6 +485,7 @@ export const LIGHTS = [
 // ── the deep's machinery (deep.js) ─────────────────────────────────────────
 // Ropes and warp threads you can climb: hold grip next to one. [x, yBottom, yTop]
 export const ROPES = [
+  [84, -311.8, -284.0],            // the Hush: up out of the Pin Walk into H2
   [68.6, -366.2, -356.4],          // the Treadles: up out of the east ledge into the heddle corridor
   [57.4, -540, -502.4],            // the Loom: the first warp, cloth to ledge
   [31.6, -503.2, -469.4],          // the second, past the needles
@@ -410,7 +493,10 @@ export const ROPES = [
 ];
 // Hands in the Hush's earth (deep.js HAND): [x, y] near a wall, floor or roof; reach in metres.
 export const HANDS = [
-  [36, -279, 4], [57, -277, 5], [62, -279, 3.5], [69, -282.4, 2.0], [72, -279, 3.5], [77.5, -283, 2.0], [82, -276, 6], [86, -285, 2.4], [100, -282, 5],
+  [36, -279, 4], [57, -277, 5], [62, -279, 3.5], [82, -276, 6],
+  [56, -295, 7], [46, -295, 7], [38, -295, 7], [31, -295, 7], [48, -302.6, 2.2], [30, -302.6, 2.2],                 // the Slabs
+  [32, -306, 6], [44, -306, 6], [52, -306, 6], [64, -306, 6], [72, -306, 6], [50, -311.8, 2.2], [75, -311.8, 2.2], [86, -300, 3], [82, -292, 3],      // the Pin Walk, and the rope
+  [86, -285, 2.4], [100, -282, 5],
   [102, -296, 4], [96, -303, 4], [90, -315.6, 10.8], [83, -315.6, 10.8], [76, -315.6, 10.8], [68, -315.6, 10.8], [60, -315.6, 10.8], [53, -315.6, 10.8],
   [46, -315.6, 10.8], [40, -315.6, 10.8], [35, -315.6, 10.8], [27, -315.6, 10.8], [17, -320, 5],
   // up out of the floor of the long gallery
@@ -423,6 +509,10 @@ export const STAMPERS = [
   { kind: 'heddle', r: [84, -351, 86.6, -350], dir: [0, -1], dist: 7.0, per: 3.0, ph: 0.75 },
   { kind: 'heddle', r: [91, -351, 93.6, -350], dir: [0, -1], dist: 7.0, per: 3.0, ph: 1.5 },
   { kind: 'heddle', r: [98, -351, 100.6, -350], dir: [0, -1], dist: 7.0, per: 2.4, ph: 0.4 },
+  { kind: 'heddle', r: [53.4, -397.8, 56, -396.8], dir: [0, -1], dist: 7.2, per: 3.0, ph: 0.4 },
+  { kind: 'heddle', r: [47, -397.8, 49.6, -396.8], dir: [0, -1], dist: 7.2, per: 2.4, ph: 1.1 },
+  { kind: 'heddle', r: [73.5, -412, 76.1, -411], dir: [0, -1], dist: 9.0, per: 2.8, ph: 0.2 },
+  { kind: 'heddle', r: [78.2, -412, 80.8, -411], dir: [0, -1], dist: 9.0, per: 2.8, ph: 1.6 },
   { kind: 'needle', r: [4, -489.5, 5, -488.9], dir: [1, 0], dist: 28, per: 3.2, ph: 0.0 },
   { kind: 'needle', r: [4, -481.5, 5, -480.9], dir: [1, 0], dist: 28, per: 3.2, ph: 1.6 },
   { kind: 'needle', r: [4, -459.6, 5, -459.0], dir: [1, 0], dist: 40.5, per: 3.6, ph: 0.9 },

@@ -173,6 +173,8 @@ export class Audio {
     setTimeout(() => { try { B.src.stop(); B.lfo.stop(); } catch { /* already stopped */ } }, 1200);
   }
   resume() { if (this.ctx.state !== 'running') this.ctx.resume(); }
+  // the player's own balance of voices, music and everything else
+  applyMix() { const m = this.mix || {}; this.bus.voice.gain.value = m.voice ?? 1; this.bus.sfx.gain.value = 0.9 * (m.effects ?? 1); this.bus.ui.gain.value = 0.9 * (m.effects ?? 1); }
   setVolume(v) { this.volume = v; this.master.gain.setTargetAtTime(0.9 * v, this.ctx.currentTime, 0.05); }
 
   // where a sound comes from: left/right, how far, how much rock is in the way. Far sounds lose their top; sounds behind
@@ -325,8 +327,8 @@ export class Audio {
     if (this.musRest > 0 && !s.paused) { this.musRest -= dt; if (this.musRest <= 0) this._startMusic(); }
     const target = s.voice ? 0.35 : 1;
     this.duck += (target - this.duck) * Math.min(1, dt * 3);
-    this.bus.music.gain.value = 0.42 * this.duck * (s.music ?? 1);
-    this.bus.amb.gain.value = 0.8 * (0.55 + 0.45 * this.duck);
+    this.bus.music.gain.value = 0.42 * this.duck * (s.music ?? 1) * (this.mix?.music ?? 1);
+    this.bus.amb.gain.value = 0.8 * (0.55 + 0.45 * this.duck) * (this.mix?.effects ?? 1);
   }
   stopVoices() { for (const v of this.voices || []) { try { v.gn.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08); v.src.stop(this.ctx.currentTime + 0.5); } catch { /* already over */ } } }
   // voice lines play through their own element-free buffer path

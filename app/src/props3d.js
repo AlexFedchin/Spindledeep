@@ -57,6 +57,16 @@ export class Items {
       P.R = euler(H.tip * 0.8, H.spin ? t * 0.5 + bob : Math.sin(t * 0.7 + bob) * 0.5, 0);
       out.push(P);
     };
+    // her shelf, beside the door: what has been brought home, small
+    if ((W.found || []).length && vis(15.4, 2.2)) KINDS.filter((k) => k !== 'skein').forEach((kind, i) => {
+      if (!W.found.includes(kind)) return;
+      this.need(kind);
+      if (!READY.has(kind)) return;
+      const P = this.one('shelf' + i, kind), H = HOLD[kind];
+      P.at = [14.86 + (i % 4) * 0.36, 1.84 + (i < 4 ? 0.42 : 0) + 0.12, 0.2]; P.k = 0.125; P.gain = 1; P.env = 0.15; P.over = false; P.own = false; P.lights = [];
+      P.R = euler(H.tip * 0.6, Math.sin(i * 2.1) * 0.5, 0);
+      out.push(P);
+    });
     W.skeins.forEach((s, i) => { if (!s.taken) lying('s' + i, 'skein', s.x, s.y, s.bob); });
     W.secrets.forEach((s, i) => {
       if (s.taken || !s.open || W.hiddenAt(s.x, s.y + 0.2)) { if (!s.taken && Math.hypot(s.x - p.x, s.y - p.y) < 45) this.need(s.kind); return; }

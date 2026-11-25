@@ -81,6 +81,9 @@ export class Deep {
     let out = 0;
     for (const h of this.hands) if (h.st !== 'wait' && h.st !== 'back') out++;
     const free = !p.dead && !W.ending;
+    // they feel her through the ground: where she is going, while she moves. Dead still, they only have the last they felt
+    const sp = Math.hypot(p.vx, p.vy);
+    if (sp > 1.4) { this.felt = [p.vx, p.vy]; this.quiet = 0; } else this.quiet = (this.quiet || 0) + dt;
     for (const h of this.hands) {
       const dx = p.x - h.ax, dy = p.y + 0.1 - h.ay, d = Math.hypot(dx, dy);
       if (d > 26) { h.st = 'wait'; h.ext = 0; h.grab = false; continue; }
@@ -89,12 +92,15 @@ export class Deep {
       if ((nearBell || !free) && h.st !== 'wait' && !(h.grab && p.dead)) { h.st = 'back'; h.grab = false; }
       const go = (st) => { h.st = st; h.t = 0; };
       if (h.st === 'wait') {
-        if (free && !nearBell && h.cool <= 0 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + HAND.gap && out < HAND.most && d < h.reach + 0.8 && dx * h.nx + dy * h.ny > 0) { go('stir'); out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
+        if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + HAND.gap && out < HAND.most && d < h.reach + 0.8 && dx * h.nx + dy * h.ny > 0) { go('stir'); out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
       } else if (h.st === 'stir') {
         if (h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir)) {
           // aim where she will be when it gets there
           let ax = p.x, ay = p.y + 0.1;
           for (let k = 0; k < 3; k++) { const tt = Math.hypot(ax - h.ax, ay - h.ay) / HAND.lunge; ax = p.x + p.vx * tt; ay = p.y + 0.1 + (p.grounded ? 0 : clamp(p.vy * tt, -2, 2)); }
+          // she stopped: it strikes where she was heading
+          h.deaf = this.quiet > 0.03 && !!this.felt;
+          if (h.deaf) { const fx = clamp(this.felt[0] * 0.5, -2.6, 2.6); ax = p.x + (Math.abs(fx) < 1.7 ? Math.sign(fx || p.facing) * 1.7 : fx); ay = p.y; }
           h.aimD = Math.min(h.reach + 0.4, Math.hypot(ax - h.ax, ay - h.ay) + 0.3);
           const l = Math.hypot(ax - h.ax, ay - h.ay) || 1;
           h.dx = (ax - h.ax) / l; h.dy = (ay - h.ay) / l; h.ext = 0.1;
@@ -103,14 +109,15 @@ export class Deep {
         }
       } else if (h.st === 'lunge' || h.st === 'grope') {
         const lunge = h.st === 'lunge';
+        if (h.deaf && this.quiet <= 0) h.deaf = false;
         if (lunge) h.ext = Math.min(h.aimD, h.ext + dt * HAND.lunge);
         // it bends toward her: a little while it flies, more as it gropes
-        const ux = dx / (d || 1), uy = dy / (d || 1), turn = (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
+        const ux = dx / (d || 1), uy = dy / (d || 1), turn = h.deaf ? 0 : (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
         const cr = h.dx * uy - h.dy * ux, an = clamp(Math.atan2(cr, h.dx * ux + h.dy * uy), -turn, turn), cs = Math.cos(an), sn = Math.sin(an);
         [h.dx, h.dy] = [h.dx * cs - h.dy * sn, h.dx * sn + h.dy * cs];
-        if (!lunge) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
+        if (!lunge && !h.deaf) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
         if (lunge && h.ext >= h.aimD) go('grope');
-        else if (!lunge && h.t > HAND.grope) { go('back'); h.cool = HAND.cool; }
+        else if (!lunge && h.t > HAND.grope) { go('back'); h.cool = h.deaf ? 4.5 : HAND.cool; }       // one that closed on nothing gives up for a while
       } else if (h.st === 'hold') {
         // dragged to the rock it came out of
         h.ext = Math.max(0.7, h.ext - HAND.drag * dt);
@@ -123,7 +130,7 @@ export class Deep {
       const l = Math.hypot(h.dx, h.dy) || 1;
       h.tx = h.ax + h.dx / l * h.ext; h.ty = h.ay + h.dy / l * h.ext;
       if (h.st === 'hold' && free) { p.x += (h.tx - p.x) * Math.min(1, dt * 14); p.y += (h.ty - p.y) * Math.min(1, dt * 14); p.vx = p.vy = 0; p.climb = null; p._collide(W.gates); }
-      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < HAND.grab) {
+      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : HAND.grab)) {
         h.grab = true; go('hold');
         W.emit('seize', { x: p.x, y: p.y });
       }

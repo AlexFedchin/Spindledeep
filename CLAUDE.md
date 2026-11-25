@@ -108,6 +108,16 @@ object-space normals, yarn as untextured tubes, plies spun in the shader) → `p
 How each is held up: `HOLD` in props3d.js. A new keepsake needs an `item_<kind>` in build.py, a `HOLD` entry and, as a stand-in, a `KEEP` drawing.
 Faces must wind outward (bakes of inside-out faces come out black): see `flip` in `lathe`, `outward`. Nothing may glow over a held thing (emission washes it out).
 
+## The thread's machinery and the six rooms (2026-11-25)
+
+`rig.js` (rules), `drawrig.js`, `drawrooms.js` (furniture), data in `level.js`: hooks with `sink` (goes down under her, lifts a `rig` gate) or `pull` (wound in
+from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (fouls on the thread). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
+H1 → Slabs → Pin Walk → rope → H2; well ledge → bobbin's lane → lower room → the Loom's well. `LEVEL` planes their floors. Gate 0 and 1 must stay g2 and east.
+Check: `scripts/checks/rooms.mjs [frayed]` (`ONLY=name`, `TRACE=1`, `HANDS=1`). Beds of pins at floor level need the ring ~3.6 m up.
+Hands: `deaf` ones strike where she was heading (she stopped). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
+Options in `options.js` (kept in settings.json with `found`, `ended`, `best`); key bindings in input.js. Saves are v3; older ones in the deep get their thread re-laid.
+`--size=WxH` with `--smoke` tests another window shape.
+
 ## Sound (app/src/sound.js)
 
 `Sound` feels out the cave at 10 Hz (size, walls, roof, drop) and drives audio.js: four reverbs (`setSpace`), wall echoes, muffling

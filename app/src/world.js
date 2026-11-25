@@ -5,14 +5,17 @@ import { Player } from './player.js';
 import { clamp, rand, mulberry, lerp } from './util.js';
 import { buildLore, loreLights } from './props.js';
 import { Deep } from './deep.js';
+import { Rig } from './rig.js';
 import { hug } from './route.js';
 
-const BASE_YARN = 92, SKEIN_YARN = 14;
+const BASE_YARN = 92, SKEIN_YARN = 14, FRAYED = 0.8;
+export const SHELF = { x: 15.4, y: 0.55 };      // by her door: what has been brought home
 const RED = [1.0, 0.16, 0.12];
 
 export class World {
-  constructor(T) {
+  constructor(T, mode = '') {
     this.T = T;
+    this.mode = mode;                 // '' or 'frayed' (after an ending: less yarn, rings that never hang still)
     this.thread = new Thread(T);
     this.player = new Player(T);
     const snap = (e, up = 2.2) => {
@@ -25,7 +28,9 @@ export class World {
     // a swinging ring hangs from an anchor `len` above where it rests
     this.hooks = L.HOOKS.map((h) => ({ ...h, ring: 0, ...(h.sway ? { ax: h.x, ay: h.y + h.sway[0], rx: h.x, ry: h.y } : {}) }));
     this.bells = L.BELLS.map((b, i) => ({ ...snap(b), i, lit: 0, ring: 0, sway: rand(0, 6) }));
-    this.gates = L.GATES.map((g) => ({ ...g, open: 0 }));
+    this.gates = L.GATES.map((g) => ({ open: 0, ...g }));
+    // frayed: the rings of the Gallery and the Mere never hang still either (but one: the gap after it is too wide for that)
+    if (mode === 'frayed') this.hooks.forEach((h, i) => { if (i < 12 && i !== 3) { const len = 4; Object.assign(h, { sway: [len, 0.085, 3.1 + (i % 4) * 0.25, i * 1.9], ax: h.x, ay: h.y + len, rx: h.x, ry: h.y }); } });
     this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
     // hidden rooms and their keepsakes
     // `open`: the rock over it has begun to crumble (she is at the mouth of its crack); `seen`: she is inside it
@@ -67,6 +72,7 @@ export class World {
     this.ending = null;
     this.husks = [];        // the dolls you lost on the way down stay where they fell
     this.deep = new Deep(this);
+    this.rig = new Rig(this);
     this.reset();
   }
 
@@ -77,7 +83,9 @@ export class World {
     this.player.reset(L.START.x, L.START.y);
   }
 
-  get maxYarn() { return BASE_YARN + this.skeinCount * SKEIN_YARN; }
+  get maxYarn() { const y = BASE_YARN + this.skeinCount * SKEIN_YARN; return this.mode === 'frayed' ? Math.max(BASE_YARN - 1, y * FRAYED) : y; }     // (the fall into the Loom needs nearly all of a bare ball)
+  // all eight keepsakes in this run: she has sewn on the second eye, and sees further
+  get whole() { return this.secrets.every((s) => s.taken); }
   budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt; }
   yarnFrac() { return clamp(this.budgetLeft() / this.maxYarn, 0, 1); }
 
@@ -96,7 +104,7 @@ export class World {
     const p = this.player, th = this.thread;
     const ctx = { slow: this.slow ?? 1, budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
-    this.deep.pre(dt);
+    this.deep.pre(dt); this.rig.pre();
     p.update(dt, controls && !p.dead && !this.ending ? inp : blank, th, ctx);
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, this.budgetLeft(), false);
@@ -105,9 +113,11 @@ export class World {
     if (!p.dead && !this.ending && controls) this._interact(inp, dt);
     this._bells(dt);
     this._gates(dt);
+    this.still = Math.hypot(p.vx, p.vy) < 0.6 && !th.locked ? (this.still || 0) + dt : 0;
     this._moths(dt);
     this._hazards(dt);
     this.deep.update(dt);
+    this.rig.update(dt, controls && !p.dead && !this.ending ? inp : blank);
     this._pickups();
     this._memories();
     this._hintsUpdate();
@@ -132,7 +142,9 @@ export class World {
     const nearFinale = Math.hypot(this.finale.x - p.x, this.finale.y - p.y) < 2.6;
     this.nearFinale = nearFinale && this.deep.rise.done;       // the choice itself is ending.js
     if (nearFinale) { this.prompt = null; return; }
-    if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
+    const atShelf = (this.found || []).length > 0 && Math.abs(p.x - SHELF.x) < 0.9 && p.y < SHELF.y + 1.6 && p.y > SHELF.y - 0.5;
+    if (atShelf) { this.prompt = { a: 'act', t: 'Look at her shelf' }; if (inp.pressed.act) { this.emit('shelf', {}); return; } }
+    else if (peg) this.prompt = { a: 'act', t: 'Tie the thread to the peg' };
     else if (nearMend) this.prompt = { a: 'act', t: 'Mend the thread' };
     // reaching a peg ties the thread to it by itself, so a fall always sends you back to the last peg you passed
     const autoTie = peg && !nearFinale && p.grounded && !th.locked;
@@ -200,7 +212,7 @@ export class World {
       if (d < 24 && nest.spawned < nest.n) {
         nest.spawned++;
         const a = rand(0, 6.28);
-        this.moths.push({ nest, x: nest.x + Math.cos(a) * 2, y: nest.y + Math.sin(a) * 1.5, vx: 0, vy: 0, st: 'wander', t: rand(0, 5), idx: -1, flap: rand(0, 6), flee: 0, size: rand(0.85, 1.2), seed: Math.random() * 1000 });
+        this.moths.push({ nest, x: nest.x + Math.cos(a) * 2, y: nest.y + Math.sin(a) * 1.5, vx: 0, vy: 0, st: 'wander', t: rand(0, 5), idx: -1, near: 0, used: 0, flap: rand(0, 6), flee: 0, size: rand(0.85, 1.2), seed: Math.random() * 1000 });
       }
     }
     const litBells = this.bells.filter((b) => b.lit > 0.5);
@@ -214,7 +226,7 @@ export class World {
         if (m.idx < th.liveStart || m.idx >= th.n || th.dead[m.idx] || m.flee > 0) { m.st = 'wander'; m.idx = -1; }
         else {
           m.x = th.x[m.idx] + Math.sin(m.t * 3) * 0.02; m.y = th.y[m.idx] + 0.08;
-          th.wear[m.idx] += dt / 4.2;
+          th.wear[m.idx] += dt / (this.mode === 'frayed' ? 2.8 : 4.2);
           if (Math.random() < dt * 0.8) this.emit('chew', { x: m.x, y: m.y });
           if (th.wear[m.idx] >= 1) {
             th.cut(m.idx); this.emit('cut', { x: m.x, y: m.y });
@@ -241,12 +253,19 @@ export class World {
           if (d < bd && !repelled(th.x[i], th.y[i])) { bd = d; best = i; }
         }
         const dd = Math.hypot(p.x - m.x, p.y - m.y);
-        if (dd < 4 && (best < 0 || bd > 3.5) && !repelled(p.x, p.y) && !p.dead) {
+        // they come to what moves: stand still a moment and they forget her (the thread still draws them)
+        if (dd < (this.still > 1.2 ? 0.45 : Math.abs(p.vx) > 3.5 ? 5.5 : 4) && (best < 0 || bd > 3.5) && !repelled(p.x, p.y) && !p.dead) {
           tx = p.x; ty = p.y + 0.1; m.st = 'seek';
           if (dd < 0.5) { m.st = 'doll'; this.emit('mothOn', { x: m.x, y: m.y }); continue; }
         } else if (best >= 0) {
           tx = th.x[best]; ty = th.y[best] + 0.1; m.st = 'seek';
-          if (bd < 0.35) { m.st = 'land'; m.idx = best; continue; }
+          // it tries the thread first, circling it; a thread that is being shaken or swung on it cannot settle on
+          if (bd < 1.1) {
+            const shaken = Math.hypot(th.x[best] - th.ox[best], th.y[best] - th.oy[best]) > 0.012;
+            m.near = shaken ? 0 : m.near + dt;
+            if (m.near < 0.9) { tx += Math.cos(m.t * 6 + m.seed) * 0.8; ty += 0.35 + Math.sin(m.t * 6 + m.seed) * 0.45; }
+          } else m.near = 0;
+          if (bd < 0.35 && m.near > 0.9) { m.st = 'land'; m.idx = best; m.near = 0; continue; }
         } else m.st = 'wander';
       }
       if (m.flee > 0) { const a = Math.atan2(m.y - p.y, m.x - p.x); tx = m.x + Math.cos(a) * 6; ty = m.y + Math.abs(Math.sin(a)) * 4 + 2; }
@@ -265,10 +284,13 @@ export class World {
   }
   _scare(m) {
     if (m.st === 'land' || m.st === 'doll') this.emit('scatter', { x: m.x, y: m.y });
-    m.st = 'flee'; m.flee = 2.6; m.idx = -1;
+    // they get used to it: each fright soon after another keeps it away for less
+    m.used = this.time - (m.lastFright ?? -99) < 8 ? Math.min(3, m.used + 1) : 0; m.lastFright = this.time;
+    const away = 2.6 * 0.78 ** m.used;
+    m.st = 'flee'; m.flee = away; m.idx = -1; m.near = 0;
     const a = Math.atan2(m.y - this.player.y, m.x - this.player.x);
     m.vx = Math.cos(a) * 7; m.vy = Math.sin(a) * 7 + 2;
-    setTimeout(() => { if (m.st === 'flee') m.st = 'wander'; }, 2600);
+    setTimeout(() => { if (m.st === 'flee') m.st = 'wander'; }, away * 1000);
   }
 
   // ── hazards ────────────────────────────────────────────────────────────
@@ -306,7 +328,7 @@ export class World {
   }
   _die(cause) {
     const p = this.player;
-    p.dead = true; p.deadT = 0;
+    p.dead = true; p.deadT = 0; this.lost = (this.lost || 0) + 1;
     this.emit('death', { x: p.x, y: p.y, cause });
     // leave the body: floating on the ink, eaten hollow if the moths had it, otherwise lying on the floor below
     let y = p.y, kind = cause === 'moths' ? 'husknest' : 'husk';
@@ -322,7 +344,7 @@ export class World {
     p.reset(c.x + 0.6, c.y + 0.6);
     this.hurt = 0;
     for (const m of this.moths) { m.st = 'wander'; m.idx = -1; m.flee = 1.5; m.x = m.nest.x; m.y = m.nest.y; }
-    this.deep.onRespawn();
+    this.deep.onRespawn(); this.rig.onRespawn();
     this.emit('respawn', { x: p.x, y: p.y });
   }
 
@@ -339,6 +361,7 @@ export class World {
       if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9 && !this.hiddenAt(s.x, s.y + 0.2)) {
         s.taken = true;
         this.emit('keepsake', { x: s.x, y: s.y, kind: s.kind, what: s.what, text: s.text, n: this.secrets.filter((q) => q.taken).length, of: this.secrets.length });
+        if (this.whole) this.emit('allfound', { x: s.x, y: s.y });
       }
     }
   }
@@ -375,7 +398,7 @@ export class World {
       out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl, c: l.c, soft: 10 });
     }
     // the doll's own warmth
-    if (!p.dead && !this.hideDoll && !(this.snuff > 0.98)) out.push({ x: p.x, y: p.y + 0.3, r: 4.6, i: 0.9 * p.scale * (1 - (this.snuff || 0)), c: [1.0, 0.5, 0.4], soft: 12 });
+    if (!p.dead && !this.hideDoll && !(this.snuff > 0.98)) out.push({ x: p.x, y: p.y + 0.3, r: this.whole ? 6.8 : 4.6, i: (this.whole ? 1.05 : 0.9) * p.scale * (1 - (this.snuff || 0)), c: [1.0, 0.5, 0.4], soft: 12 });
     // the thread: a light every ~0.9 m along the visible polyline
     const P = th.poly, n = th.polyN;
     let acc = 0, budget = 96, lx = P[0], ly = P[1];
@@ -405,6 +428,12 @@ export class World {
     }
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
     for (const [sx0, sx1, sy] of L.SHELVES) if (vis((sx0 + sx1) / 2, sy)) out.push({ x: (sx0 + sx1) / 2, y: sy + 0.7, r: 2.8, i: 0.2, c: [0.72, 0.76, 0.88], soft: 0 });
+    for (const s of this.rig.spindles) if (vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.4, r: 3.2, i: 0.36 + 0.35 * s.v, c: s.v > 0.5 ? RED : [0.72, 0.76, 0.88], soft: 10 });
+    for (const h of this.rig.pulls) if (h.f < 1 && vis(h.x, h.y)) out.push({ x: h.x, y: h.y - 0.1, r: 2.4, i: 0.22, c: [0.85, 0.8, 0.7], soft: 10 });
+    for (const gt of this.gates) if (gt.rig && !gt.bridge && gt.open < 0.9 && vis((gt.x0 + gt.x1) / 2, gt.base)) for (const s of [-0.9, 0.9]) out.push({ x: (gt.x0 + gt.x1) / 2 + s, y: gt.base + 1.4, r: 3.6, i: 0.24, c: [0.78, 0.76, 0.8], soft: 6 });
+    const br = this.rig.gates.bridge;
+    if (br && br.x0 < br.end - 0.1 && vis(br.x0, br.y1)) out.push({ x: br.x0 + 0.4, y: br.y1 + 0.6, r: 4, i: 0.4, c: [0.85, 0.8, 0.72], soft: 8 }, { x: br.x0 + 5, y: br.y1 + 0.8, r: 4, i: 0.22, c: [0.75, 0.76, 0.82], soft: 8 });
+    for (const b of this.rig.bobbins) if (vis(b.x, b.y)) out.push({ x: b.x, y: b.y + 0.4, r: 4.2, i: 0.34, c: [0.8, 0.72, 0.62], soft: 8 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
@@ -493,7 +522,11 @@ function makeHints() {
     { x0: 14, x1: 40, y0: -84, y1: -68, keys: ['pluck'], text: 'pluck the thread · the moths fear its song', until: (w) => w.bells[0].lit > 0 },
     { x0: 4, x1: 30, y0: -122, y1: -104, keys: ['grip', 'jump'], text: 'grip in the air near an iron ring to swing · jump to let go', until: (w) => w.player.x > 40 },
     { x0: 98, x1: 118, y0: -124, y1: -110, when: (w) => w.gates[1].open < 1, text: 'the veil listens for every bell your thread has touched', keys: ['pluck'] },
-    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, pluck · if one has you, pluck to tear free', until: (w) => w.player.x > 62 },
+    { x0: 29, x1: 44, y0: -262, y1: -248, keys: ['grip'], text: 'hang from the ring and it goes down · the door goes up · swing on before it drops', until: (w) => w.player.x < 15 },
+    { x0: 4, x1: 13, y0: -284, y1: -268, when: (w) => w.rig.pulls[0].f < 1, keys: ['jump', 'grip', 'up'], text: 'catch the handle in the air · land, still holding · wind in', until: (w) => w.player.x > 24 },
+    { x0: 26, x1: 68, y0: -305, y1: -294, text: 'the spindles turn where your thread runs past them · the door wants both', until: (w) => w.player.x < 27 },
+    { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it pass · it will foul on your thread', until: (w) => w.player.x < 62 },
+    { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck', until: (w) => w.player.x > 62 },
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
     { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },

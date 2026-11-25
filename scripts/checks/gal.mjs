@@ -6,7 +6,7 @@ for(const src of (process.argv[2]?[process.argv[2]]:[]).concat(new URL('../../ap
  const {buildTerrain}=await import(src+'terrain.js'),{World}=await import(src+'world.js');const T=buildTerrain();Math.random=()=>0.5;
  const res=[];
  for(const g of GAPS){const [n,dir,sx,sy,x0,x1,ty,edge]=g;let good=0;
-  for(let rel=0.2;rel<5;rel+=0.1){const W=new World(T);W.nests.forEach(q=>q.spawned=99);W.drips.length=0;W.thread.reset(sx,sy+.4);W.thread.tie(sx,sy+.4);W.player.reset(sx,sy);for(let i=0;i<30;i++)W.update(1/120,idle,true);
+  for(let rel=0.2;rel<5;rel+=0.1){const W=new World(T,process.env.MODE||'');W.nests.forEach(q=>q.spawned=99);W.drips.length=0;W.thread.reset(sx,sy+.4);W.thread.tie(sx,sy+.4);W.player.reset(sx,sy);for(let i=0;i<30;i++)W.update(1/120,idle,true);
    let t=0,ph=0,tj=0,ok=0;for(let i=0;i<1500;i++){t+=1/120;const p=W.player,inp={axisX:dir,axisY:0,held:{},pressed:{}};
     if(ph===0&&p.coyote>.02&&(T.d(p.x+dir*.9,p.y-.6)>.3||dir*(p.x-edge)>-.9)){inp.pressed.jump=inp.held.jump=true;ph=1;tj=t;}
     if(ph===1){inp.held.jump=t-tj<.3;if(t-tj>.12)inp.held.grip=true;if(W.thread.pivots.some(q=>q.hook)){ph=2;tj=t;}}
