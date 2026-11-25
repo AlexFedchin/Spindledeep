@@ -28,6 +28,8 @@ AUTO = {}
 CONTRAST = 1.25
 OUT_W, OUT_H = 1920, 1080
 DEBUG = None
+LOCK = True
+BOIL = 1.0
 
 
 def load(path):
@@ -98,11 +100,20 @@ def world_phase(P, dep, sp_world, axis, s0=0.004):
     return d / (s0 * torch.pow(2.0, l0)), d / (s0 * torch.pow(2.0, l0 + 1)), fr
 
 
+def load_pos(fdir, f):
+    Praw = load(os.path.join(fdir, f'pos_{f:04d}.png'))[:3]
+    pf = os.path.join(fdir, f'posf_{f:04d}.png')
+    if os.path.exists(pf):
+        fine = load(pf)[:3]
+        Praw = torch.where((Praw > 0.002) & (Praw < 0.998), (torch.round(Praw * 256 - fine) + fine) / 256, Praw)
+    return Praw
+
+
 def process(fdir, f, exposure, boil, first_k=None):
     tag = f'{f:04d}'
     enc = [float(x) for x in open(os.path.join(fdir, 'encoding.txt')).read().split()]
     beauty = load(os.path.join(fdir, f'beauty_{tag}.png'))[:3] ** 2 * 16
-    Praw = load(os.path.join(fdir, f'pos_{tag}.png'))[:3]
+    Praw = load_pos(fdir, f)
     P = Praw * enc[3] + torch.tensor(enc[:3], device=dev).view(3, 1, 1)
     aux = load(os.path.join(fdir, f'aux_{tag}.png'))[:3]
     dep = torch.exp(load(os.path.join(fdir, f'depth_{tag}.png'))[0] * math.log(1001.0)) - 1
@@ -147,6 +158,7 @@ def process(fdir, f, exposure, boil, first_k=None):
     # boil: the plate is re-engraved a few times a second, lines shift slightly
     bseed = (f // boil) * 7.13
     wob = (vnoise(xx * 0.012 + bseed, yy * 0.012 - bseed) - 0.5) * 0.35 + (vnoise(xx * 0.05 - bseed, yy * 0.05) - 0.5) * 0.12
+    wob = wob * BOIL
     # tone
     lumv = (beauty_bg * torch.tensor([0.3, 0.52, 0.18], device=dev).view(3, 1, 1)).sum(0)
     if AUTO.get(fdir) is None and 'fixed' in AUTO:
@@ -161,8 +173,12 @@ def process(fdir, f, exposure, boil, first_k=None):
     # world-anchored line families, spaced by their real on-screen density so foreshortened ground and
     # sloped hills never alias: lines are iso-contours of dot(P, axis); the octave comes from the screen
     # gradient of that field; per pixel the family that reads most horizontal on screen wins
-    fw = camj['fwd'].get(str(f)) or list(camj['fwd'].values())[0]
-    fg = torch.tensor([fw[0], fw[1], 0.0], device=dev); fg = fg / fg.norm().clamp(min=1e-6)
+    # one axis for the whole shot: if it turned with the camera, the lines would sweep over everything that is far from
+    # the origin (snow outside crawled eight lines a second during a 9 degree pan, seen as flicker)
+    fws = np.array(list(camj['fwd'].values()), dtype=np.float64)[:, :2]
+    fws = fws / np.maximum(np.linalg.norm(fws, axis=1, keepdims=True), 1e-9)
+    fw = fws.mean(0) if LOCK else (camj['fwd'].get(str(f)) or list(camj['fwd'].values())[0])
+    fg = torch.tensor([float(fw[0]), float(fw[1]), 0.0], device=dev); fg = fg / fg.norm().clamp(min=1e-6)
     AZ = torch.tensor([0.0, 0.0, 1.0], device=dev)
     AX = torch.tensor([0.55, -0.4, 0.73], device=dev); AX = AX / AX.norm()
     valid = ~sky
@@ -255,7 +271,8 @@ def main():
     frames = sorted(int(os.path.basename(p)[7:11]) for p in glob.glob(os.path.join(fdir, 'beauty_*.png')))
     first = int(opts.get('first', frames[0])); last = int(opts.get('last', frames[-1]))
     exposure = float(opts.get('exposure', 1.0)); boil = int(opts.get('boil', 4))
-    global CONTRAST, DEBUG, OUT_W, OUT_H
+    global CONTRAST, DEBUG, OUT_W, OUT_H, LOCK, BOIL
+    LOCK = opts.get('lock', '1') == '1'; BOIL = float(opts.get('wobble', 1.0))
     if 'size' in opts:
         OUT_W, OUT_H = (int(x) for x in opts['size'].split('x'))
     DEBUG = opts.get('debug')

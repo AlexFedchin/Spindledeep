@@ -26,7 +26,7 @@ INK = np.array([0.045, 0.04, 0.06]); PAPER = np.array([0.91, 0.86, 0.75]); RED =
 
 # (shot, transition into this shot in frames: 0 = cut)
 FILMS = {
-    'intro': [('I1', 0), ('I2', 16), ('I3', 0), ('I4', 0), ('I5', 10), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],
+    'intro': [('I1', 0), ('I2', 16), ('I2K', 0), ('I3', 0), ('I4', 0), ('I5', 10), ('I5S', 0), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],      # shots_intro.py
     'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0), ('C5', 0)],      # shots_cut.py: the bitten ending
     'outro': [('O1', 0), ('O2', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # plates.py; hard cuts through black
 }
@@ -217,6 +217,83 @@ def breath(seconds, seed=1):
     return np.stack([x, x * 0.95], 1)
 
 
+def intro_events(cuts):
+    """every sound the shots asked for, on the film's clock: [{t, kind, vol, pan, shot, ...}]"""
+    import json
+    out = []
+    for name, _ in FILMS['intro']:
+        p = os.path.join(CACHE, 'frames', name, 'events.json')
+        if name not in cuts or not os.path.exists(p):
+            continue
+        for e in json.load(open(p)):
+            out.append({**e, 'shot': name, 't': cuts[name] / FPS + (e['f'] - 1) / FPS})
+    return sorted(out, key=lambda e: e['t'])
+
+
+def intro_sound(M, cuts, at, T, wind, wind_in):
+    """the prologue. Beds follow the picture; every other sound is an event the shot itself wrote from the numbers its
+    movement is made of (shots_intro.ev), and lands with its contact moment on that frame (foley.py). No chimes, no harp:
+    when the doll wakes there is wool, and nothing else."""
+    import foley
+    E = intro_events(cuts)
+    when = lambda kind: next((e['t'] for e in E if e['kind'] == kind), None)
+    t_open, t_shut, t_hush = when('wind_open'), when('wind_shut'), when('hush')
+    t_k, t_5s, t_6, t_8, t_9, t_t = at('I2K'), at('I5S'), at('I6'), at('I8'), at('I9'), at('TITLE')
+    # music: under the storm and the work, gone before the door shuts
+    M.add(decode('mus_title'), 1.5, 0.25, fade_in=5, fade_out=6, dur=t_shut - 0.3 - 1.5)
+    # the storm: outside / through the walls / outside at the glass / through the walls / the door / outside / the room again
+    M.bed(wind, 0, t_k, 0.95, fi=2.5, fo=0.25)
+    M.bed(wind_in, t_k - 0.2, t_5s + 0.1, 0.34, fi=0.3, fo=0.2)
+    M.bed(wind, t_5s - 0.05, t_6 + 0.1, 0.42, fi=0.25, fo=0.2)
+    M.bed(wind_in, t_6 - 0.05, t_open + 0.2, 0.45, fi=0.25, fo=0.2)
+    M.bed(wind, t_open - 0.02, t_8 + 0.6, 1.0, fi=0.3, fo=0.9)
+    M.bed(wind, t_8, t_shut + 0.06, 0.6, fi=0.6, fo=0.12)                   # through the open door
+    M.bed(wind_in, t_shut - 0.05, t_9 + 0.2, 0.6, fi=0.05, fo=0.4)
+    M.bed(decode('amb_wind', af='lowpass=f=1500'), t_9 - 0.1, t_hush + 1.2, 0.4, fi=0.3, fo=1.6)     # outside the glass, then it holds its breath
+    M.bed(decode('amb_wind', af='lowpass=f=160'), t_hush, t_t + 1.0, 0.35, fi=1.4, fo=1.0)
+    M.bed(wind, t_t + 0.6, T, 0.34, fi=1.6, fo=2.2)
+    room = crackle(t_open - t_k + 0.2)
+    M.add(room[: int((t_5s - t_k) * SR)], t_k, 0.26, fade_in=0.4, fade_out=0.15)
+    M.add(room[int((t_6 - t_k) * SR):], t_6, 0.26, fade_in=0.1, fade_out=0.2)
+    # what each place does to a sound
+    place = {**{k: dict(lo=None, hi=None, g=1.8, room=0.12) for k in ('I2K', 'I3', 'I4', 'I5')}, 'I2': dict(lo=None, hi=750, g=0.8, room=0.0), 'I5S': dict(lo=None, hi=2600, g=1.15, room=0.12), 'I7': dict(lo=None, hi=None, g=1.0, room=0.0),
+             'I9': dict(lo=None, hi=5000, g=1.15, room=0.0)}
+    count, log = {}, []
+    stem = np.zeros_like(M.buf)
+    for e in E:
+        k = e['kind']
+        if k in ('wind_open', 'wind_shut', 'hush'):
+            continue
+        if k == 'breath':
+            M.add(breath(4.2), e['t'], 0.34 * e['vol']); continue
+        if k == 'gust':
+            g = decode('amb_wind', af='highpass=f=120'); M.add(g[int(9 * SR): int(12.5 * SR)], e['t'] - 0.05, 0.9, fade_in=0.15, fade_out=2.4); continue
+        i = count.get(k, 0); count[k] = i + 1
+        c, t0, g = foley.clip(k, i, e.get('dur'))
+        pl = place.get(e['shot'], dict(lo=None, hi=None, g=1.0, room=0.14))
+        x = foley.band(c, pl['lo'], pl['hi']) if (pl['lo'] or pl['hi']) else c
+        if pl['room']:
+            n = int(0.09 * SR); y = np.zeros(len(x) + n, np.float32); y[: len(x)] = x
+            for d, gg in ((0.013, 1.0), (0.022, 0.8), (0.037, 0.55), (0.058, 0.35), (0.081, 0.2)):
+                j = int(d * SR); y[j: j + len(x)] += x[: len(y) - j] * gg * pl['room']
+            x = y
+        # no two alike
+        vary = 1.0 + 0.12 * math.sin(i * 2.4 + len(k))
+        x2 = np.stack([x, x], 1)
+        v = g * e['vol'] * pl['g'] * vary
+        M.add(x2, e['t'] - t0, v, pan=e.get('pan', 0.0))
+        i0 = int((e['t'] - t0) * SR)
+        if i0 >= 0:
+            m = min(len(x2), len(stem) - i0); stem[i0: i0 + m] += x2[:m] * v
+        log.append({'t': e['t'], 'kind': k, 'shot': e['shot'], 'f': e['f'], 'lasts': k in foley.LAST})
+    import json
+    json.dump(log, open(os.path.join(CACHE, 'intro_events.json'), 'w'), indent=0)
+    np.save(os.path.join(CACHE, 'intro_foley.npy'), stem.mean(1).astype(np.float32))
+    # the title: the thread drawn under it, as it is drawn
+    tt = at('TITLE')
+    M.add(np.stack([foley.sustained('thread_draw', 1.4, 1)] * 2, 1), tt + 0.6, 0.16, pan=0.0)
+
+
 def soundtrack(film, cuts, nframes):
     T = nframes / FPS
     M = Mix(T + 2)
@@ -224,30 +301,7 @@ def soundtrack(film, cuts, nframes):
     wind = decode('amb_wind')
     wind_in = decode('amb_wind', af='lowpass=f=550,lowpass=f=550')
     if film == 'intro':
-        M.add(decode('mus_title'), 1.5, 0.32, fade_in=5, fade_out=4, dur=at('TITLE', 1) + 3.5 - 1.5)
-        # exterior storm vs. muffled inside
-        M.bed(wind, 0, at('I3'), 0.95, fi=2.5, fo=0.4)
-        M.bed(wind_in, at('I3') - 0.4, at('I6', 50), 0.55, fi=0.4, fo=0.3)
-        M.add(crackle(at('I6', 74) - at('I3')), at('I3'), 0.5, fade_in=0.5, fade_out=0.2)
-        M.add(breath(4.2), at('I4', 48), 0.8)
-        M.add(decode('chime', rate=0.5), at('I4', 70), 0.12, fade_in=0.5)
-        M.add(decode('release'), at('I3', 62), 0.35); M.add(decode('release'), at('I3', 170), 0.35)
-        M.add(decode('tie'), at('I5', 52), 0.7)
-        M.add(decode('grip'), at('I5', 100), 0.4)
-        M.add(decode('creak', rate=1.3), at('I6', 44), 0.6, fade_out=0.4, dur=1.6)
-        M.bed(wind, at('I6', 50), at('I8'), 1.0, fi=0.5, fo=0.6)
-        M.add(decode('release', rate=0.6), at('I6', 70), 0.5)
-        step = decode('snow1')
-        for k in range(10):
-            M.add(step, at('I7', 6 + k * 13), 0.12, pan=0.3)
-        M.bed(wind_in, at('I8') - 0.6, at('TITLE'), 0.7, fi=0.6, fo=0.5)
-        M.add(decode('land', rate=0.5), at('I8', 84), 1.0)
-        M.add(decode('creak', rate=1.6), at('I8', 80), 0.45, dur=0.8, fade_out=0.3)
-        M.add(decode('harp', rate=0.75), at('I9', 46), 0.45)
-        M.add(decode('grip'), at('I9', 98), 0.5)
-        M.add(decode('harp', rate=0.5), at('TITLE', 14), 0.6)
-        M.add(decode('chime', rate=0.75), at('TITLE', 30), 0.25)
-        M.bed(wind, at('TITLE'), T, 0.35, fi=0.5, fo=2.5)
+        intro_sound(M, cuts, at, T, wind, wind_in)
     elif film == 'cut':
         # the storm lets go; water; the title's music, for the only time since; then the well, and the names
         V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')

@@ -24,6 +24,9 @@ def setattr_safe(obj, name, value):
         print('  (skip', type(obj).__name__ + '.' + name, '-', e, ')')
 
 
+ORIGIN = V((0, 0, 0))     # the position pass is written from here (EEVEE keeps it in half floats: 1 mm steps at 1-2 m from zero, 16 mm at 20 m)
+
+
 def new_scene(frames, out_dir, w=1280, h=720, samples=16, preview=False, pos_lo=(-80, -60, -45), pos_size=200.0):
     """Every pass is written as a 16-bit PNG with a known encoding (no EXR reader needed downstream):
     beauty = sqrt(rgb / 16), normal = n*0.5+0.5, pos = (P - lo) / size, depth = ln(1+d) / ln(1001), aux raw.
@@ -87,7 +90,13 @@ def new_scene(frames, out_dir, w=1280, h=720, samples=16, preview=False, pos_lo=
         return cb.outputs[0]
     normal = per_channel(rl.outputs['Normal'], (1.0, 1.0, 1.0), 0.5)
     lo = pos_lo
-    pos = per_channel(rl.outputs['pos'], (-lo[0], -lo[1], -lo[2]), 1.0 / pos_size)
+    pos = per_channel(rl.outputs['pos'], [ORIGIN[i] - lo[i] for i in range(3)], 1.0 / pos_size)
+    # and again as the fraction of a 1/256 of the box, so that 16 bits do not step either (post.py puts the two together)
+    sp_ = nt.nodes.new('CompositorNodeSeparateColor'); nt.links.new(pos, sp_.inputs[0])
+    cb_ = nt.nodes.new('CompositorNodeCombineColor')
+    for i in range(3):
+        nt.links.new(math1(math1(sp_.outputs[i], 'MULTIPLY', 256.0), 'FRACT', 0.0), cb_.inputs[i])
+    posf = cb_.outputs[0]
     d = math1(math1(math1(rl.outputs['Depth'], 'ADD', 1.0), 'LOGARITHM', math.e), 'DIVIDE', math.log(1001.0))
     cc = nt.nodes.new('CompositorNodeCombineColor')
     for i in range(3):
@@ -101,7 +110,7 @@ def new_scene(frames, out_dir, w=1280, h=720, samples=16, preview=False, pos_lo=
     fo.format.color_depth = '16'
     fo.format.compression = 15
     fo.file_slots.clear()
-    for slot, src in (('beauty_', beauty), ('normal_', normal), ('pos_', pos), ('aux_', rl.outputs['aux']), ('depth_', cc.outputs[0])):
+    for slot, src in (('beauty_', beauty), ('normal_', normal), ('pos_', pos), ('posf_', posf), ('aux_', rl.outputs['aux']), ('depth_', cc.outputs[0])):
         fo.file_slots.new(slot)
         nt.links.new(src, fo.inputs[slot])
     r.filepath = os.path.join(out_dir, 'preview_')
@@ -165,7 +174,8 @@ def _aov(nt, out_node, aux):
     """every material writes its world position and its aux mask into the AOV passes"""
     geo = nt.nodes.new('ShaderNodeNewGeometry')
     a1 = nt.nodes.new('ShaderNodeOutputAOV'); a1.aov_name = 'pos'
-    nt.links.new(geo.outputs['Position'], a1.inputs['Color'])
+    so = nt.nodes.new('ShaderNodeVectorMath'); so.operation = 'SUBTRACT'; so.name = 'posorg'; so.inputs[1].default_value = ORIGIN
+    nt.links.new(geo.outputs['Position'], so.inputs[0]); nt.links.new(so.outputs[0], a1.inputs['Color'])
     a2 = nt.nodes.new('ShaderNodeOutputAOV'); a2.aov_name = 'aux'
     if isinstance(aux, (tuple, list)):
         a2.inputs['Color'].default_value = (*aux, 1)
@@ -442,14 +452,14 @@ def flicker(lamp, base, amount=0.25, speed=1.0, seed=0):
 # ── snow: thousands of camera-facing streaks rebuilt every frame from a closed-form wind ─────────
 class Snow:
     def __init__(self, name, n, box_min, box_max, wind=(7.0, 0.0, -1.6), gust=0.45, streak=0.035, width=0.012,
-                 cam=None, tgt=None, material=None, seed=3, still=False):
+                 cam=None, tgt=None, material=None, seed=3, still=False, near=1.2):
         rng = np.random.default_rng(seed)
         self.n = n; self.lo = np.array(box_min, float); self.hi = np.array(box_max, float)
         self.p0 = self.lo + rng.random((n, 3)) * (self.hi - self.lo)
         self.var = 0.75 + rng.random((n, 1)) * 0.5
         self.wob = rng.random((n, 3)) * TAU
         self.wind = np.array(wind, float); self.gust = gust; self.streak = streak; self.width = width
-        self.cam, self.tgt, self.still = cam, tgt, still
+        self.cam, self.tgt, self.still, self.near = cam, tgt, still, near
         self.size = rng.random((n, 1)) * 0.8 + 0.6
         me = bpy.data.meshes.new(name)
         verts = np.zeros((n * 4, 3)); faces = [(i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3) for i in range(n)]
@@ -487,7 +497,11 @@ class Snow:
         side /= np.linalg.norm(side, axis=1, keepdims=True) + 1e-6
         dist = np.linalg.norm(p - camp[None, :], axis=1, keepdims=True)
         # flakes right at the lens get thin (they would be out of focus), the closest vanish
-        w = self.width * self.size * 0.5 * np.clip(dist / 8.0, 0.2, 1.0) * (dist > 1.2)
+        w = self.width * self.size * 0.5 * np.clip(dist / 8.0, 0.2 * min(1.0, self.near / 1.2), 1.0) * (dist > self.near)
+        if getattr(self, 'front', None) is not None:       # nothing beyond the front it has blown to yet
+            w = w * (p[:, :1] < self.front(frame))
+        if getattr(self, 'keep', None) is not None:
+            w = w * self.keep(p)[:, None]
         a = p; b = p - d * L
         verts = np.empty((self.n, 4, 3))
         verts[:, 0] = a + side * w; verts[:, 1] = b + side * w; verts[:, 2] = b - side * w; verts[:, 3] = a - side * w
@@ -652,56 +666,133 @@ def woodpile(name, x0, x1, y0, y1, z, seed, mats):
     return objs
 
 
+DOLL_BODY = ((0, 0, 0.11), (0.075, 0.065, 0.09))          # centre and radii, in the doll's own frame: act.py's hands close on these
+DOLL_HEAD = ((0, 0, 0.245), (0.085, 0.078, 0.08))
+DOLL_NECK = (0, 0, 0.185)
+
+
+def doll_ring(normal, off, lift, n=72, start=0.0):
+    """points round the doll's body where the plane (normal, shifted by off along it) cuts it, `lift` off the wool; and
+    the outward direction at each"""
+    c, r = V(DOLL_BODY[0]), DOLL_BODY[1]
+    nn = V(normal).normalized()
+    u = nn.cross(V((0, 1, 0))).normalized(); w = nn.cross(u)
+    out = []
+    for i in range(n):
+        th = start + i / n * TAU
+        d = u * math.cos(th) + w * math.sin(th)
+        o = nn * off
+        A = sum((d[k] / r[k]) ** 2 for k in range(3)); B = 2 * sum(o[k] * d[k] / r[k] ** 2 for k in range(3)); C = sum((o[k] / r[k]) ** 2 for k in range(3)) - 1
+        t = (-B + math.sqrt(max(0, B * B - 4 * A * C))) / (2 * A)
+        q = o + d * t
+        g = V([q[k] / r[k] ** 2 for k in range(3)]).normalized()
+        out.append((c + q + g * lift, g))
+    return out
+
+
+def _ribbon_band(name, normal, half, lift, material, n=72):
+    """a flat band lying on the doll's body, in the plane through its middle with this normal"""
+    edges = [doll_ring(normal, off, up, n) for off, up in ((-half, -0.001), (-half, lift), (half, lift), (half, -0.001))]
+    verts = [edges[k][i][0] for i in range(n) for k in range(4)]
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n
+        for k in range(3):
+            faces.append((i * 4 + k, j * 4 + k, j * 4 + k + 1, i * 4 + k + 1))
+    return mesh_obj(name, verts, faces, material, smooth=True)
+
+
 def doll(name, loc=(0, 0, 0), scale=1.0, mats=None, pose='stand'):
     """the yarn doll: knitted head and body, button eye and a cross-stitched one, ribbon sash, coat patch,
-    mitten hands, felt feet, a tuft of yarn loops. ~0.34 m tall at scale 1. Returns (root, parts dict)."""
+    mitten hands (a thumb each), felt feet, a tuft of yarn loops. ~0.34 m tall at scale 1. The head turns on 'headpiv',
+    the arms on 'arm*' (rest (0, -s*0.35, 0): hanging a little out), the thumbs on 'mthumb*'. The soles are at z = -0.014.
+    The engraving's lines are tied to it (stick), so they go with it when it is moved. Returns (root, parts dict)."""
     m = mats
     root = empty(name, loc)
     root.scale = (scale, scale, scale)
     P = {}
 
-    def part(o, key=None):
-        parent(o, root, keep=False)
+    def part(o, key=None, to=None):
+        parent(o, to or root, keep=False)
         if key:
             P[key] = o
         return o
-    body = part(prim('sphere', name + '_body', loc=(0, 0, 0.11), scale=(0.075, 0.065, 0.09), material=m['wool_grey'], segments=32, ring_count=16), 'body')
-    head = part(prim('sphere', name + '_head', loc=(0, 0, 0.245), scale=(0.085, 0.078, 0.08), material=m['wool_grey'], segments=32, ring_count=16), 'head')
+    neck = V(DOLL_NECK)
+    hp = part(empty(name + '_headpiv', neck), 'headpiv')
+
+    def face(o, key=None):
+        o.location = V(o.location) - neck
+        return part(o, key, hp)
+    part(prim('sphere', name + '_body', loc=DOLL_BODY[0], scale=DOLL_BODY[1], material=m['wool_grey'], segments=96, ring_count=48), 'body')
+    face(prim('sphere', name + '_head', loc=DOLL_HEAD[0], scale=DOLL_HEAD[1], material=m['wool_grey'], segments=64, ring_count=32), 'head')
     # coat-sleeve patch on the chest
-    part(prim('cube', name + '_patch', loc=(0.02, -0.06, 0.125), rot=(0.25, 0, 0.1), scale=(0.028, 0.006, 0.026), material=m['coat']))
+    part(prim('cube', name + '_patch', loc=(0.02, -0.058, 0.125), rot=(0.25, 0, 0.1), scale=(0.026, 0.005, 0.024), material=m['coat']))
     # ribbon sash across the body, bow at the hip
-    sash = part(prim('torus', name + '_sash', loc=(0, 0, 0.11), rot=(0.0, 0.5, 0), major_radius=0.074, minor_radius=0.008, material=m['ribbon']))
-    sash.scale = (1.0, 0.88, 1.0)
+    part(_ribbon_band(name + '_sash', (math.sin(0.5), 0, math.cos(0.5)), 0.0075, 0.0012, m['ribbon']), 'sash')
     for s in (-1, 1):
-        part(prim('sphere', name + f'_bow{s}', loc=(0.07, -0.02 + s * 0.022, 0.07), scale=(0.012, 0.022, 0.016), material=m['ribbon'], segments=12, ring_count=8))
-        part(prim('cube', name + f'_tail{s}', loc=(0.075, -0.02 + s * 0.012, 0.045), rot=(s * 0.25, 0.1, 0), scale=(0.004, 0.009, 0.026), material=m['ribbon']))
+        part(prim('sphere', name + f'_bow{s}', loc=(0.068, -0.026 + s * 0.02, 0.068), scale=(0.008, 0.02, 0.014), material=m['ribbon'], segments=16, ring_count=10))
+        part(prim('cube', name + f'_tail{s}', loc=(0.07, -0.026 + s * 0.011, 0.046), rot=(s * 0.25, 0.1, 0), scale=(0.002, 0.008, 0.024), material=m['ribbon']))
     # button eye (four holes) and a cross-stitched eye
-    be = part(prim('cyl', name + '_btn', loc=(-0.03, -0.074, 0.255), rot=(math.pi / 2, 0, 0), scale=(0.018, 0.018, 0.004), material=m['button'], vertices=24), 'eye')
+    face(prim('cyl', name + '_btn', loc=(-0.03, -0.074, 0.255), rot=(math.pi / 2, 0, 0), scale=(0.018, 0.018, 0.004), material=m['button'], vertices=32), 'eye')
+    face(prim('torus', name + '_btnrim', loc=(-0.03, -0.078, 0.255), rot=(math.pi / 2, 0, 0), major_radius=0.0155, minor_radius=0.0018, material=m['button']))
     for k in range(4):
         a = k * TAU / 4 + 0.785
-        part(prim('cyl', name + f'_hole{k}', loc=(-0.03 + math.cos(a) * 0.007, -0.0785, 0.255 + math.sin(a) * 0.007), rot=(math.pi / 2, 0, 0), scale=(0.0022, 0.0022, 0.002), material=m['ribbon'], vertices=8))
+        face(prim('cyl', name + f'_hole{k}', loc=(-0.03 + math.cos(a) * 0.0055, -0.0785, 0.255 + math.sin(a) * 0.0055), rot=(math.pi / 2, 0, 0), scale=(0.002, 0.002, 0.002), material=m['ribbon'], vertices=10))
     for s in (-1, 1):
-        part(prim('cube', name + f'_x{s}', loc=(0.03, -0.075, 0.255), rot=(math.pi / 2, s * 0.785, 0), scale=(0.002, 0.016, 0.002), material=m['ribbon']))
+        face(prim('cube', name + f'_x{s}', loc=(0.03, -0.075, 0.255), rot=(math.pi / 2, s * 0.785, 0), scale=(0.002, 0.016, 0.002), material=m['ribbon']))
     # stitched mouth
     for k in range(3):
-        part(prim('cube', name + f'_m{k}', loc=(-0.012 + k * 0.012, -0.076, 0.212 + (0.003 if k == 1 else 0)), rot=(math.pi / 2, 0, 0), scale=(0.005, 0.0015, 0.0015), material=m['wool_dark']))
+        face(prim('cube', name + f'_m{k}', loc=(-0.012 + k * 0.012, -0.0742, 0.212 + (0.003 if k == 1 else 0)), rot=(math.pi / 2, 0, 0), scale=(0.005, 0.0015, 0.0015), material=m['wool_dark']))
     # tuft of yarn loops
-    tuft = part(empty(name + '_tuft', (0, 0, 0.32)), 'tuft')
+    tuft = face(empty(name + '_tuft', (0, 0, 0.32)), 'tuft')
     for k in range(3):
         t = prim('torus', name + f'_loop{k}', loc=(0, 0, 0.0), rot=(math.pi / 2, 0, (k - 1) * 0.5), major_radius=0.018, minor_radius=0.004, material=m['wool_grey'])
         t.location = ((k - 1) * 0.012, 0, 0.012)
         parent(t, tuft, keep=False)
     # arms and mitten hands, legs and felt feet
     for s in (-1, 1):
-        arm = part(empty(name + f'_arm{s}', (s * 0.07, 0, 0.16)), f'arm{s}')
-        a = prim('cyl', name + f'_armm{s}', loc=(0, 0, -0.04), scale=(0.018, 0.018, 0.045), material=m['wool_grey'], vertices=12)
-        parent(a, arm, keep=False)
-        h = prim('sphere', name + f'_hand{s}', loc=(0, 0, -0.09), scale=(0.024, 0.02, 0.026), material=m['wool_dark'], segments=16, ring_count=10)
-        parent(h, arm, keep=False)
-        arm.rotation_euler = (0, s * 0.35, 0)
-        leg = part(prim('cyl', name + f'_leg{s}', loc=(s * 0.032, 0, 0.03), scale=(0.02, 0.02, 0.035), material=m['wool_grey'], vertices=12))
-        part(prim('sphere', name + f'_foot{s}', loc=(s * 0.034, -0.012, 0.0), scale=(0.026, 0.034, 0.014), material=m['felt'], segments=16, ring_count=8))
+        arm = part(empty(name + f'_arm{s}', (s * 0.062, 0, 0.162)), f'arm{s}')
+        parent(prim('cyl', name + f'_armm{s}', loc=(0, 0, -0.038), scale=(0.0165, 0.0165, 0.038), material=m['wool_grey'], vertices=24), arm, keep=False)
+        parent(prim('sphere', name + f'_sh{s}', scale=(0.0165, 0.0165, 0.0165), material=m['wool_grey'], segments=24, ring_count=12), arm, keep=False)
+        parent(prim('sphere', name + f'_hand{s}', loc=(0, 0, -0.09), scale=(0.019, 0.023, 0.026), material=m['wool_dark'], segments=24, ring_count=14), arm, keep=False)
+        th = empty(name + f'_mthumb{s}', (0, -0.014, -0.078)); parent(th, arm, keep=False); P[f'mthumb{s}'] = th
+        parent(prim('sphere', name + f'_mthumbm{s}', loc=(0, -0.006, -0.01), scale=(0.0085, 0.0085, 0.016), material=m['wool_dark'], segments=16, ring_count=10), th, keep=False)
+        th.rotation_euler = (-0.5, 0, 0)
+        arm.rotation_euler = (0, -s * 0.35, 0)
+        part(prim('cyl', name + f'_leg{s}', loc=(s * 0.032, 0, 0.03), scale=(0.02, 0.02, 0.035), material=m['wool_grey'], vertices=20))
+        part(prim('sphere', name + f'_foot{s}', loc=(s * 0.034, -0.012, 0.0), scale=(0.026, 0.034, 0.014), material=m['felt'], segments=24, ring_count=12))
+    stick(root, root)
+    stick(hp, hp)
+    for s in (-1, 1):
+        stick(P[f'arm{s}'], P[f'arm{s}'])
     return root, P
+
+
+def stick(top, ref, offset=(0, 0, 0)):
+    """tie the engraving to a thing that moves: the line fields of everything under `top` are read in `ref`'s own frame
+    (plus where it starts), so the lines go with it instead of sliding over it. Later calls override earlier ones."""
+    bpy.context.view_layer.update()
+    off = ref.matrix_world.translation.copy() + V(offset)
+    todo = [top]
+    while todo:
+        o = todo.pop()
+        todo.extend(o.children)
+        if o.type != 'MESH':
+            continue
+        for slot in o.material_slots:
+            if not slot.material:
+                continue
+            base = slot.material.get('stick_of', slot.material.name)
+            name = f'{base}@{ref.name}'
+            if name not in bpy.data.materials:
+                c = slot.material.copy(); c.name = name; c['stick_of'] = base
+                nt = c.node_tree
+                a = nt.nodes.get('posorg')
+                if a:
+                    tc = nt.nodes.new('ShaderNodeTexCoord'); tc.object = ref
+                    ad = nt.nodes.new('ShaderNodeVectorMath'); ad.operation = 'ADD'; ad.inputs[1].default_value = off
+                    nt.links.new(tc.outputs['Object'], ad.inputs[0]); nt.links.new(ad.outputs[0], a.inputs[0])
+            slot.material = bpy.data.materials[name]
 
 
 def _folded_frustum(name, r0, r1, z0, z1, folds=11, depth=0.06, sx=1.0, sy=1.0, n=48, rings=10, material=None, seed=0, gap=None):

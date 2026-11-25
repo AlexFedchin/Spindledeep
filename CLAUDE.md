@@ -149,7 +149,7 @@ film shows; keep its content out of pages and summaries.
   finished mp4: it catches whole seconds that stills at round frames miss.
 - Blender 4.2.3 portable lives in `scripts/cine/.cache/blender-4.2.3-windows-x64/` (ignored by git).
 - `lib.py` (materials, doll, knitter, snow, threads), `sets.py` (exterior, interior, Loom, shaft),
-  `shots.py` (one function per shot, `INTRO`/`OUTRO` lists, per-shot post exposure).
+  `shots.py` (the retired epilogue, review stills, `INTRO`/`OUTRO` lists), `shots_intro.py` (the prologue).
 - Render: `blender -b -P scripts/cine/render.py -- <shot> [--preview] [--still=F]` writes 16-bit PNG
   passes (sqrt beauty, normal, encoded world position, aux masks, log depth) to `.cache/frames/<shot>`.
 - Grade: `<art venv>/python scripts/cine/post.py <frames> <out> --exposure=E` turns passes into the
@@ -173,6 +173,19 @@ film shows; keep its content out of pages and summaries.
 - Review stills K1/K2/K3 in shots.py (not in either film) show the model: `render.py -- K2 --preview --still=1`.
 - EEVEE Next gotchas: a world volume swallows the sun (use `lib.fog_box`); compositor colour inputs clamp
   negatives (offsets go through math nodes).
+
+## The prologue, second staging (2026-11-25)
+
+Shots are in `shots_intro.py` (I1 I2 I2K I3 I4 I5 I5S I6 I7 I8 I9), render with `render_intro.sh`, stills with `pv.sh SHOT f,f,f`. Rules from the user:
+hands touch what they hold (never inside, never hovering) and the doll moves with them; she walks; **every camera move is linear** (`camera()`: no easing, no
+hand-held drift); every sound is exactly on its movement; no magic sounds (no harp/chimes) anywhere in it.
+- `act.py`: `Hand.grasp/close/pinch/rod_grip` fit her own skin to a distance field (fingers closed joint by joint), `Hold` bolts the hand to the thing,
+  `Actor.arm` places a hand exactly (world matrix), `Walk` plants footsteps. Check with `touch.py -- <shot> 1` (gap in mm per hold, arm too short, wrists, feet).
+- Sounds: shots call `ev(frame, kind, ...)`, `render.py` writes `events.json`, `foley.py` makes each kind (contact moment `t0` found in the recording),
+  `edit.py intro` mixes, `synccheck.py` measures the film. Change a movement's timing and its `ev` together: both use the same variables.
+- `post.py`: line fields are tied to one axis per shot (they swept when the camera panned); position pass is written from `lib.ORIGIN` (near the subject: EEVEE keeps
+  it in half floats) plus a fine pass `posf`. Moving things carry their lines (`lib.stick`, `restp` on the knitter). Outdoors move the camera sideways: pushing toward
+  the snow strobes. Snow strokes must be as long as a frame's flight (`streak` 0.04).
 
 ## The knitter model (2026-11-23)
 

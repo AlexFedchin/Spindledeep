@@ -66,6 +66,10 @@ def _material(d, aov):
         pass
     nt.links.new(b.outputs['BSDF'], out.inputs['Surface'])
     aov(nt, out, (0, 0, 0))
+    # the engraving is drawn on her, not on the air she moves through: her lines are read off where each point of her
+    # stands at rest (an attribute kept on the mesh), so they go with her cloth and skin
+    at = nt.nodes.new('ShaderNodeAttribute'); at.attribute_type = 'GEOMETRY'; at.attribute_name = 'restp'
+    nt.links.new(at.outputs['Vector'], nt.nodes['posorg'].inputs[0])
     return m
 
 
@@ -114,6 +118,11 @@ def build(name, loc, seated, lib):
         if 'Tongue' in o.name or 'Teeth' in o.name:
             o.hide_render = True                     # behind closed lips; they only poke through when the jaw moves
     arm.hide_render = True
+    bpy.context.view_layer.update()
+    for o in meshes:
+        rp = o.data.attributes.new('restp', 'FLOAT_VECTOR', 'POINT')
+        mw = o.matrix_world
+        rp.data.foreach_set('vector', [c for v in o.data.vertices for c in (mw @ v.co)])
     bpy.context.view_layer.update()
     Wr = {b.name: arm.matrix_world @ b.matrix_local for b in arm.data.bones}
     pos = {k: m.translation.copy() for k, m in Wr.items()}

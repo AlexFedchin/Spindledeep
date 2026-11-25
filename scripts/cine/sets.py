@@ -274,7 +274,7 @@ def spinning_wheel(name, loc, mats, spin_frames=None, red=False):
     return root, wheel
 
 
-def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitter_on=True, doll_pose='lying', red_shawl=False):
+def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitter_on=True, doll_pose='lying', red_shawl=False, table=(0.28, 1.12), table_x=None, spool=(0.62, 0.85, 0.79)):
     """a corner of the cottage: the window wall (y=0, facing +Y into the room), a table under the window,
     the door in the left wall, a shelf and the spinning wheel"""
     mats = M()
@@ -304,6 +304,7 @@ def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitt
     for (lx, lz, sx, sz) in [(0, 1.0, 0.68, 0.05), (0, 2.0, 0.68, 0.05), (-0.62, 1.5, 0.05, 0.5), (0.62, 1.5, 0.05, 0.5), (0, 1.5, 0.02, 0.5), (0, 1.5, 0.6, 0.02)]:
         prim('cube', 'iframe', loc=(lx, 0.02, lz), scale=(sx, 0.05, sz), material=mats['darkwood'])
     R['sill'] = prim('cube', 'isill', loc=(0, 0.16, 0.97), scale=(0.75, 0.16, 0.03), material=mats['darkwood'])
+    prim('cube', 'iapron', loc=(0, 0.0, 0.89), scale=(0.72, 0.12, 0.06), material=mats['darkwood'])      # closes the gap between the sill and the log under it
     # outside the window: night (snow streaks, a far ridge) or morning (bright snow)
     if night:
         prim('plane', 'outside', loc=(0, -14, 2), rot=(math.pi / 2, 0, 0), scale=(30, 12, 1), material=lib.mat('outside', (0.02, 0.025, 0.035), rough=1.0, emit=(0.02, 0.025, 0.04), estr=0.6))
@@ -318,18 +319,23 @@ def interior(sc, cam, tgt, night=True, outside_snow=True, candle_lit=True, knitt
         sun = light('SUN', 'sun', (0, -5, 5), 6.0, color=(1.0, 0.8, 0.58), size=math.radians(1.0), rot=(math.radians(62), 0, math.radians(165)))
         light('AREA', 'skywin', (0, -0.8, 1.6), 30, color=(0.85, 0.9, 1.0), size=1.2, rot=(math.radians(90), 0, 0))
     # table under the window
-    prim('cube', 'table', loc=(0, 0.7, 0.76), scale=(0.85, 0.42, 0.03), material=mats['plank'])
-    for (x, y) in [(-0.78, 0.35), (0.78, 0.35), (-0.78, 1.05), (0.78, 1.05)]:
+    ty0, ty1 = table                       # the table's depth (the prologue's is a narrow work table she can lean across)
+    tx0, tx1 = table_x or (-0.85, 0.85)
+    prim('cube', 'table', loc=((tx0 + tx1) / 2, (ty0 + ty1) / 2, 0.76), scale=((tx1 - tx0) / 2, (ty1 - ty0) / 2, 0.03), material=mats['plank'])
+    for (x, y) in [(tx0 + 0.07, ty0 + 0.07), (tx1 - 0.07, ty0 + 0.07), (tx0 + 0.07, ty1 - 0.07), (tx1 - 0.07, ty1 - 0.07)]:
         prim('cube', 'tleg', loc=(x, y, 0.37), scale=(0.035, 0.035, 0.37), material=mats['darkwood'])
     R['candle'] = lib.candle('candle', (0.42, 0.55, 0.79), mats, height=0.13, lit=candle_lit, energy=7.0 if night else 0.0, seed=2) if candle_lit else lib.candle('candle', (0.42, 0.55, 0.79), mats, height=0.05, lit=False)
     # scraps: a coat sleeve, the ribbon, scissors, spool of red thread, a needle
-    sl = prim('cyl', 'sleeve', loc=(-0.45, 0.75, 0.82), rot=(math.pi / 2, 0, 0.6), scale=(0.05, 0.035, 0.2), material=mats['coat'], vertices=16)
+    sl = prim('cyl', 'sleeve', loc=(-0.45, 0.75, 0.82) if table_x is None else (0.78, 0.6, 0.825), rot=(math.pi / 2, 0, 0.6), scale=(0.05, 0.035, 0.2), material=mats['coat'], vertices=16)
     lib.curve_obj('ribbon_loose', [(-0.62, 0.45, 0.795), (-0.5, 0.52, 0.80), (-0.42, 0.42, 0.795), (-0.3, 0.5, 0.80), (-0.22, 0.46, 0.795)], bevel=0.0, material=mats['ribbon'])
     rb = bpy.data.objects['ribbon_loose']; rb.data.extrude = 0.008
+    if table_x is not None:
+        rb.location = (1.1, -0.07, 0.0)
+    sy = 0.0 if ty1 > 1 else -0.2
     for s in (-1, 1):
-        prim('cube', f'scissor{s}', loc=(0.12, 0.95, 0.795), rot=(0, 0, 0.4 + s * 0.12), scale=(0.07, 0.006, 0.002), material=mats['iron'])
-        prim('torus', f'sring{s}', loc=(0.05 + s * 0.012, 0.92 - s * 0.012, 0.795), major_radius=0.014, minor_radius=0.003, material=mats['iron'])
-    spool = empty('spool', (0.62, 0.85, 0.79))
+        prim('cube', f'scissor{s}', loc=(0.12, 0.95 + sy, 0.795), rot=(0, 0, 0.4 + s * 0.12), scale=(0.07, 0.006, 0.002), material=mats['iron'])
+        prim('torus', f'sring{s}', loc=(0.05 + s * 0.012, 0.92 + sy - s * 0.012, 0.795), major_radius=0.014, minor_radius=0.003, material=mats['iron'])
+    spool = empty('spool', spool)
     for z in (0.0, 0.07):
         e = prim('cyl', f'spool_end{z}', loc=(0, 0, z + 0.005), scale=(0.03, 0.03, 0.005), material=mats['plank'], vertices=20); parent(e, spool, keep=False)
     w = prim('cyl', 'spool_red', loc=(0, 0, 0.04), scale=(0.024, 0.024, 0.032), material=mats['red'], vertices=20); parent(w, spool, keep=False)

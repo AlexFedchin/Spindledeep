@@ -39,11 +39,20 @@ for f in range(sc.frame_start, sc.frame_end + 1):
     t = lib.eval_fc(tgt, 'location', f, tgt.location) if tgt else c + lib.V((0, 1, 0))
     fwd[f] = list(t - c)
 json.dump({'sensor': cam.data.sensor_width, 'lens': lens, 'fwd': fwd, 'w': sc.render.resolution_x}, open(os.path.join(out, 'camera.json'), 'w'))
+import shots_intro  # noqa: E402
+json.dump(shots_intro.EVENTS, open(os.path.join(out, 'events.json'), 'w'), indent=0)     # what the soundtrack hears, frame by frame
+if 'events' in opts:
+    print('EVENTS', shot, len(shots_intro.EVENTS), flush=True); sys.exit(0)
 if 'frames' in opts:
     a, b = opts['frames'].split('-'); sc.frame_start, sc.frame_end = int(a), int(b)
 if 'still' in opts:
     f = int(opts['still'])
     sc.frame_start = sc.frame_end = f
+if 'stills' in opts:                                       # several frames from one build
+    for f in (int(x) for x in opts['stills'].split(',')):
+        sc.frame_start = sc.frame_end = f
+        bpy.ops.render.render(animation=True)
+    print('RENDERED', shot, opts['stills'], flush=True); sys.exit(0)
 if 'save' in opts:
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out, shot + '.blend'))
 bpy.ops.render.render(animation=True)

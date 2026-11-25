@@ -3,7 +3,7 @@
 cd "$(dirname "$0")/../.."
 B=scripts/cine/.cache/blender-4.2.3-windows-x64/blender.exe
 PY=scripts/art/.cache/venv/Scripts/python.exe
-SH=${@:-I1 I2 I3 I4 I5 I6 I7 I8 I9 E1 E2 E3 E4 E5 E6 E7}
+SH=${@:-E1 E2 E3 E4 E5 E6 E7}
 for s in $SH; do
   F=$($PY -c "import re;src=open('scripts/cine/shots.py').read();import sys
 m=re.search(r'def $s\(out, preview\):.*?new_scene\((\d+)',src,re.S);print(int(m.group(1))*2//3)")

@@ -1,0 +1,249 @@
+<title>By Hand: the opening film</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    .screen { max-width: 1040px; margin: 34px auto 18px; }
+    .screen video, .solo video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000; border: 1px solid var(--rule); }
+    .solo.wide { max-width: 680px; }
+    video:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    .reveal-cap { margin-top: 10px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the opening film</div>
+    <h1>By Hand</h1>
+    <p class="tag">her hands on the wool<span></span>her boots in the snow</p>
+  </header>
+
+  <div class="col summary">
+    <p>The opening film has been staged again, 85 seconds in all. She knits stitch by stitch, sews the eye on, ties the thread, carries the doll to the sill and sets it down. Her hands rest on what they hold, she walks on her own legs, every camera moves in a straight line at one speed, and each sound is placed by the same numbers that move the picture.</p>
+  </div>
+
+  <div class="screen"><video controls playsinline preload="metadata" poster="img/sill_after.jpg"><source src="vid/prologue_720.mp4" type="video/mp4"></video>
+    <p class="reveal-cap">The whole film, with sound</p></div>
+
+  <h2>The knitting</h2>
+  <p class="ask">make more detailed moves in the knitting scene</p>
+  <div class="col">
+    <figure class="solo wide"><video muted loop playsinline autoplay preload="metadata" poster="img/knit.jpg"><source src="vid/knit.mp4" type="video/mp4"></video><figcaption>A new shot: the needle in, the yarn round, the loop through, the old one off.</figcaption></figure>
+    <ul class="what">
+      <li><b>One stitch has four moves,</b> and each is a different movement of needle, wrist or forefinger. The piece hangs from the needles loop by loop and swings a little behind her hands.</li>
+      <li><b>The eye is sewn on properly.</b> The needle goes in under the button, her fingers let go and take it by the point on the other side, and the red thread is drawn through and pulled tight. Her left hand holds the head and the doll gives with each tug.</li>
+    </ul>
+    <div class="reveal">
+      <img src="img/eye_before.jpg" alt="Before: hands hovering beside the doll">
+      <img class="after" src="img/eye_after.jpg" alt="After: one hand cups the head, the other works the needle">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-eye" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>Hands that touch</h2>
+  <p class="ask">make sure the hands are touching the doll, not inside, not hovering, but touching, and the dolls moves together with hands</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/lift_before.jpg" alt="Before: one hand inside the doll, one beside it">
+      <img class="after" src="img/lift_after.jpg" alt="After: both hands closed on its sides">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lift" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>Her skin is now fitted to the wool. The palm is brought up until it meets the surface, then every finger closes joint by joint until its own skin does, and the thumb last. After that the hand is fixed to the doll, so they move as one thing. In the old film one hand floated 5 cm away and the other was sunk 6 cm into the doll.</p>
+    <div class="chart"><p class="legend"><span><i style="background:#a99f8c"></i>before, left hand</span><span><i style="background:repeating-linear-gradient(90deg,#a99f8c 0 5px,transparent 5px 9px)"></i>before, right hand</span><span><i style="background:#d8262c"></i>now, both hands</span></p>
+<svg viewBox="0 0 640 250" role="img" aria-label="Millimetres between her hands and the doll while she lifts it"><line x1="46" x2="628" y1="28.7" y2="28.7" stroke="#2c2832" stroke-width="1"/><text x="38" y="32.7" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+60</text><line x1="46" x2="628" y1="72.9" y2="72.9" stroke="#2c2832" stroke-width="1"/><text x="38" y="76.9" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+30</text><line x1="46" x2="628" y1="117.0" y2="117.0" stroke="#a99f8c" stroke-width="1"/><text x="38" y="121.0" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">+0</text><line x1="46" x2="628" y1="161.1" y2="161.1" stroke="#2c2832" stroke-width="1"/><text x="38" y="165.1" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">-30</text><line x1="46" x2="628" y1="205.3" y2="205.3" stroke="#2c2832" stroke-width="1"/><text x="38" y="209.3" fill="#a99f8c" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">-60</text><text x="87.6" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">0 s</text><text x="212.3" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">0.5 s</text><text x="337.0" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">1 s</text><text x="461.7" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">1.5 s</text><text x="586.4" y="242" fill="#a99f8c" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">2 s</text><polyline points="46.0,42.1 87.6,45.5 129.1,45.5 170.7,45.9 212.3,46.7 253.9,47.1 295.4,46.8 337.0,45.8 378.6,44.0 420.1,41.4 461.7,38.3 503.3,34.7 544.9,31.7 586.4,29.2 628.0,27.7" fill="none" stroke="#a99f8c" stroke-width="2" /><polyline points="46.0,201.2 87.6,205.6 129.1,205.6 170.7,205.9 212.3,206.2 253.9,205.6 295.4,202.8 337.0,197.8 378.6,191.3 420.1,183.7 461.7,175.4 503.3,167.6 544.9,160.7 586.4,155.4 628.0,152.0" fill="none" stroke="#a99f8c" stroke-width="2" stroke-dasharray="5 4"/><line x1="46.0" x2="628.0" y1="117.9" y2="117.9" stroke="#d8262c" stroke-width="3"/></svg></div>
+    <p class="reveal-cap">Millimetres between skin and doll while she lifts it; below zero is inside</p>
+    <div class="tablebox"><table class="windows"><tr><th>What she holds</th><th>Frames</th><th>Skin to surface, the whole hold</th></tr>
+      <tr><td>Knitting needles</td><td class="n">156</td><td class="n">&minus;0.6 mm</td></tr>
+      <tr><td>The doll&rsquo;s head while sewing</td><td class="n">210</td><td class="n">&minus;0.8 mm</td></tr>
+      <tr><td>The sewing needle, whenever it is pinched</td><td class="n">&ndash;</td><td class="n">&minus;1.3 to +0.1 mm</td></tr>
+      <tr><td>The thread she pulls tight</td><td class="n">93</td><td class="n">&minus;0.1 to +0.1 mm</td></tr>
+      <tr><td>The doll, lifted from the table</td><td class="n">73</td><td class="n">&minus;0.8 to &minus;0.4 mm</td></tr>
+      <tr><td>The doll, set on the sill</td><td class="n">126</td><td class="n">&minus;0.8 to &minus;0.4 mm</td></tr>
+      <tr><td>Her hand on its head</td><td class="n">29</td><td class="n">&minus;0.8 to &minus;0.5 mm</td></tr>
+      <tr><td>The lantern&rsquo;s handle</td><td class="n">416</td><td class="n">&minus;0.7 mm</td></tr></table></div>
+    <p class="reveal-cap">Nearest point of the hand to what it holds; the wool gives up to 0.8 mm</p>
+    <figure class="solo wide"><video muted loop playsinline autoplay preload="metadata" poster="img/sill_after.jpg"><source src="vid/sill.mp4" type="video/mp4"></video><figcaption>The sill is a shot of its own now. Before, the film cut from the lift to the doll already standing there.</figcaption></figure>
+  </div>
+
+  <h2>She walks</h2>
+  <p class="ask">when the knitter exits the house she should be actually walking, not just flowing</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/walk_before.jpg" alt="Before: a stiff figure gliding over the snow">
+      <img class="after" src="img/walk_after.jpg" alt="After: mid-stride, in profile, with footprints behind her">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-walk" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <figure class="solo wide"><video muted loop playsinline autoplay preload="metadata" poster="img/walk_after.jpg"><source src="vid/walk.mp4" type="video/mp4"></video><figcaption>Seen from the side, to the lip of the pit and down its steps.</figcaption></figure>
+    <ul class="what">
+      <li><b>Each foot is planted</b> and stays where it was put until its heel lifts. Hips drop, sway and turn over the standing leg. The furthest any foot falls short of its footprint is 0.0 mm.</li>
+      <li><b>At the door</b> she stops, lays her palm on it and pushes; the wind takes it out of her hand. The snow comes in only after that.</li>
+      <li><b>Outside</b> she leaves prints, the lantern swings with her steps, and she goes down stone steps into the pit instead of sinking.</li>
+    </ul>
+    <div class="reveal">
+      <img src="img/door_before.jpg" alt="Before: she slides through the doorway">
+      <img class="after" src="img/door_after.jpg" alt="After: she steps out over the threshold">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-door" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>The flicker</h2>
+  <p class="ask">there is also some flickeing seen outside when she exits. Fix it.</p>
+  <div class="col">
+    <p>There were five causes, and each has been dealt with.</p>
+    <ul class="what">
+      <li><b>The light in the doorway.</b> It stood where she walks, so her own body shut it off and the picture blinked dark for a moment. It now comes from above the eaves.</li>
+      <li><b>Lines that turned with the camera.</b> The engraved lines on the snow followed the camera&rsquo;s heading and crawled whenever it panned. They are fixed to the ground now.</li>
+      <li><b>Lines strobing.</b> Pushing toward the snow swept the lines past faster than 24 frames can show. Outside, the camera now tracks sideways along them, so they stand still.</li>
+      <li><b>Coarse positions.</b> Out by the pit, positions were stored in steps of up to 16 mm, which broke the lines into crawling dashes. They are stored finely now, in every shot.</li>
+      <li><b>Blinking flakes.</b> A flake&rsquo;s stroke was shorter than the way it flies in one frame. It is as long now.</li>
+    </ul>
+    <div class="tablebox"><table class="windows"><tr><th>Shot</th><th>Flicker before</th><th>Now</th></tr><tr><td>Her way to the pit</td><td class='n'>28.9</td><td class='n'>13.5</td></tr><tr><td>The door</td><td class='n'>20.9</td><td class='n'>13.7</td></tr><tr><td>The opening storm</td><td class='n'>38.3</td><td class='n'>23.5</td></tr><tr><td>The window from outside</td><td class='n'>34.5</td><td class='n'>20.4</td></tr><tr><td>Lifting the doll</td><td class='n'>22.8</td><td class='n'>10.7</td></tr><tr><td>The doll alone</td><td class='n'>18.2</td><td class='n'>11.6</td></tr><tr><td>The waking</td><td class='n'>16.3</td><td class='n'>4.3</td></tr></table></div>
+    <p class="reveal-cap">Average back-and-forth change per pixel (0 to 255), falling snow included</p>
+    <p>By the pit, measured only where no flakes fall, flicker went from 64 to 9 at full size.</p>
+  </div>
+
+  <h2>The camera</h2>
+  <p class="ask">in every shot the camera movement should not have an ease-in-out smoothing, it should be just linear</p>
+  <div class="col">
+    <p>All eleven moves run in a straight line at one speed from the first frame to the last, and the hand-held drift is gone. Within any shot, the fastest and slowest frames differ by at most 0.003 mm. This covers the opening film only.</p>
+  </div>
+
+  <h2>The sound</h2>
+  <p class="ask">All the sounds should play in perfect sync with the movements. Also the magic sounds when the doll starts to move it super cringe, replace it pls</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>The film&rsquo;s 138 sounds are written by the movement itself.</b> When a needle meets the other, a heel lands or the doll&rsquo;s feet reach the sill, the shot notes that frame, and the moment of contact inside the recording is laid on it.</li>
+      <li><b>Checked in the finished file:</b> 0.0 ms between sound and picture all the way through. Of the 68 struck sounds that stand clear of their neighbours, 64 land within one frame (42 ms) of their movement and 59 within half a frame. The other four are faint needle strokes heard through the window, which begin under the end of the sound before.</li>
+      <li><b>No more harp and chimes.</b> When the doll wakes, the storm outside drops away and all that is left is wool: a stuffed neck being turned, an arm, then the mitten closing on the thread and the thread coming tight. The title&rsquo;s chimes and the one at the candle are gone too.</li>
+      <li><b>New recordings,</b> all CC0: knitting with metal needles, a needle going through cloth, wool, an old cottage door, a shed latch and an oil lantern.</li>
+    </ul>
+    <div class="reveal">
+      <img src="img/wake_before.jpg" alt="Before: the doll in profile">
+      <img class="after" src="img/wake_after.jpg" alt="After: the doll behind the glass, its mitten on the thread">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-wake" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The film</b><span><code>app/assets/cine/intro.mp4</code></span></div>
+    <div><b>The shots</b><span><code>scripts/cine/shots_intro.py</code></span></div>
+    <div><b>Hands and feet</b><span><code>scripts/cine/act.py</code>, checked by <code>touch.py</code></span></div>
+    <div><b>Sounds</b><span><code>scripts/cine/foley.py</code>, checked by <code>synccheck.py</code></span></div>
+    <div><b>Render</b><span><code>scripts/cine/render_intro.sh</code>, stills with <code>pv.sh</code></span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/W7jrYmxMZJTfqAj1wYvMeW">rough</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>
