@@ -28,16 +28,16 @@ export class Stage {
       if (th.reach) { F.hollow = 1; th.hands = null; out.push(poseReach(F, th.reach)); }
       else { F.hollow = th.hollow ?? 0.9; out.push(poseKneel(F, th, t)); th.hands = mix3(F.p('handL'), F.p('handR'), 0.5); th.hands = add(th.hands, [0.06 * th.k, -0.02 * th.k, 0]); }
     }
-    if (cr && cr.on && cam[1] < -430 && vis(cr.x, cr.y, 12)) {
-      // on the back wall, belly to it, climbing; the head turned right round to look whenever it stops
-      const F = this.wall;
-      F.hollow = 1; F.gain = 0.9; F.D = 22;
-      const look = (this._l = lerp(this._l ?? 0, cr.look, Math.min(1, dt * 4)));
-      out.push(poseClimb(F, this.c2, { s: cr.y + 1.5, k: 4.0, path: (s) => [cr.x + Math.sin(s * 0.35) * 0.4, s, -1.2], out: () => [0, 0, 1], rear: 0, lift: 0.28, step: 0.85, spread: 0.42,
-        neck: 0.45 + look * 0.35, look, head: 1.2, mouth: 0.4 + 1.0 * look, twitch: cr.jerk, quick: 9, jump: this._cy === undefined || Math.abs(cr.y - this._cy) > 4 }, dt, t));
-      F.lights = [{ x: cr.x + 2.5, y: cr.y + 5, z: 2.5, r: 10, i: 0.55, c: [0.75, 0.8, 1] }];
-      this._cy = cr.y;
-    } else this._cy = undefined;
+    if (cr && cr.on && cam[1] < -430 && vis(cr.x, cr.y, 8)) {
+      // hand over hand along her own thread, belly up to it; the head turned right round to look whenever it stops
+      const F = this.wall, look = (this._l = lerp(this._l ?? 0, cr.look, Math.min(1, dt * 4)));
+      F.hollow = 1; F.gain = 0.95; F.D = 22;
+      const path = (s) => { const [x, y] = W.deep.alongThread(s); return [x, y, 0.5]; };
+      out.push(poseClimb(F, this.c2, { s: cr.s, k: 1.75, path, out: () => [0, 0, 1], rear: 0.1, lift: 0.22, step: 0.8, spread: 0.12,
+        neck: 0.55 + look * 0.9, look, head: 1.15, mouth: 0.4 + 1.1 * look, twitch: cr.jerk, quick: 9, jump: cr.snap }, dt, t));
+      cr.snap = false;
+      F.lights = [{ x: cr.x + 1.4, y: cr.y + 2.4, z: 2.0, r: 6, i: 0.6, c: [0.75, 0.8, 1] }];
+    }
     return out;
   }
 }

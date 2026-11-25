@@ -17,6 +17,13 @@ const WET = { brink: 0.12, throat: 1.0, gardens: 0.72, gallery: 1.25, mere: 1.2,
 // what happens on its own, by area: [group, seconds between (min, max), level, rate (min, max), metres away (min, max), where]
 // where: 'air' in the open, 'wall' on a face of rock, 'rock' inside it (heard through it), 'floor', 'roof', 'far' a direction only
 const LIFE = {
+  // the rooms the thread opens
+  weighing: [['pan', 5, 13, 0.16, 0.8, 1.1, 5, 14, 'roof'], ['chain', 16, 34, 0.1, 0.7, 0.9, 6, 14, 'air'], ['floor', 14, 30, 0.2, 0.7, 1.0, 5, 12, 'floor', 'shy']],
+  pews: [['chair', 8, 20, 0.2, 0.6, 0.85, 5, 14, 'floor', 'shy'], ['cloth', 14, 30, 0.12, 0.7, 0.9, 5, 12, 'floor', 'shy'], ['wood', 18, 40, 0.16, 0.5, 0.7, 8, 16, 'wall']],
+  slabs: [['cloth', 7, 17, 0.14, 0.6, 0.85, 4, 11, 'roof'], ['scratch', 11, 26, 0.18, 0.6, 0.8, 3, 8, 'rock'], ['trickle', 14, 30, 0.2, 0.5, 0.7, 3, 9, 'roof']],
+  pins: [['pin', 3, 9, 0.2, 0.8, 1.3, 3, 12, 'roof'], ['pin', 5, 13, 0.16, 0.5, 0.7, 3, 10, 'floor', 'shy'], ['scratch', 16, 34, 0.16, 0.5, 0.7, 4, 9, 'rock']],
+  lane: [['clack', 6, 15, 0.22, 0.75, 1.1, 6, 16, 'wall'], ['loomwork', 14, 30, 0.26, 0.7, 0.95, 10, 22, 'rock'], ['timber', 14, 30, 0.26, 0.7, 1.0, 6, 16, 'wall']],
+  lower: [['clack', 9, 22, 0.18, 0.5, 0.75, 8, 18, 'wall'], ['ratch', 12, 28, 0.12, 0.6, 0.8, 8, 18, 'rock'], ['loomwork', 16, 34, 0.22, 0.6, 0.85, 10, 22, 'rock'], ['chain', 18, 40, 0.14, 0.6, 0.8, 8, 16, 'air']],
   brink: [['twig', 14, 30, 0.18, 0.7, 1.0, 8, 18, 'far'], ['st_snow', 12, 26, 0.3, 0.6, 0.8, 5, 14, 'far']],
   throat: [['trickle', 9, 20, 0.4, 0.75, 1.1, 5, 15, 'wall'], ['stones', 16, 34, 0.35, 0.8, 1.1, 8, 20, 'wall'], ['groan', 35, 70, 0.22, 0.8, 1.1, 14, 24, 'rock'],
     ['tick', 6, 15, 0.22, 0.8, 1.3, 4, 12, 'wall'], ['rumble', 70, 140, 0.28, 0.8, 1.0, 20, 30, 'far']],
@@ -42,6 +49,17 @@ const GROUND = {
   wood: ['st_wood', 0.5, 'st_board', 0.2, 'ld_wood'],
   soft: ['st_soft', 0.5, null, 0, 'ld_soft'],
 };
+
+// which of the thread's rooms this is, if any
+function roomAt(x, y) {
+  if (x < 46 && y < -249 && y > -264) return 'weighing';
+  if (x < 32 && y <= -264 && y > -287) return 'pews';
+  if (x > 8 && x < 71 && y < -287 && y > -304.4) return 'slabs';
+  if (x > 8 && x < 90 && y <= -304.4 && y > -313.5) return 'pins';
+  if (x > 33 && x < 102 && y < -396 && y > -407.5) return 'lane';
+  if (x > 20 && x < 100 && y <= -407.5 && y > -423) return 'lower';
+  return null;
+}
 
 export class Sound {
   constructor(A) {
@@ -180,7 +198,7 @@ export class Sound {
 
   // ── things that happen on their own ─────────────────────────────────────
   _life(dt, W, p, area) {
-    const A = this.A, list = LIFE[area];
+    const A = this.A, list = LIFE[roomAt(W.player.x, W.player.y) || area];
     if (!list || p.dead || W.ending || (W.intro && !W.intro.done) || W.showcase) return;
     if (area === 'loom' && (W.deep.rise.on || p.y < -528 || p.y > -452)) return;     // its floor, its climb and its top keep their own silence
     for (const e of list) {

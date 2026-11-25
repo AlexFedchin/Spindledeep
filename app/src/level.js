@@ -164,6 +164,14 @@ export const OPS = [
   ['fill', B(46, -506, 56, -503.6, 0.5)],      // a ledge at the top of the first warp
   ['fill', B(30, -505.6, 39.6, -503.2, 0.5)],     // and one past the swinging ring (level with the first: a swing can't climb)
   ['fill', B(33.5, -472.4, 42, -470, 0.5)],
+  ['fill', B(34.4, -489.8, 39.2, -488, 0.4)],     // N1: off the top of the second warp, eastward
+  ['fill', B(50.4, -489, 54, -487, 0.4)],         // N2
+  ['fill', B(59.6, -488.8, 64.4, -486.6, 0.4)],   // N3
+  ['fill', B(80, -486, 88, -484, 0.4)],           // N4
+  ['fill', B(41.6, -473.4, 49.4, -471.4, 0.4)],   // the machine's floor, west of its gap
+  ['fill', B(55, -473.8, 84.6, -471.4, 0.4)],     // and east of it
+  ['carve', B(64.1, -472.9, 65.9, -470, 0.15)], ['carve', B(72.1, -472.9, 73.9, -470, 0.15)],     // gutters
+  ['fill', B(44.6, -465.6, 85.4, -463.6, 0.4)],   // its roof
   ['fill', B(0, -450.4, 40, -444, 0.8)],       // the breast beam
   ['carve', B(3, -444.1, 44, -424.5, 2.4)],    // and the high dark place above it
 
@@ -199,12 +207,23 @@ export const OPS = [
   // the Shoe: a crawl at the far end of the Treadles' west ledge
   ['carve', T([[13.2, -365.4, 0.6], [9.5, -365.45, 0.6], [6.6, -365.25, 0.62]])],
   ['carve', E(3.9, -364.4, 2.6, 1.55)],
+  // the Tally: across the shaft past the Weighing Room's door, on a ledge
+  ['fill', B(3.4, -262.4, 5.7, -259.2, 0.3)],
+  ['carve', T([[5.6, -258.1, 0.85], [4.2, -258.4, 0.62], [2.8, -258.2, 0.62]])],
+  ['carve', E(2.7, -257.6, 1.9, 1.45)],
+  // the Held Breath: a crawl at the west end of the Pin Walk, away from the pins
+  ['carve', T([[21.4, -311.55, 0.62], [18.4, -311.5, 0.6], [15.4, -311.3, 0.62]])],
+  ['carve', E(12.8, -310.8, 3.0, 1.6)],
+  // the Cut: a crawl behind the first pole of the lower room
+  ['carve', T([[33.6, -420.4, 0.62], [30.2, -420.35, 0.6], [27.6, -420.15, 0.62]])],
+  ['carve', E(25.0, -419.4, 3.0, 1.6)],
   ...SHELVES.map(([x0, x1, y]) => ['fill', B(x0, y - 0.55, x1, y, 0.22)]),
 ];
 
 // erosion stays calm in these rects [x0, y0, x1, y1] so the narrow cracks keep their shape
 export const QUIET = [
-  [1, -446, 46, -436],
+  [0.4, -262, 9.4, -255.6], [9, -313.4, 22, -308.4], [21.4, -422, 34.4, -417.4],
+  [1, -446, 46, -436], [41, -475, 86, -462], [33, -491, 90, -482],
   [0.5, -5.2, 12.8, 3.0], [74, -17.2, 89.6, -12.3], [0.4, -86.8, 12.6, -79.2], [1.2, -118.2, 13.2, -113.8],
   [109.8, -157.6, 119.6, -152.6], [57.6, -244.8, 73.8, -240.0],
   [0.4, -327.2, 18.6, -322.0], [0.4, -367.2, 14.6, -362.0],
@@ -223,6 +242,7 @@ export const LEVEL = [
   [22, 88, -312.2],                                                                      // the Pin Walk
   [39.8, 65.0, -405], [67.0, 75.0, -405], [77, 85, -405], [87, 103, -405],               // the bobbin's lane
   [34, 99, -421],
+  [34.8, 39.0, -488], [50.6, 53.8, -487], [59.8, 64.2, -486.6], [80.2, 87.8, -484], [42.0, 49.2, -471.4], [55.2, 64.1, -471.4], [65.9, 72.1, -471.4], [73.9, 84.4, -471.4],
   [18.5, 22.1, -194.2],      // the Mere's west shore, where the last jump lands
 ];
 
@@ -304,6 +324,11 @@ export const PEGS = [
   { x: 39.5, y: -421 },     // 41: the lower room
   { x: 66, y: -421 },       // 42: past the pulled door
   { x: 83, y: -421 },       // 43: before the last ring
+  { x: 38.2, y: -488 },     // 44: N1
+  { x: 52, y: -487 },       // 45: N2
+  { x: 82.6, y: -484 },     // 46: N4
+  { x: 83.6, y: -471.4 },   // 47: the machine
+  { x: 56.4, y: -471.4 },   // 48: past the bobbin
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
@@ -323,6 +348,9 @@ export const HOOKS = [
   { x: 38.7, y: -308.7 }, { x: 58.7, y: -308.7, sway: [2.6, 0.1, 3.2, 0.6] },
   { x: 48.7, y: -417.5, sway: [4, 0.1, 3.2, 1.0] },
   { x: 60.5, y: -418.4, pull: { dx: -4.0, gate: 'w2' } },
+  { x: 57.0, y: -484.4, sway: [5, 0.1, 3.2, 0.4] },
+  { x: 80.6, y: -468.6, pull: { dx: 2.6, gate: 'w4', speed: 1.7 } },
+  { x: 52.2, y: -469.0, sink: { dist: 1.0, gate: 'w5' } },
   { x: 88.7, y: -417.5, sink: { dist: 1.1, gate: 'w3' } },
 ];
 
@@ -350,6 +378,11 @@ export const GATES = [
   { id: 'h1', rig: true, spindles: true, dir: -1, x0: 28.2, x1: 28.9, y0: -303, y1: -295.4 },
   { id: 'w2', rig: true, x0: 69.6, x1: 70.3, y0: -421, y1: -411.8 },
   { id: 'w3', rig: true, x0: 94.6, x1: 95.3, y0: -421, y1: -411.8 },
+  { id: 'w4', rig: true, x0: 77.2, x1: 77.9, y0: -471.4, y1: -465.5 },
+  { id: 'w5', rig: true, x0: 45.4, x1: 46.1, y0: -471.4, y1: -465.5 },
+  // strips of the cloth: one tears away a moment after she lands on it
+  { id: 'strip1', give: true, x0: 40.9, x1: 43.1, y0: -487.9, y1: -487.5 }, { id: 'strip2', give: true, x0: 45.4, x1: 48.2, y0: -487.5, y1: -487.1 },
+  { id: 'strip3', give: true, x0: 66.6, x1: 68.8, y0: -486.4, y1: -486.0 }, { id: 'strip4', give: true, x0: 71.2, x1: 73.4, y0: -485.7, y1: -485.3 }, { id: 'strip5', give: true, x0: 75.7, x1: 77.9, y0: -485.1, y1: -484.7 },
 ];
 
 // Hidden rooms (`r` is the room's ellipse, entered once for its title) and the keepsake each one hides.
@@ -371,6 +404,12 @@ export const SECRETS = [
     text: "A pattern for a doll, in her hand. At the bottom, underlined twice: 'Sew the mouth shut, so it can tell it nothing. No name, so it can't be called.'" },
   { name: 'The Shoe', hide: [0.3, -367.0, 8.6, -361.8], r: [3.9, -364.4, 2.6, 1.55], x: 3.4, y: -365.8, kind: 'shoe', what: "a child's shoe",
     text: "Very small and very old. A child fell down the well, before the cottage was built. She called for her mother for three days. On the fourth day, something else began to call." },
+  { name: 'The Tally', hide: [0.3, -260.4, 4.3, -255.6], r: [2.6, -257.6, 1.8, 1.4], x: 2.4, y: -258.8, kind: 'weight', what: 'an iron weight',
+    text: 'Filed down at the base, a little at a time, until it weighed exactly what a name weighs. There are forty-one scratches round it. The last is new.' },
+  { name: 'The Held Breath', hide: [9.0, -313.2, 19.6, -308.6], r: [12.8, -310.8, 3.0, 1.6], x: 12.2, y: -312.0, kind: 'tag', what: "a child's luggage tag",
+    text: 'The name has been cut out of it, very neatly, by somebody who loved her. It was too late. It had already been read aloud.' },
+  { name: 'The Cut', hide: [21.4, -421.8, 31.6, -417.2], r: [25.0, -419.4, 3.0, 1.6], x: 24.4, y: -420.6, kind: 'scissors', what: 'embroidery scissors',
+    text: 'One point snapped off. She meant to cut her own thread on the way down, and sat here a long time with them open. It asked her, in her mother\'s voice, to wait.' },
 ];
 
 export const SKEINS = [
@@ -402,7 +441,7 @@ export const SPINDLES = [
   { x: 54.2, y: -300.1, r: 0.95, gate: 'h1' }, { x: 37.6, y: -302.3, r: 0.95, gate: 'h1' },
 ];
 // A bobbin as big as a cart rolls between x0 and x1 on a floor at y. It fouls on a thread across its way.
-export const BOBBINS = [{ x0: 63, x1: 93.5, y: -405, r: 1.25, speed: 5.2 }];
+export const BOBBINS = [{ x0: 63, x1: 93.5, y: -405, r: 1.25, speed: 5.2 }, { x0: 58.6, x1: 75.4, y: -471.4, r: 1.25, speed: 5.6 }];
 
 // The knitter's grey thread: from her door, down through the deep, to her chair. Knots hold her voice.
 export const GREY = [
@@ -424,7 +463,8 @@ export const GREY = [
   [25.6, -365.8], [29.1, -363.6], [34, -366.3], [41.0, -364.0], [47, -365.8], [53.1, -363.6], [58, -365.8], [66, -365.8], [68.4, -358],
   [70, -358], [90, -358], [108, -358], [110.5, -372], [110, -398], [108, -404.4], [98, -404.8], [60, -404.8], [38, -404.8], [35.6, -409], [36.6, -420.8], [45.2, -420.8], [48.7, -417.5], [52.4, -420.8], [66, -420.8], [85.2, -420.8], [88.7, -417.5], [92.4, -420.8], [97.5, -420.6], [100.4, -425], [104, -440], [106, -458], [102, -461.8], [96.6, -462],
   // the Loom: down to the cloth, across it, and up the warp to her
-  [93, -505], [88, -539.8], [72, -539.8], [56, -539.8], [57.2, -520], [52, -503.4], [43, -501], [35, -503.0], [31.6, -485], [36, -469.8],
+  [93, -505], [88, -539.8], [72, -539.8], [56, -539.8], [57.2, -520], [52, -503.4], [43, -501], [35, -503.0], [31.6, -495], [32.2, -487], [36.6, -487.8], [42, -487.3], [46.6, -486.9], [52, -486.8], [57, -484.4], [62, -486.4], [67.6, -485.8], [72.3, -485.1], [76.8, -484.5], [84, -483.8], [86.6, -477], [84, -471.2],
+  [74.6, -471.2], [65, -471.2], [56, -471.2], [52.2, -469.0], [48.4, -471.2], [42.6, -471.2], [38, -469.8],
   [42.8, -458], [39.4, -443.8], [28, -443.8], [16, -443.8],
 ];
 
@@ -442,6 +482,10 @@ export const MEMORIES = [
   { id: 'm8', x: 66, y: -282.4, text: "Hush now, little one. Hush. Don't pluck your thread down here... they don't like the noise. Be quiet, and they'll let you by." },
   { id: 'm9', x: 61.4, y: -365.8, line: 'm9', thread: 'old', text: "Mama? I fell down the well. It's dark. Mama, there's something down here with me. It says everything I say." },
   { id: 'm10', x: 67.6, y: -539.8, text: "This is the last of me, little one. I told you, don't follow. 'Never let go of the thread...' that part was not my voice. It can't climb. It needs one thread, from here to the top, and you have brought it one. When it begs you with my voice, bite your thread in two. I never gave you a name. So it can never call you." },
+  // in the rooms the thread opens (at the end of the list: saves keep them by their place in it)
+  { id: 'm11', x: 10.4, y: -280.8, text: "They sat in rows down here, little one, and said them aloud. The names of everyone they had lost. They thought that they were praying." },
+  { id: 'm12', x: 47.4, y: -302.8, text: 'When it moves in the walls, be still. I was still for a whole winter, once. It sat beside me the whole time.' },
+  { id: 'm13', x: 43.6, y: -420.8, text: 'I can hear you coming down. Such small feet. ...I never gave you feet that make a sound.' },
 ];
 // her chair in the Hall of Chairs: empty, her candle still burning beside it
 export const CHAIR = { x: 32.6, y: -246.2 };
@@ -485,10 +529,11 @@ export const LIGHTS = [
 // ── the deep's machinery (deep.js) ─────────────────────────────────────────
 // Ropes and warp threads you can climb: hold grip next to one. [x, yBottom, yTop]
 export const ROPES = [
-  [84, -311.8, -284.0],            // the Hush: up out of the Pin Walk into H2
+  [84, -312.3, -284.0],            // the Hush: up out of the Pin Walk into H2
   [68.6, -366.2, -356.4],          // the Treadles: up out of the east ledge into the heddle corridor
   [57.4, -540, -502.4],            // the Loom: the first warp, cloth to ledge
-  [31.6, -503.2, -469.4],          // the second, past the needles
+  [31.6, -503.2, -486.8],          // the second, past the needles
+  [86.6, -484.0, -469.2],          // the third, at the far side
   [42.4, -470, -443.0],            // the last, beside the breast beam
 ];
 // Hands in the Hush's earth (deep.js HAND): [x, y] near a wall, floor or roof; reach in metres.
@@ -514,12 +559,15 @@ export const STAMPERS = [
   { kind: 'heddle', r: [73.5, -412, 76.1, -411], dir: [0, -1], dist: 9.0, per: 2.8, ph: 0.2 },
   { kind: 'heddle', r: [78.2, -412, 80.8, -411], dir: [0, -1], dist: 9.0, per: 2.8, ph: 1.6 },
   { kind: 'needle', r: [4, -489.5, 5, -488.9], dir: [1, 0], dist: 28, per: 3.2, ph: 0.0 },
-  { kind: 'needle', r: [4, -481.5, 5, -480.9], dir: [1, 0], dist: 28, per: 3.2, ph: 1.6 },
+  { kind: 'needle', r: [4, -497.0, 5, -496.4], dir: [1, 0], dist: 28, per: 3.2, ph: 1.6 },
   { kind: 'needle', r: [4, -459.6, 5, -459.0], dir: [1, 0], dist: 40.5, per: 3.6, ph: 0.9 },
 ];
 // The dark that rises after you in the Loom: wakes when you leave peg `peg` (24) and her last words are over (`after` s),
 // stops at peg `stop` (28). `lag`: it is never further below you than this.
-export const RISE = { x0: 4, x1: 116, y0: -540, y1: -446, speed: 1.5, peg: 24, stop: 28, delay: 4.0, back: 12, after: 31, lag: 24 };
+export const RISE = { x0: 4, x1: 116, y0: -540, y1: -446, peg: 24, stop: 28, delay: 3.0, back: 12, after: 31,
+  // from each pole: how fast it comes (m/s), and how far below her it can be left. In between it gathers itself and heaves (`surge`)
+  legs: { 24: [1.7, 17], 25: [1.2, 14], 26: [1.2, 13], 44: [0.42, 12], 45: [0.42, 12], 46: [0.62, 11], 47: [0.3, 10], 48: [0.34, 10], 27: [1.3, 13] },
+  surge: { every: 8.5, warn: 1.1, len: 0.8, k: 4.2 } };
 // the called, standing on the floor of the Loom: [x, picture, height]
 export const CALLED = [
   [85.6, 0, 1.9], [83.9, 3, 1.75], [82.2, 2, 1.5], [80.1, 1, 1.95], [78.4, 0, 1.7], [76.0, 3, 1.9], [74.6, 2, 1.85], [69.4, 1, 1.9], [67.9, 0, 1.35], [66.0, 3, 1.8],

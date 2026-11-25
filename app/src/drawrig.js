@@ -15,6 +15,7 @@ export function drawRig(D, ctx, ectx) {
 
   // ── doors: long needles through a bar, drawn up into the roof ──
   for (const gt of D.w.gates) {
+    if (gt.give) { drawStrip(D, ctx, gt, { X, Y, lw, line }); continue; }
     if (gt.id === 'mat') { drawMat(D, ctx, gt, { X, Y, lw, line, poly }); continue; }
     if (!gt.rig || gt.bridge || !D.vis((gt.x0 + gt.x1) / 2, (gt.base + gt.y1) / 2, 8)) continue;
     const c = (gt.x0 + gt.x1) / 2, up = gt.y0 - gt.base, H = gt.y1 - gt.base, clip = gt.y1 + 0.3;
@@ -129,4 +130,23 @@ function drawMat(D, ctx, gt, { X, Y, lw, line }) {
     }
   }
   for (let x = a + 0.1, i = 0; x < b; x += 0.21, i++) { line(x, gt.y1 + 0.01, x + 0.05, gt.y1 - 0.5, 0.14, 0.02); if (i % 3 === 0) line(x, gt.y1 - 0.48, x + Math.sin(i) * 0.06, gt.y1 - 0.75 - (i % 5) * 0.12, 0.4, 0.015); }
+}
+
+// a strip of the cloth hung on threads: it shivers under her, then swings down by one end
+function drawStrip(D, ctx, gt, { X, Y, lw, line }) {
+  const c = (gt.x0 + gt.x1) / 2;
+  if (!D.vis(c, gt.y1, 7)) return;
+  const w = gt.x1 - gt.x0, gone = gt.open >= 1, t = gt.t || 0, sh = gt.load ? Math.sin(D.time * 44) * 0.04 : 0;
+  const fall = gone ? Math.min(1, t / 0.5) : 0, a = -fall * 1.5, side = Math.sin(gt.x0 * 7) > 0 ? 1 : -1;
+  for (const e of [-1, 1]) if (!gone || e === side) line(c + e * (w / 2 - 0.1), gt.y1, c + e * (w / 2 - 0.1) + sh, gt.y1 + 9, 0.3, 0.014);
+  ctx.save(); ctx.translate(X(c + side * w / 2), Y(gt.y1 + (gone ? 0 : sh))); ctx.rotate(-a * side);
+  const k = D.k, q = -side;
+  for (let j = 0; j < 3; j++) {
+    const y = (0.06 + j * 0.13) * k;
+    for (const [lw2, v] of [[0.13, 0.03], [0.095, 0.42 + (j % 2) * 0.1]]) { ctx.strokeStyle = g(v); ctx.lineWidth = lw(lw2); ctx.beginPath(); for (let x = 0; x <= w + 0.01; x += 0.1) { const yy = y + Math.sin(x * 10 + j * Math.PI) * 0.025 * k; if (x === 0) ctx.moveTo(q * x * k, yy); else ctx.lineTo(q * x * k, yy); } ctx.stroke(); }
+  }
+  ctx.strokeStyle = g(0.14); ctx.lineWidth = lw(0.018);
+  for (let x = 0.1; x < w; x += 0.2) { ctx.beginPath(); ctx.moveTo(q * x * k, 0); ctx.lineTo(q * (x + 0.04) * k, 0.4 * k); ctx.stroke(); }
+  ctx.strokeStyle = g(0.5); for (let x = 0.15; x < w; x += 0.34) { ctx.beginPath(); ctx.moveTo(q * x * k, 0.4 * k); ctx.lineTo(q * (x + Math.sin(x * 9) * 0.05) * k, (0.6 + (x * 7 % 0.4)) * k); ctx.stroke(); }
+  ctx.restore();
 }

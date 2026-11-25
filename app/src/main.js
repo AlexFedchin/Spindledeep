@@ -97,7 +97,7 @@ async function boot() {
     // what the last save had found counts as found (saves from before the shelf)
     const old = loadSave(true);
     if (old && old.keeps) L.SECRETS.forEach((s, i) => { if ((old.keeps[i] || 0) & 2 && !settings.found.includes(s.kind)) settings.found.push(s.kind); });
-    if (old && old.cp >= 28 && !Object.keys(settings.ended).length) settings.ended = { once: true };
+    if (old && old.cp === 28 && !Object.keys(settings.ended).length) settings.ended = { once: true };
     await step('kindling the lamp…', 0.05);
     R = new Renderer();
     await R.init($('view'));
@@ -463,17 +463,17 @@ function handleEvents() {
           count: e.n >= W.skeins.length ? `the last skein · all ${W.skeins.length} found` : `skein ${e.n} of ${W.skeins.length}` });
         break;
       case 'shelf': if (!SHOW && state === 'play') openShelf('door'); break;
-      case 'allfound': toast('all eight · she sews on the second eye', 5); A.play('bowl', { vol: 0.3, rate: 0.75, verb: 1.4, bus: 'ui' }); break;
+      case 'allfound': toast('all of them · she sews on the second eye', 5); A.play('bowl', { vol: 0.3, rate: 0.75, verb: 1.4, bus: 'ui' }); break;
       // what the thread works (rig.js)
       case 'doorUp': A.play('gate', { vol: 0.55, rate: 0.85, x: e.x, y: e.y }); if (Math.hypot(e.x - p.x, e.y - p.y) < 20) cam.shake = Math.max(cam.shake, 0.12); break;
       case 'doorDown': A.play('gate', { vol: 0.7, rate: 0.6, x: e.x, y: e.y }); D.spawn('puff', e.x, e.y + 0.2, 8, { speed: 1.2, vy: 0.5, life: 0.6 }); break;
-      case 'ratchet': A.any('timber', { vol: 0.16, rate: 1.7, x: e.x, y: e.y }); break;
+      case 'ratchet': A.any('ratch', { vol: 0.34, vary: 0.08, x: e.x, y: e.y }); break;
       case 'latched': A.play('gate', { vol: 0.6, rate: 1.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { speed: 1.6, life: 0.7 }); save(); break;
-      case 'spindle': A.play('chime', { vol: 0.4, rate: 0.85 + e.i * 0.18, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1.4, life: 0.7 }); break;
-      case 'spindleOff': A.play('release', { vol: 0.25, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'spindle': A.any('whirr', { vol: 0.5, vary: 0.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 0.85 + e.i * 0.18, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1.4, life: 0.7 }); break;
+      case 'spindleOff': A.any('clack', { vol: 0.3, rate: 0.9, x: e.x, y: e.y }); break;
       case 'foul': A.play('snag', { vol: 0.7, rate: 0.7, x: e.x, y: e.y }); A.any('timber', { vol: 0.5, rate: 0.7, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.18); D.spawn('fiber', e.x, e.y - 1, 10, { speed: 1.6, life: 1.2 }); break;
       case 'bobFree': A.play('release', { vol: 0.5, rate: 0.6, x: e.x, y: e.y }); A.any('timber', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); break;
-      case 'bobRoll': A.any('timber', { vol: 0.22, rate: 0.75, x: e.x, y: e.y }); break;
+      case 'bobRoll': A.any('roll', { vol: 0.5, vary: 0.1, x: e.x, y: e.y }); break;
       case 'bobTurn': A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y }); break;
       case 'secretOpen': startReveal(e); break;
       case 'secret': card(e.name); A.play('chime', { vol: 0.35, rate: 1.3, x: e.x, y: e.y }); break;
@@ -515,6 +515,12 @@ function handleEvents() {
         cam.shake = 0.7;
         if (e.first) toast('climb', 4);
         break;
+      case 'surgeWarn': A.any('heave', { vol: 0.75, rate: 0.8, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.2); break;
+      case 'surge': A.any('heave', { vol: 1.0, rate: 1.1, x: e.x, y: e.y, verb: 1.2 }); A.play('thud', { vol: 0.9, rate: 0.6, x: e.x, y: e.y, verb: 1.4 }); A.any('groan', { vol: 0.5, rate: 0.55, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.7); D.spawn('fiber', p.x, p.y - 4, 26, { speed: 3, vy: 5, life: 1.4 }); break;
+      case 'crawlNear': A.play('inhale', { vol: 0.8, rate: 0.8, x: e.x, y: e.y }); if (!W._nearSeen) { W._nearSeen = true; toast('it is on your thread · pluck', 3); } break;
+      case 'crawlShake': A.any('palm', { vol: 1.0, rate: 0.8, x: e.x, y: e.y }); A.any('groan', { vol: 0.35, rate: 1.2, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 8, { speed: 2, life: 0.8 }); break;
+      case 'stripGo': A.any('cloth', { vol: 0.5, rate: 0.8, x: e.x, y: e.y }); break;
+      case 'stripTear': A.play('tear', { vol: 0.45, rate: 0.8, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 12, { speed: 1.5, vy: -1, life: 1.0 }); break;
       case 'riseStop': A.beds({}); A.play('thud', { vol: 0.5, rate: 0.7, verb: 1.4 }); break;
     }
   }
@@ -970,6 +976,7 @@ function buildPts(viewW, viewH, k) {
     if (st === 2 || (st === 4 && W.ending && W.ending.cut)) { r = 0.3; gg = 0.28; b = 0.27; a = 0.8; w = wLive * 0.7; }
     else if (st === 0) { r = 0.72; gg = 0.07; b = 0.07; w = wLive * 0.85; }
     else { r = 0.9; gg = 0.1; b = 0.09; }
+    if (W.deep.rise.level > W.deep.rise.y0 + 0.5 && y < W.deep.rise.level && y > -560) { r *= 0.22; gg = 0.03; b = 0.04; a *= 0.6; }
     if (wear > 0) { const q = clamp(wear, 0, 1); r = lerp(r, 0.18, q); gg = lerp(gg, 0.05, q); w *= 1 - q * 0.55; }
     a *= lit;
     put(x, y, w, a, r, gg, b); open = true;

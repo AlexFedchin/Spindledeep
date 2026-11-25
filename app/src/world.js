@@ -409,7 +409,7 @@ export class World {
       acc += seg;
       if (acc < 0.95) continue;
       acc = 0;
-      if (!vis(x, y)) continue;
+      if (!vis(x, y) || (y < this.deep.rise.level && y > -545 && this.deep.rise.level > this.deep.rise.y0 + 0.5)) continue;
       const lit = (st === 0 ? 0.34 : 0.6) * (1 - (this.snuff || 0));
       if (lit < 0.01) continue;
       const d = this.T.d(x, y);
@@ -431,6 +431,7 @@ export class World {
     for (const s of this.rig.spindles) if (vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.4, r: 3.2, i: 0.36 + 0.35 * s.v, c: s.v > 0.5 ? RED : [0.72, 0.76, 0.88], soft: 10 });
     for (const h of this.rig.pulls) if (h.f < 1 && vis(h.x, h.y)) out.push({ x: h.x, y: h.y - 0.1, r: 2.4, i: 0.22, c: [0.85, 0.8, 0.7], soft: 10 });
     for (const gt of this.gates) if (gt.rig && !gt.bridge && gt.open < 0.9 && vis((gt.x0 + gt.x1) / 2, gt.base)) for (const s of [-0.9, 0.9]) out.push({ x: (gt.x0 + gt.x1) / 2 + s, y: gt.base + 1.4, r: 3.6, i: 0.24, c: [0.78, 0.76, 0.8], soft: 6 });
+    for (const gt of this.gates) if (gt.give && gt.open < 1 && vis((gt.x0 + gt.x1) / 2, gt.y1)) out.push({ x: (gt.x0 + gt.x1) / 2, y: gt.y1 + 0.5, r: 2.6, i: 0.3, c: [0.78, 0.76, 0.84], soft: 6 });
     const br = this.rig.gates.bridge;
     if (br && br.x0 < br.end - 0.1 && vis(br.x0, br.y1)) out.push({ x: br.x0 + 0.4, y: br.y1 + 0.6, r: 4, i: 0.4, c: [0.85, 0.8, 0.72], soft: 8 }, { x: br.x0 + 5, y: br.y1 + 0.8, r: 4, i: 0.22, c: [0.75, 0.76, 0.82], soft: 8 });
     for (const b of this.rig.bobbins) if (vis(b.x, b.y)) out.push({ x: b.x, y: b.y + 0.4, r: 4.2, i: 0.34, c: [0.8, 0.72, 0.62], soft: 8 });
@@ -530,5 +531,6 @@ function makeHints() {
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
     { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },
+    { x0: 78, x1: 90, y0: -474, y1: -464, when: (w) => w.rig.pulls[2] && w.rig.pulls[2].f < 1, keys: ['jump', 'grip', 'up'], text: 'catch the handle · land, still holding · wind in' },
   ];
 }

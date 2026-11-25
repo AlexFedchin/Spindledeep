@@ -28,7 +28,7 @@ const ring = (dir, edge, rel, land, then) => { let ph = 0, tj = 0; return (W, p,
   if (ph < 4) inp.axisX = dir;
   if (ph === 0 && dir * (p.x - edge) > -0.35 && p.coyote > 0.02) { inp.pressed.jump = inp.held.jump = true; ph = 1; tj = t; }
   if (ph === 1) { inp.held.jump = t - tj < 0.3; if (t - tj > 0.1) inp.held.grip = true; if (hooked(W)) { ph = 2; tj = t; } else if (p.grounded && t - tj > 0.4) return 'missed'; }
-  if (ph === 2) { inp.held.grip = true; const P = W.thread.pivots[W.thread.pivots.length - 1]; if (t - tj > rel && dir * p.vx > 0 && dir * (p.x - P.x) > 0.2) { inp.pressed.jump = inp.held.jump = true; inp.held.grip = false; ph = 3; tj = t; } }
+  if (ph === 2) { inp.held.grip = true; const P = W.thread.pivots[W.thread.pivots.length - 1]; if (t - tj > rel && dir * p.vx > 0 && dir * (p.x - P.x) > 0.2) { inp.pressed.jump = inp.held.jump = true; ph = 3; tj = t; } }
   if (ph === 3) { inp.held.jump = t - tj < 0.3; if (p.grounded && t - tj > 0.1) { if (dir * (p.x - land) < -0.3) return 'short'; ph = 4; } }
   if (ph === 4) return then ? then(W, p, t, inp) : 'ok';
 }; };
@@ -83,6 +83,11 @@ sweep('Treadles: two heddles in the lane', 40, (d) => { let w = d; return (W, p,
 sweep('Lower room: ring (swinging)', 41, (rel) => ring(1, 46.2, rel, 51.4), 0.2, 6, 0.1);
 sweep('Lower room: handle and door', 41, (d) => { let first = true; const f = handle(1, 59.6 + d, 1, 71.5); return (W, p, t, inp) => { if (first) { first = false; W.thread.reset(54, -420.6); p.reset(55, -420.6); return; } return f(W, p, t, inp); }; }, -0.4, 0.5, 0.1);
 sweep('Lower room: last ring, door, out', 43, (rel) => ring(1, 86.2, rel, 90.8, walk(1, 97)), 0.2, 5, 0.1);
+// the hidden rooms off them: in, the thing taken, and out again
+const there = (i, west, east, jump) => () => { let back = false; return (W, p, t, inp) => { const s = W.secrets[i], d = back ? 1 : -1; inp.axisX = d; if (s.taken) back = true; const wall = T.d(p.x + d * 0.55, p.y + 0.2) < 0.12; if (p.coyote > 0.02 && (wall || jump.some(([x, q]) => q === d && Math.abs(p.x - x) < 0.3))) inp.pressed.jump = inp.held.jump = true; if (!p.grounded && p.vy > 0) inp.held.jump = true; if (!back && p.x < west) inp.axisX = 1; if (back && p.x > east) return 'ok'; }; };
+sweep('The Tally, from pole 32', 32, there(8, 1.6, 9.5, [[8.5, -1], [5.3, 1]]), 0, 0.1, 1, 20);
+sweep('The Held Breath, from the Pin Walk', 37, there(9, 11.2, 24, []).bind ? (d) => { const f = there(9, 11.2, 24, [])(); let st = false; return (W, p, t, inp) => { if (!st) { st = true; W.thread.reset(26, -311.8); p.reset(26, -311.6); return; } return f(W, p, t, inp); }; } : null, 0, 0.1, 1, 20);
+sweep('The Cut, from pole 41', 41, there(10, 23.4, 38, []), 0, 0.1, 1, 20);
 // the longest leg between two poles, along the old woman's thread
 const W = make(0), g = W.grey, at = (pg) => { let b = 0, bd = 1e9; for (let i = 0; i < g.n; i++) { const d = Math.hypot(g.x[i] - pg.x, g.y[i] - pg.y); if (d < bd) { bd = d; b = i; } } return bd < 6 ? b : -1; };
 const idx = W.pegs.map((p) => [at(p), p.i]).filter((a) => a[0] >= 0).sort((a, b) => a[0] - b[0]), legs = [];

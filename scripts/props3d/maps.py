@@ -417,6 +417,52 @@ def pattern():
     save(b - ghost * 0.09, 'pattern_back.png')
 
 
-for fn in (spool, button, thimble, seeds, pattern):
+# ── the weight: forty-one scratches round it in fives, the last one bright ──
+def weight():
+    W, H = 4096, 1024
+    im = Image.new('L', (W, H), 128)
+    d = ImageDraw.Draw(im)
+    r = random.Random(41)
+    x = 200
+    for g in range(9):
+        n = 4 if g < 8 else 1
+        for k in range(n):
+            for q in range(3):
+                d.line([(x + r.uniform(-4, 4), 400 + r.uniform(-12, 12)), (x + 10 + r.uniform(-8, 8), 720 + r.uniform(-16, 16))], fill=10, width=15 if g < 8 else 22)
+            x += 66
+        if n == 4:
+            d.line([(x - 300, 690 + r.uniform(-20, 20)), (x - 20, 430 + r.uniform(-20, 20))], fill=10, width=16)
+        x += 92
+    f = font(FELL, 210)
+    d.text((W * 0.80, 440), '1 lb', font=f, fill=60)
+    save(im.filter(ImageFilter.GaussianBlur(2)), 'weight_h.png')
+
+
+# ── the tag ──
+def tag():
+    W, H = 1200, 1960
+    a = paper(W, H, 63, base=204)
+    ink = Image.new('L', (W, H), 255)
+    d = ImageDraw.Draw(ink)
+    d.rectangle([80, 420, W - 80, H - 90], outline=40, width=7)
+    d.rectangle([100, 440, W - 100, H - 110], outline=60, width=2)
+    f, f2 = font(FELLSC, 96), font(FELLI, 64)
+    t = 'Luggage in Advance'
+    d.text(((W - f.getlength(t)) / 2, 480), t, font=f, fill=34)
+    for y, t in ((690, 'Passenger'), (1250, 'From'), (1520, 'To')):
+        d.text((150, y), t, font=f2, fill=60)
+        if t != 'Passenger':
+            for x in range(150, W - 150, 16):
+                d.line([(x, y + 190), (x + 8, y + 190)], fill=80, width=4)
+    hand(ink, (240, 1330), 'the Brink', 100, ink=26, seed=2)
+    hand(ink, (240, 1600), 'her aunt\'s', 100, ink=26, seed=4)
+    d.text((W - 420, H - 210), 'No. 41', font=f2, fill=60)
+    ink = ink.filter(ImageFilter.GaussianBlur(0.9))
+    a = fold(a, 0, 1180, W, 1196, 34, 3)
+    save(a * (0.12 + 0.88 * np.asarray(ink, np.float32) / 255), 'tag_front.png')
+    save(paper(W, H, 64, base=196), 'tag_back.png')
+
+
+for fn in (spool, button, thimble, seeds, pattern, weight, tag):
     fn()
     print(fn.__name__)

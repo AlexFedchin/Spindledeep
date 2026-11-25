@@ -1,4 +1,4 @@
-// The things she picks up, as real models (scripts/props3d): the keepsakes of the hidden rooms and the balls of red yarn. Drawn by
+// The things she picks up (shapes from scripts/props3d, drawn flat and inked like everything else: the user wants 2-2.5D, not models): the keepsakes of the hidden rooms and the balls of red yarn. Drawn by
 // the renderer's prop pass where they lie, and held up close, turning, when one is found (main.js startShow). Each model is
 // fetched when she comes near the first one of its kind; until it is there the old flat drawing stands in.
 import { clamp, lerp } from './util.js';
@@ -8,11 +8,13 @@ export const READY = new Set();          // kinds whose model is loaded: props.j
 export const WORLD_K = 0.2, SHOW_K = 0.6;      // half the size of one, lying about and held up (m)
 
 const mm = (A, B) => B.map((v) => [0, 1, 2].map((r) => A[0][r] * v[0] + A[1][r] * v[1] + A[2][r] * v[2]));
-// how each is held up: tip toward the viewer, where it starts, and whether it goes round or only sways (how far, how fast)
+// how each is held up: like a thing cut out and turned a little in the fingers, never all the way round. tip and yaw are how it
+// faces, sway and nod how far it rocks, z its size, blur how much of its surface is left out (what is printed on it stays sharp)
 const HOLD = {
-  spool: { tip: 0.78, sway: 0.75, nod: 0.12 }, button: { tip: 0.12, z: 0.95, sway: 0.62, nod: 0.22 }, seeds: { tip: 0.05, z: 1.1, sway: 0.5, nod: 0.1 },
-  thimble: { tip: 0.1, z: 0.84, yaw: 0.4, spin: 0.3, look: 0.75 }, eye: { tip: 0.14, sway: 0.6, nod: 0.24 }, mitten: { tip: 0.12, sway: 0.75, nod: 0.12 },
-  pattern: { tip: 0.04, z: 1.12, sway: 0.4, nod: 0.1 }, shoe: { tip: 0.48, z: 1.12, yaw: -1.2, spin: 0.26 }, skein: { tip: 0.35, z: 0.95, yaw: 0, spin: 0.3 },
+  spool: { tip: 0.62, sway: 0.2, nod: 0.05, blur: 0.4 }, button: { tip: 0.06, z: 0.92, sway: 0.26, nod: 0.08, blur: 0.6 }, seeds: { tip: 0.03, z: 1.08, sway: 0.2, nod: 0.05, blur: 0, flat: 0.7 },
+  thimble: { tip: 0.24, z: 0.84, sway: 0.24, nod: 0.06, blur: 0.8 }, eye: { tip: 0.08, sway: 0.24, nod: 0.08, blur: 2.2 }, mitten: { tip: 0.06, sway: 0.2, nod: 0.05, blur: 1.5 },
+  weight: { tip: 0.3, z: 0.86, sway: 0.24, nod: 0.06, blur: 0.8 }, tag: { tip: 0.03, z: 1.02, sway: 0.2, nod: 0.05, blur: 0, flat: 0.7 }, scissors: { tip: 0.02, z: 1.04, sway: 0.2, nod: 0.05, blur: 1 },
+  pattern: { tip: 0.02, z: 1.12, sway: 0.16, nod: 0.04, blur: 0, flat: 0.7 }, shoe: { tip: 0.34, z: 1.14, yaw: 0.1, sway: 0.2, nod: 0.05, blur: 1.8 }, skein: { tip: 0.2, z: 0.92, sway: 0.22, nod: 0.06, blur: 2 },
 };
 const KINDS = Object.keys(HOLD);
 
@@ -44,7 +46,7 @@ export class Items {
     return P;
   }
   // the mouse turns what is held up
-  drag(dx, dy) { const u = this.turn; u.yaw += dx; u.pitch = clamp(u.pitch + dy, -1.5, 1.5); u.vy = lerp(u.vy, dx * 60, 0.4); u.vp = 0; }
+  drag(dx, dy) { const u = this.turn; u.yaw = clamp(u.yaw + dx, -0.75, 0.75); u.pitch = clamp(u.pitch + dy, -0.5, 0.5); }
   // → what to draw this frame
   frame(W, cam, viewW, viewH, dt, t) {
     const out = [], p = W.player, vis = (x, y) => Math.abs(x - cam[0]) < viewW / 2 + 1 && Math.abs(y - cam[1]) < viewH / 2 + 1;
@@ -52,9 +54,9 @@ export class Items {
       if (Math.hypot(x - p.x, y - p.y) < 45 || vis(x, y)) this.need(kind);
       if (!READY.has(kind) || !vis(x, y)) return;
       const P = this.one(key, kind), H = HOLD[kind];
-      P.at = [x, y + 0.2 + Math.sin(t * 1.4 + bob) * 0.03, 0.2]; P.k = WORLD_K * fade; P.gain = kind === 'skein' ? 1.6 : 1; P.env = 0.12; P.over = false; P.own = false;
-      P.lights = [{ x: x - 0.5, y: y + 0.9, z: 1.1, r: 3, i: 0.55, c: kind === 'skein' ? [1, 0.5, 0.42] : [1, 0.86, 0.66] }];
-      P.R = euler(H.tip * 0.8, H.spin ? t * 0.5 + bob : Math.sin(t * 0.7 + bob) * 0.5, 0);
+      P.at = [x, y + 0.2 + Math.sin(t * 1.4 + bob) * 0.03, 0.2]; P.k = WORLD_K * fade; P.gain = 1; P.env = 0.06; P.blur = H.blur + 1; P.flat = H.flat; P.over = false; P.own = false;
+      P.lights = [{ x: x - 0.5, y: y + 0.9, z: 1.1, r: 3, i: 0.3, c: [1, 0.86, 0.66] }];
+      P.R = euler(H.tip * 0.8, (H.yaw || 0) + Math.sin(t * 0.7 + bob) * 0.22, 0);
       out.push(P);
     };
     // her shelf, beside the door: what has been brought home, small
@@ -63,8 +65,8 @@ export class Items {
       this.need(kind);
       if (!READY.has(kind)) return;
       const P = this.one('shelf' + i, kind), H = HOLD[kind];
-      P.at = [14.86 + (i % 4) * 0.36, 1.84 + (i < 4 ? 0.42 : 0) + 0.12, 0.2]; P.k = 0.125; P.gain = 1; P.env = 0.15; P.over = false; P.own = false; P.lights = [];
-      P.R = euler(H.tip * 0.6, Math.sin(i * 2.1) * 0.5, 0);
+      P.at = [14.76 + (i % 6) * 0.258, 1.84 + (i < 6 ? 0.42 : 0) + 0.11, 0.2]; P.k = 0.108; P.gain = 1; P.env = 0.1; P.over = false; P.own = false; P.lights = []; P.blur = H.blur + 1; P.flat = H.flat;
+      P.R = euler(H.tip * 0.6, (H.yaw || 0) + Math.sin(i * 2.1) * 0.2, 0);
       out.push(P);
     });
     W.skeins.forEach((s, i) => { if (!s.taken) lying('s' + i, 'skein', s.x, s.y, s.bob); });
@@ -77,20 +79,15 @@ export class Items {
     this.need(S.kind);
     if (!u.on) { u.on = true; u.yaw = u.pitch = u.vy = u.vp = 0; u.t = 0; }
     u.t += dt;
-    if (!u.held) { u.yaw += u.vy * dt; u.vy *= Math.exp(-dt * 1.8); }
+    if (!u.held) { u.yaw *= Math.exp(-dt * 1.6); u.pitch *= Math.exp(-dt * 1.6); }        // let go, it turns back
     if (it && READY.has(S.kind)) {
       const P = this.one('show', S.kind), H = HOLD[S.kind], x = it.x, y = it.y, k = it.k;
       const away = clamp(Math.abs(u.yaw) + Math.abs(u.pitch), 0, 1), q = u.t;        // once it is turned by hand it stops swaying on its own
-      const yaw = H.spin ? H.yaw + q * H.spin * (1 - away * 0.7) : Math.sin(q * 0.55) * H.sway * (1 - away);
-      const pitch = H.tip + (H.nod ? Math.sin(q * 0.41 + 1) * H.nod * (1 - away) : 0) - (H.look ? (0.5 - 0.5 * Math.cos(q * 0.5)) * H.look * 1.6 * (1 - away) : 0);
-      P.at = [x, y, 1.2]; P.k = k * lerp(1, H.z || 1, clamp((k - WORLD_K) / (SHOW_K - WORLD_K), 0, 1)); P.over = true; P.own = true; P.env = 1; P.gain = it.a * 1.4;
+      const yaw = (H.yaw || 0) + Math.sin(q * 0.7) * H.sway * (1 - away);
+      const pitch = H.tip + Math.sin(q * 0.5 + 1) * H.nod * (1 - away);
+      P.at = [x, y, 1.2]; P.k = k * lerp(1, H.z || 1, clamp((k - WORLD_K) / (SHOW_K - WORLD_K), 0, 1)); P.over = true; P.own = true; P.env = 1; P.gain = it.a * 0.95; P.blur = H.blur; P.flat = H.flat; P.flat = H.flat;
       P.R = mm(euler(clamp(pitch + u.pitch, -1.6, 1.6), 0, 0), euler(0, yaw + u.yaw, 0));
-      const s = Math.max(0.4, k / SHOW_K);
-      P.lights = [
-        { x: x - 1.5 * s, y: y + 1.7 * s, z: 1.2 + 1.9 * s, r: 7, i: 2.3, c: [1.0, 0.87, 0.68] },            // the key: warm, high on the left
-        { x: x + 1.9 * s, y: y + 0.8 * s, z: 1.2 - 1.1 * s, r: 7, i: 2.2, c: [0.62, 0.72, 1.0] },            // a cold rim from behind on the right
-        { x: x + 0.7 * s, y: y - 1.9 * s, z: 1.2 + 1.2 * s, r: 6, i: 0.28, c: [1.0, 0.5, 0.38] },            // a little of the thread's red from below
-      ];
+      P.lights = [];
       out.push(P);
     }
     return out;

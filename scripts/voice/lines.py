@@ -6,7 +6,7 @@ PERSONA = ("Female, about eighty, a frail old grandmother who knits: a soft, sli
            "gentle tremor of age, low and quiet, speaking slowly as if remembering, intimate and close; "
            "clear, unhurried English diction.")
 
-WRONG = {'m6': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'cut1': 0.45, 'cut3': 0.7, 'names': 0.6, 'call': 0.7, 'home': 0.45}
+WRONG = {'m6': 0.55, 'm13': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'cut1': 0.45, 'cut3': 0.7, 'names': 0.6, 'call': 0.7, 'home': 0.45}
 # the deep (rewritten 2026-11-24): m9 and fin_mama are the first child who fell down the well (her own persona, design takes
 # only); fin_b is the chorus, everyone it has taken at once (pick.py layers the take into several pitched voices)
 CHILD_VOICE = ("Female child, about six years old: a small, high, clear, breathy little girl's voice, frightened and trying to be brave, "
@@ -57,6 +57,12 @@ LINES = {
            'Whispering, frightened, pausing to listen between sentences; the last sentence slow and very quiet, as if it might hear.'),
     'm10': ("This is the last of me, little one. I told you, don't follow. Never let go of the thread... that part was not my voice. It can't climb. It needs one thread, from here to the top, and you have brought it one. When it begs you with my voice, bite your thread in two. I never gave you a name. So it can never call you.",
            'A dying woman using her last breath to warn someone she loves: urgent but weak, clear, every sentence deliberate; tender only on the last two sentences.'),
+    'm11': ("They sat in rows down here, little one, and said them aloud. The names of everyone they had lost. They thought that they were praying.",
+            'Quiet and pitying, remembering something seen; slower on the last sentence, which she says almost to herself, with horror held back.'),
+    'm12': ("When it moves in the walls, be still. I was still for a whole winter, once. It sat beside me the whole time.",
+            'A warning, whispered very close; a long pause after "once"; the last sentence flat and tired, as if it were a small thing.'),
+    'm13': ("I can hear you coming down. Such small feet. ...I never gave you feet that make a sound.",
+            'Fond and warm at first, almost smiling; a long silence; the last sentence slow, level and wrong, much too calm.'),
     'fin_love': ("Don't you love me? I made you. Don't you love me?",
            'Hurt and soft; both questions said in exactly the same way, like a recording.'),
     'fin_tieit': ('Tie it. Tie it. Tie it. Tie it. Tie it.',

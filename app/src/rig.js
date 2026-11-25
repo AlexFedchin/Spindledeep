@@ -8,6 +8,7 @@ import * as L from './level.js';
 import { clamp } from './util.js';
 
 export const SINK = { down: 0.4, up: 0.3, at: 0.36, hold: 6.5, lift: 1.5, drop: 0.35 };
+export const STRIP = { hold: 0.62, back: 3.4 };
 export const BOB = { foul: 4.2, rest: 2.6, cost: 4 };
 
 export class Rig {
@@ -22,6 +23,19 @@ export class Rig {
     this.gates = Object.fromEntries(W.gates.filter((g) => g.rig).map((g) => [g.id, g]));
     for (const g of Object.values(this.gates)) { g.base = g.y0; g.hold = 0; g.end = g.x0; }
     this.n = 0;
+  }
+  // a strip of cloth she stands on tears away, and hangs back in its place a little later
+  _strips(dt) {
+    const p = this.W.player;
+    for (const g of this.W.gates) {
+      if (!g.give) continue;
+      g.t = (g.t || 0) + dt;
+      const on = !p.dead && p.grounded && p.x > g.x0 - 0.3 && p.x < g.x1 + 0.3 && Math.abs(p.y - g.y1 - p.r) < 0.16;
+      if (g.open < 1) {
+        if (on && !g.load) { g.load = true; g.t = 0; this.W.emit('stripGo', { x: (g.x0 + g.x1) / 2, y: g.y1 }); }
+        if (g.load && g.t > STRIP.hold) { g.open = 1; g.load = false; g.t = 0; this.W.emit('stripTear', { x: (g.x0 + g.x1) / 2, y: g.y1 }); }
+      } else if (g.t > STRIP.back && Math.hypot(p.x - (g.x0 + g.x1) / 2, p.y - g.y1) > 2.2) { g.open = 0; g.t = 0; }
+    }
   }
   save() { return { pulls: this.pulls.map((h) => +h.f.toFixed(3)) }; }
   load(s) { (s.pulls || []).forEach((f, i) => { if (this.pulls[i]) { this.pulls[i].f = f; this._place(this.pulls[i]); } }); }
@@ -39,6 +53,7 @@ export class Rig {
 
   update(dt, inp) {
     const W = this.W, p = W.player, th = W.thread, last = th.locked ? th.pivots[th.pivots.length - 1] : null, hook = last && last.hook;
+    this._strips(dt);
     // ── sinking rings ──
     for (const h of this.sinks) {
       const load = hook === h && !p.grounded && !p.dead;
@@ -135,5 +150,5 @@ export class Rig {
     }
     if (!p.dead && !W.ending && Math.abs(b.v) > 0.4 && Math.hypot(p.x - b.x, p.y - b.y) < b.r + p.r * 0.75) W._die('crushed');
   }
-  onRespawn() { for (const b of this.bobbins) { b.x = b.x1; b.dir = -1; b.st = 'roll'; b.v = 0; b.free = 1; } for (const h of this.sinks) h.off = 0; }
+  onRespawn() { for (const b of this.bobbins) { b.x = b.x1; b.dir = -1; b.st = 'roll'; b.v = 0; b.free = 1; } for (const h of this.sinks) h.off = 0; for (const g of this.W.gates) if (g.give) { g.open = 0; g.load = false; } }
 }

@@ -303,16 +303,37 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     // (a figure writes 1 in its normal's alpha, a thing lying about 0.5, a thing held up 0: that one is in front of the rock)
     let prop = step(fnA.a, 0.75);
     let fa = fc.a * mix(smoothstep(-0.30, -0.05, d), 1.0, step(fnA.a, 0.25));
-    let spF = mix(sp * 0.62, max(2.4, sp * 0.5), prop);
+    let spF = sp * 0.62;
     let ph = dirPhase(px, 0.5, spF) + nx.y * 1.3 + nx.x * 0.7 + wob * 0.3;
     let ph2f = dirPhase(px, -0.75, spF) + nx.x * 1.1 + wob * 0.3;
     var sm = engrave(expose(lum(fl) * 1.5), ph, ph2f, 1.1 / spF, 1.0);
     sm *= smoothstep(0.0, 0.22, fn3.z);
-    // things are seen close: finer lines over a continuous tone, so what is on them can be read
-    if (prop > 0.5) { let tv = expose(lum(fl) * 1.15); sm = mix(engrave(tv, ph, ph2f, 1.2 / spF, 0.8), tv, 0.72); }
+    if (prop > 0.5) {
+      let sv = lum(fl);
+      sm = engrave(expose(sv * 0.92), dirPhase(px, 0.6, spF) + wob * 0.3, dirPhase(px, -0.6, spF) + wob * 0.3, 1.1 / spF, 1.0);
+    }
     paperMask = mix(paperMask, sm, fa);
     tint = mix(tint, fl / max(lum(fl), 1e-3), fa);
     bgDim = mix(bgDim, 0.0, fa);
+  }
+
+  // the ink line round a thing to pick up, and where its form turns sharply: as thick as the doll's
+  if (textureDimensions(figTex).x > 1u) {
+    let r = max(1.0, u.res.y / 620.0) / u.res;
+    var am = 0.0; var ap = 0.0; var bend = 0.0; var kind = 1.0;
+    let c0 = textureSampleLevel(figNrm, linSamp, uv, 0.0); let a0 = fc.a;
+    for (var k = 0; k < 8; k++) {
+      let an = f32(k) * 0.7854; let q = uv + vec2f(cos(an), sin(an)) * r;
+      let a1 = textureSampleLevel(figTex, linSamp, q, 0.0).a; let n1 = textureSampleLevel(figNrm, linSamp, q, 0.0);
+      am = max(am, a1); ap = max(ap, 1.0 - a1);
+      if (a1 > 0.5) { kind = min(kind, n1.a / a1); if (a0 > 0.5) { bend = max(bend, length(n1.xyz / a1 - c0.xyz / a0)); } }
+    }
+    if (a0 > 0.5) { kind = min(kind, c0.a / a0); }
+    if (kind < 0.75 && am > 0.02) {
+      let over = mix(smoothstep(-0.30, -0.05, d), 1.0, step(kind, 0.25));
+      let sil = min(am, max(ap, 1.0 - a0));
+      paperMask *= 1.0 - max(smoothstep(0.25, 0.75, sil), smoothstep(0.42, 0.72, bend) * 0.9) * over;
+    }
   }
 
   // something is being held up: everything else goes quiet
@@ -419,81 +440,52 @@ fn turn(v: vec3f) -> vec3f { return f.r0.xyz * v.x + f.r1.xyz * v.y + f.r2.xyz *
   o.w = w; o.n = turn(n.xyz); o.uv = uv; o.c = c; o.kind = round(m.x * 255.0); o.metal = m.y;
   return o;
 }
-fn h2(p: vec2f) -> f32 { var q = fract(p * vec2f(123.34, 456.21)); q += dot(q, q + 45.32); return fract(q.x * q.y); }
-fn vn(p: vec2f) -> f32 {
-  let i = floor(p); let g = fract(p); let u = g * g * (3.0 - 2.0 * g);
-  return mix(mix(h2(i), h2(i + vec2f(1.0, 0.0)), u.x), mix(h2(i + vec2f(0.0, 1.0)), h2(i + vec2f(1.0, 1.0)), u.x), u.y);
-}
-// what a polished thing sees round it: a dark room, a window high on the left, a strip of cold light on the right, a low glow
-fn room(r: vec3f, rough: f32) -> vec3f {
-  let s = mix(0.05, 0.55, rough);
-  let up = r.y * 0.5 + 0.5;
-  var c = mix(vec3f(0.018, 0.016, 0.018), vec3f(0.16, 0.15, 0.15), smoothstep(0.3, 1.0, up));
-  let w1 = dot(r, normalize(vec3f(-0.62, 0.55, 0.56)));
-  c += vec3f(1.5, 1.28, 0.98) * smoothstep(0.86 - s, 0.86 + s * 0.6, w1) * (1.0 - 0.45 * rough);
-  let w2 = dot(r, normalize(vec3f(0.9, 0.12, 0.25)));
-  c += vec3f(0.55, 0.65, 0.9) * smoothstep(0.9 - s, 0.9 + s * 0.5, w2) * smoothstep(-0.7, -0.3, r.y) * (1.0 - 0.4 * rough);
-  c += vec3f(0.3, 0.12, 0.08) * smoothstep(0.75 - s, 0.95, dot(r, normalize(vec3f(0.2, -0.85, 0.4))));
-  return c;
-}
 struct FO { @location(0) c: vec4f, @location(1) n: vec4f };
+// drawn, not photographed: a flat tone for what it is made of, three steps of light, ink where two strands meet
 @fragment fn fs(i: VO, @builtin(front_facing) ff: bool) -> FO {
-  let t = textureSample(tex, samp, i.uv); let tn = textureSample(nrm, samp, i.uv).xyz * 2.0 - 1.0;
-  let V = normalize(vec3f(f.at.xy, f.at.z + f.dist) - i.w);
-  let g = normalize(i.n);
-  let dp1 = dpdx(i.w); let dp2 = dpdy(i.w); let du1 = dpdx(i.uv); let du2 = dpdy(i.uv);
-  var n = g; var alb = pow(t.rgb, vec3f(2.2)); var rough = clamp(1.0 - t.a, 0.08, 1.0); var metal = i.metal; var sheen = 0.0; var ao = i.c.a;
+  let t = textureSampleBias(tex, samp, i.uv, f.amb.w); let tn = textureSampleBias(nrm, samp, i.uv, max(f.amb.w, 0.6)).xyz * 2.0 - 1.0;
+  let tb = textureSampleBias(tex, samp, i.uv, f.amb.w + 5.5); let tc = textureSampleBias(tex, samp, i.uv, f.amb.w + 7.4); let nb = textureSampleBias(nrm, samp, i.uv, 4.5).xyz * 2.0 - 1.0;
+  let fw = max(fwidth(i.uv.x), 1e-4);
+  let V = vec3f(0.0, 0.0, 1.0);
+  var g = normalize(i.n); if (g.z < 0.0) { g = normalize(g - V * g.z * 1.25); }
+  var n = g; var red = 0.0; var tone = 0.0; var ink = 0.0; var ao = i.c.a;
   if (i.kind < 0.5) {
-    n = normalize(turn(tn));
-    if (dot(n, V) < 0.0) { n = normalize(n - V * dot(n, V) * 1.25); }
+    n = normalize(turn(nb)); if (n.z < 0.0) { n = normalize(n - V * n.z * 1.25); }
+    n = normalize(mix(g, n, 0.6));
+    // what it is made of: one flat grey; what is written, scratched or stamped on it: ink, or bare light on a raised edge
+    let l = dot(pow(t.rgb, vec3f(2.2)), vec3f(0.3, 0.52, 0.18)); let lb0 = dot(pow(tb.rgb, vec3f(2.2)), vec3f(0.3, 0.52, 0.18));
+    let lb = max(lb0, dot(pow(tc.rgb, vec3f(2.2)), vec3f(0.3, 0.52, 0.18)) * 0.9 * step(0.12, lb0));
+    tone = clamp(0.16 + pow(clamp(lb * 1.3, 0.0, 1.0), 0.55) * 0.86, 0.16, 0.98);
+    ink = smoothstep(mix(0.80, 0.92, f.r1.w), mix(0.52, 0.66, f.r1.w), l / max(lb, 1e-3)) * smoothstep(0.004, 0.02, lb);
+    ink = max(ink, smoothstep(0.115, 0.07, l) * smoothstep(0.2, 0.3, max(lb, dot(pow(tc.rgb, vec3f(2.2)), vec3f(0.3, 0.52, 0.18)))));
+    let L0 = normalize(vec3f(-0.55, 0.62, 0.62));
+    let rel = dot(normalize(turn(tn)), L0) - dot(normalize(turn(nb)), L0);
+    ink = max(ink, smoothstep(0.2, 0.42, -rel) * 0.9 * step(f.r1.w, 0.1)); tone = mix(tone, 1.0, smoothstep(0.2, 0.42, rel) * 0.5 * step(f.r1.w, 0.1));
   } else {
-    alb = pow(i.c.rgb, vec3f(2.2)); metal = 0.0; rough = 0.9;
-    if (i.kind < 1.5) {
-      // two plies, and the fibres lying along them
-      let fw = max(abs(du1.x) + abs(du2.x), 1e-4);
-      let fine = smoothstep(1.6, 0.35, fw);                // far away the twist is too fine to draw
-      let ph = i.uv.y * 2.0 + i.uv.x * 0.16;
-      let ridge = cos(ph * 6.2832);
-      let a = dp1; let b = dp2;
-      let pa = cross(b, g); let pb = cross(g, a);
-      let Tt = pa * du1.x + pb * du2.x; let Bb = pa * du1.y + pb * du2.y;
-      let Tn = Tt / max(length(Tt), 1e-6); let Bn = Bb / max(length(Bb), 1e-6);
-      let hv = -sin(ph * 6.2832);
-      let fib = vn(vec2f(ph * 13.0, i.uv.x * 0.55 - i.uv.y * 2.0)); let fib2 = vn(vec2f(ph * 29.0 + 7.0, i.uv.x * 1.1));
-      let k = fine * 0.75;
-      n = normalize(g - (Bn * (hv * 0.9 + (fib - 0.5) * 1.5) + Tn * (hv * 0.28 + (fib2 - 0.5) * 0.9)) * k);
-      let groove = smoothstep(-1.0, 0.1, ridge);
-      alb *= mix(1.0, mix(0.35, 1.0, groove) * (0.72 + 0.5 * fib) * (0.82 + 0.32 * fib2), fine * 0.95 + 0.05);
-      ao *= mix(1.0, mix(0.55, 1.0, groove), fine);
-      sheen = 0.5;
-    } else { sheen = 0.8; alb *= 1.1; ao = 1.0; }
-    if (dot(n, V) < 0.0) { n = normalize(n - V * dot(n, V) * 1.25); }
+    let c = pow(i.c.rgb, vec3f(2.2)); red = step(0.12, c.r - c.g);
+    tone = mix(pow(dot(c, vec3f(0.3, 0.52, 0.18)), 0.42) * 0.95, 0.72, red);
+    let fine = smoothstep(1.7, 0.5, fw);
+    let ridge = cos((i.uv.y * 2.0 + i.uv.x * 0.16) * 6.2832);
+    if (i.kind < 1.5) { ink = smoothstep(-0.55, -0.85, ridge) * fine; }
   }
-  let nv = max(dot(n, V), 0.02);
-  let F0 = mix(vec3f(0.04), alb, metal); let dalb = alb * (1.0 - metal);
-  let a2 = pow(max(rough, 0.12), 4.0);
-  var col = f.amb.rgb * dalb * (0.5 + 0.5 * n.y) * ao;
+  // one light, high on the left, in three steps; hollows take a step down
+  let nl = dot(n, normalize(vec3f(-0.55, 0.62, 0.62)));
+  let e = fwidth(nl) * 0.8 + 0.02;
+  var lit = mix(0.5, 0.76, smoothstep(0.12 - e, 0.12 + e, nl));
+  lit = mix(lit, 1.0, smoothstep(0.52 - e, 0.52 + e, nl));
+  lit = mix(lit, 0.97, f.r1.w); lit *= mix(0.62, 1.0, smoothstep(0.25, 0.5, ao));
+  // a polished thing gets one hard shine
+  let sh = smoothstep(0.955, 0.965, dot(normalize(vec3f(-0.4, 0.5, 0.8)), n)) * step(0.5, i.metal + step(0.8, t.a) * step(i.kind, 0.5));
+  var v = mix(tone * lit, 0.98, sh * 0.8) * (1.0 - ink * 0.85);
+  // in the caves it takes the light of the place, as everything drawn does
+  var here = f.env;
   for (var k = 0; k < i32(f.nl); k++) {
-    let l = f.lights[k];
-    let v = l.p.xyz - i.w; let d2 = length(v); let x = length(v.xy) / l.p.w;
-    if (x >= 1.0) { continue; }
-    let fall = (1.0 - x * x) * (1.0 - x * x) / (1.0 + d2 * d2 * 0.22);
-    let dir = v / max(d2, 1e-4); let nl = dot(n, dir);
-    let wrap = mix(0.0, 0.35, step(0.5, i.kind));
-    let dif = max(0.0, (nl + wrap) / (1.0 + wrap)) * mix(ao, 1.0, 0.25);
-    let h = normalize(dir + V); let nh = max(dot(n, h), 0.0); let nl0 = max(nl, 0.0);
-    let dn = nh * nh * (a2 - 1.0) + 1.0;
-    let vis = 0.25 / max(mix(nl0 * nv, 1.0, rough * 0.35), 0.04);
-    let fr = F0 + (1.0 - F0) * pow(1.0 - max(dot(h, V), 0.0), 5.0);
-    col += l.c.rgb * fall * (dalb * dif + fr * min(a2 / (3.1416 * dn * dn), 60.0) * vis * nl0 * ao * 0.8);
-    col += l.c.rgb * fall * alb * sheen * pow(1.0 - nv, 2.5) * max(0.0, nl * 0.6 + 0.4) * ao;
+    let l = f.lights[k]; let d = l.p.xy - i.w.xy; let x = length(d) / l.p.w;
+    if (x < 1.0) { here += (1.0 - x * x) * (1.0 - x * x) * dot(l.c.rgb, vec3f(0.3, 0.52, 0.18)) * 0.62; }
   }
-  let r = reflect(-V, n);
-  let fr = F0 + (max(vec3f(1.0 - rough), F0) - F0) * pow(1.0 - nv, 5.0);
-  col += (room(r, rough) * fr * mix(0.9, 1.0, metal) * mix(ao, 1.0, 0.2) + room(n, 1.0) * dalb * 0.35 * ao) * f.env;
   var o: FO;
-  o.c = vec4f(max(col, vec3f(0.0)) * f.gain, 1.0);
-  o.n = vec4f(n.xy * 0.5 + 0.5, clamp(nv, 0.0, 1.0), f.at.w);
+  o.c = vec4f(mix(vec3f(1.0, 0.95, 0.87), vec3f(1.0, 0.16, 0.12) * 1.25, red) * v * min(here, 1.0) * f.gain, 1.0);
+  o.n = vec4f(g.xy * 0.5 + 0.5, clamp(g.z, 0.0, 1.0), f.at.w);
   return o;
 }
 `;

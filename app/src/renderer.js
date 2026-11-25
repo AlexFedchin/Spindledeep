@@ -193,10 +193,10 @@ export class Renderer {
     }
     const u = G.u, [hx, hy] = P.at;
     const ls = (P.own ? [] : f.lights).map((l) => { const x = Math.hypot(l.x - hx, l.y - hy); return [l.i * Math.max(0, 1.6 - x / l.r) / (1 + x * x * 0.12), l]; }).filter((a) => a[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, PROP_LIGHTS - P.lights.length).map((a) => a[1]).concat(P.lights);
-    u[0] = f.cam[0]; u[1] = f.cam[1]; u[2] = f.viewH; u[3] = this.w / this.h; u[4] = ls.length; u[5] = P.env; u[6] = P.gain; u[7] = Math.max(2, P.k * 7);
-    u[8] = f.ambient[0]; u[9] = f.ambient[1]; u[10] = f.ambient[2];
+    u[0] = f.cam[0]; u[1] = f.cam[1]; u[2] = f.viewH; u[3] = this.w / this.h; u[4] = ls.length; u[5] = P.env; u[6] = P.gain; u[7] = Math.max(8, P.k * 26);
+    u[8] = f.ambient[0]; u[9] = f.ambient[1]; u[10] = f.ambient[2]; u[11] = P.blur;
     for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++) u[12 + c * 4 + r] = P.R[c][r];
-    u[15] = P.k; u[24] = P.at[0]; u[25] = P.at[1]; u[26] = P.at[2]; u[27] = P.over ? 0 : 0.5;
+    u[15] = P.k; u[19] = P.flat || 0; u[24] = P.at[0]; u[25] = P.at[1]; u[26] = P.at[2]; u[27] = P.over ? 0 : 0.5;
     ls.forEach((l, k) => { const o = 28 + k * 8; u[o] = l.x; u[o + 1] = l.y; u[o + 2] = l.z ?? 1.5; u[o + 3] = l.r; u[o + 4] = l.c[0] * l.i; u[o + 5] = l.c[1] * l.i; u[o + 6] = l.c[2] * l.i; });
     d.queue.writeBuffer(G.ubo, 0, u);
     rp.setPipeline(this.propPipe); rp.setBindGroup(0, G.bg); rp.setVertexBuffer(0, g.vb); rp.setIndexBuffer(g.ib, 'uint32'); rp.drawIndexed(P.m.ni);

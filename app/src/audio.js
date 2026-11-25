@@ -12,6 +12,7 @@ export const GROUPS = {
   st_wood: 6, st_board: 3, st_earth: 5, st_leaf: 4, st_wet: 5, st_soft: 5, st_grit: 4, cloth: 5,
   stones: 4, tick: 4, trickle: 3, rumble: 3, groan: 4,
   cricket: 3, beetle: 4, twig: 5, leaf: 4, timber: 4, chair: 4, floor: 4, scratch: 4, loomwork: 3,
+  ratch: 3, clack: 3, pan: 3, pin: 3, roll: 3, whirr: 1, heave: 2,
   ring: 2, chain: 4, hinge: 3, plop: 3, bubble: 4,
 };
 const FILES = [

@@ -191,6 +191,8 @@ class Yarn:
 
     def fuzz(self, pts, r, count, length, rng, col, thick=0.0016, lift=0.7, curl=1.0):
         """fibres that have worked loose from a strand"""
+        if 'fuzz' not in opts:      # drawn flat and inked they only make a smudge (2026-11-25: 2.5D, not realistic)
+            return
         pts = np.asarray(pts, float)
         m = len(pts)
         for _ in range(count):
@@ -1190,6 +1192,117 @@ def item_shoe():
         q.data.vertices.foreach_set('co', co.astype(np.float32).ravel())
         q.data.update()
     Y.P = [p * [0.8, 1, 1] for p in Y.P]
+    return objs, Y
+
+
+def item_weight():
+    P = [(0.0, -0.42), (0.36, -0.42), (0.40, -0.40), (0.405, -0.36), (0.38, -0.05), (0.35, 0.10), (0.31, 0.16), (0.20, 0.19), (0.12, 0.21), (0.10, 0.25), (0.13, 0.31), (0.17, 0.37), (0.17, 0.43), (0.12, 0.48), (0.0005, 0.50)]
+    P = np.vstack([P[:1], resample(spline(P[1:], 150), 110)])
+
+    def shape(p, a, r, z):
+        q = p.copy()
+        if z < -0.3:                                        # the filed side
+            q[2] += 0.05 * max(0, math.cos(a - 5.2)) ** 2 * min(1, (-0.3 - z) / 0.1)
+        return q
+    o = lathe('weight', P, 180, shape=shape)
+    # the scratches go round the straight part
+    co = np.array([v.co[:] for v in o.data.vertices])
+    me = o.data
+    idx = np.array([l.vertex_index for l in me.loops])
+    uv = np.empty(len(me.loops) * 2, np.float32)
+    me.uv_layers['print'].data.foreach_get('uv', uv)
+    uv = uv.reshape(-1, 2)
+    uv[:, 1] = (co[idx][:, 2] + 0.42) / 0.5
+    uv[:, 0] = (uv[:, 0] + 0.0) % 1.0001
+    me.uv_layers['print'].data.foreach_set('uv', uv.ravel())
+    outward(o)
+    give(o, metal('iron', (0.16, 0.155, 0.15), (0.03, 0.028, 0.027), 'weight_h.png', 0.03, 1.0, gloss=0.4))
+    return [o], Yarn()
+
+
+def item_tag():
+    rng = np.random.default_rng(5)
+    W, H = 0.62, 1.0
+
+    def f(x, z):
+        return (x, 0.02 * math.sin(x * 7 + z * 3) + 0.03 * math.sin(z * 4.1 + 1) + 0.012 * math.exp(-((z + 0.11) / 0.02) ** 2), z)
+
+    def make(name, off, uvf=None):
+        o = sheet(name, W, H, 124, 200, lambda x, z: tuple(np.array(f(x, z)) + [0, off, 0]), uvf, seed=4)
+        import bmesh
+        b = bmesh.new()
+        b.from_mesh(o.data)
+        kill = []
+        for fc in b.faces:
+            c = fc.calc_center_median()
+            x, z = c.x, c.z
+            corner = abs(x) / (W / 2) + max(0, (z - 0.36) / 0.14) * 0.42 > 1.02 and z > 0.36
+            hole = x * x + (z - 0.41) ** 2 < 0.032 ** 2
+            cut = -0.2 + 0.012 * math.sin(z * 60) < x < 0.21 + 0.01 * math.sin(z * 47) and 0.015 + 0.008 * math.sin(x * 23) < z < 0.135 + 0.008 * math.sin(x * 31)
+            if corner or hole or cut:
+                kill.append(fc)
+        bmesh.ops.delete(b, geom=kill, context='FACES')
+        b.to_mesh(o.data)
+        b.free()
+        return o
+    a = make('tagf', 0.0)
+    give(a, paper('tf', 'tag_front.png', (0.92, 0.82, 0.62)))
+    b = make('tagb', 0.006, lambda u, v: (1 - u, v))
+    b.data.flip_normals()
+    give(b, paper('tb', 'tag_back.png', (0.85, 0.75, 0.56)))
+    Y = Yarn()
+    col = (0.3, 0.27, 0.22)
+    for s in (-1, 1):
+        P = spline([[0.0, 0.05, 0.40], [0.01 * s, 0.0, 0.44], [0.03 * s, -0.05 * s, 0.52], [0.09 * s, -0.05, 0.60], [0.2 * s, -0.03, 0.60 + 0.04 * s], [0.27 * s, 0.0, 0.53 + 0.03 * s]], 70)
+        Y.tube(P, 0.014, 8, col)
+        Y.frayed(P[-1], P[-1] - P[-4], 0.014, rng, col, 0.1, 9)
+    return [a, b], Y
+
+
+def item_scissors():
+    def plate(name, pts, th, m, y=0.0):
+        P = resample(spline(pts, 260, closed=True), 200)[:-1] if len(pts) > 6 else np.array(pts, float)
+        n = len(P)
+        V = [(p[0], y - th / 2, p[1]) for p in P] + [(p[0], y + th / 2, p[1]) for p in P]
+        F = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, n + i, n + (i + 1) % n, (i + 1) % n) for i in range(n)]
+        o = mesh(name, V, F, np.zeros((2 * n, 2)))
+        mod(o, 'TRIANGULATE')
+        outward(o)
+        mod(o, 'EDGE_SPLIT', split_angle=math.radians(40))
+        return give(o, m)
+    st = metal('steel', (0.5, 0.49, 0.47), (0.06, 0.055, 0.05), None, gloss=0.2)
+    st2 = metal('steel2', (0.46, 0.45, 0.43), (0.06, 0.055, 0.05), None, gloss=0.24)
+    objs = []
+    for s, m in ((1, st), (-1, st2)):
+        a = math.radians(13 * s)
+        R = lambda x, z: (x * math.cos(a) + z * math.sin(a), -x * math.sin(a) + z * math.cos(a))
+        tipz = 0.56 if s > 0 else 0.40                       # one point is gone
+        blade = [(-0.055, -0.10), (-0.062, 0.0), (-0.05, 0.2), (-0.022, tipz - 0.02)] + ([(0.0, tipz + 0.02)] if s > 0 else [(-0.004, tipz - 0.05), (0.018, tipz + 0.015), (0.03, tipz - 0.04)]) + [(0.028, 0.2), (0.05, 0.02), (0.052, -0.08), (0.03, -0.16), (-0.02, -0.17)]
+        objs.append(plate(f'blade{s}', [R(x * 1.0, z) for x, z in blade], 0.028, m, 0.016 * s))
+        # the bow: a worn oval, on a shank with a knop
+        c = R(0.02 * s, -0.40)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.125, minor_radius=0.027, major_segments=72, minor_segments=18, location=(c[0] - 0.06 * s, 0.016 * s, c[1]), rotation=(math.pi / 2, 0, 0))
+        o = bpy.context.object
+        o.scale = (0.86, 1.15, 1)
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        o.data.uv_layers[0].name = 'print'
+        o.data.polygons.foreach_set('use_smooth', [True] * len(o.data.polygons))
+        objs.append(give(o, m))
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=14, radius=0.042, location=(R(0.0, -0.22)[0] - 0.008 * s, 0.016 * s, R(0, -0.22)[1]))
+        o = bpy.context.object
+        o.data.uv_layers[0].name = 'print'
+        o.data.polygons.foreach_set('use_smooth', [True] * len(o.data.polygons))
+        objs.append(give(o, m))
+    bpy.ops.mesh.primitive_cylinder_add(vertices=40, radius=0.036, depth=0.09, location=(0, 0, 0), rotation=(math.pi / 2, 0, 0))
+    o = bpy.context.object
+    o.data.uv_layers[0].name = 'print'
+    objs.append(give(o, st2))
+    Y = Yarn()
+    rng = np.random.default_rng(9)
+    P = spline([[0.02, -0.05, 0.26], [0.05, -0.06, 0.28], [0.10, -0.05, 0.22], [0.16, -0.05, 0.02], [0.26, -0.05, -0.12], [0.34, -0.05, -0.08], [0.40, -0.05, -0.2]], 120)
+    Y.tube(P, 0.014, 8, RED)
+    Y.frayed(P[-1], P[-1] - P[-4], 0.014, rng, RED, 0.1, 10)
+    Y.frayed(P[0], P[0] - P[4], 0.014, rng, RED, 0.06, 8)
     return objs, Y
 
 

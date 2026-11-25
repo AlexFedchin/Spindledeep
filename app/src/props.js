@@ -55,6 +55,9 @@ export const LORE = [
   ['candles', 2.4, -116, 1], ['stool', 4.6, -116, -1],          // the Ringer's Cell
   ['letters', 117.0, -155, 1], ['boots', 115.2, -155, 1],       // the Sill
   ['baskets', 71.2, -243, 1],                                   // the Last Basket
+  ['candles', 3.5, -258.2, 1],
+  ['markers', 14.2, -311.5, 1], ['letters', 11.2, -311.5, 1],
+  ['stool', 25.9, -420, 1], ['lantern', 23.4, -420, 1],
   ['ferrylamp', 21.0, -193, 1],                                 // the Mere's far shore: it can be seen from the last island
 ];
 
@@ -193,6 +196,10 @@ export function drawShowItem(D, ctx, ectx, it) {
   KEEP[it.kind](Q, D.time);
 }
 const KEEP = {
+  // stand-ins until the drawn ones are loaded (props3d.js)
+  weight(P) { P.poly([[-0.13, 0.0], [0.13, 0.0], [0.09, 0.2], [-0.09, 0.2]], 0.3); P.ell(0, 0.26, 0.06, 0.06, 0, null, 0.3, 0.025); for (let i = 0; i < 5; i++) P.line([[-0.08 + i * 0.035, 0.05], [-0.07 + i * 0.035, 0.14]], 0.05, 0.008); },
+  tag(P) { P.poly([[-0.1, 0.0], [0.1, 0.0], [0.1, 0.24], [0.06, 0.3], [-0.06, 0.3], [-0.1, 0.24]], 0.8); P.poly([[-0.06, 0.12], [0.06, 0.12], [0.06, 0.18], [-0.06, 0.18]], 0.03, null); P.ell(0, 0.265, 0.014, 0.014, 0, 0.03, null); },
+  scissors(P) { P.ell(-0.06, 0.06, 0.05, 0.05, 0, null, 0.6, 0.02); P.ell(0.06, 0.06, 0.05, 0.05, 0, null, 0.6, 0.02); P.line([[-0.04, 0.1], [0.05, 0.32]], 0.6, 0.022); P.line([[0.04, 0.1], [-0.03, 0.26]], 0.6, 0.022); },
   // a wooden spool, a few turns of red still on it
   spool(P) {
     P.poly([[-0.1, 0.03], [0.1, 0.03], [0.1, 0.27], [-0.1, 0.27]], 0.5);

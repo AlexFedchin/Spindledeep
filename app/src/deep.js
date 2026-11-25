@@ -10,6 +10,9 @@ const T_ground = (T, x, y) => T.ground(x, y + 1.5, 4);
 // the hands. Each waits buried; when she comes near the earth over it crumbles (the warning), then it bursts out at where
 // she WILL be, gropes after her a moment, and draws back. A pluck drives off only a hand that has already stirred, so
 // playing the thread ahead of time does nothing. One that gets hold of her drags her to the rock: pluck to tear free.
+// what follows her up the Loom comes hand over hand along the thread she has laid behind her. A pluck shakes it back down it, and
+// the more often it is done the less far
+export const CRAWL = { from: 24, v: 4.3, move: 0.95, per: 2.0, near: 7.5, grab: 1.1, shake: 10, less: 0.82, stun: 1.0, cost: 2.5, peg: 11 };
 export const HAND = { stir: 0.5, stirLow: 0.8, gap: 0.9, lunge: 15, steer: 2.6, grope: 0.8, gropeV: 4.6, back: 6, cool: 1.0, hold: 1.0, drag: 3.2, stun: 1.7, stunAgain: 1.1, at: 9, grab: 0.5, cost: 9, lull: 1.15, most: 2 };
 const REST = 0.42, SHAKE = 0.64, SLAM = 0.69, HOLD = 0.8;
 
@@ -33,7 +36,7 @@ export class Deep {
     this.stampers = L.STAMPERS.map((s, i) => ({ ...s, i, f: 0, shake: 0, phase: 'rest' }));
     // the people who came when they were called: they stand on the floor of the Loom with their backs to her
     this.called = L.CALLED.map(([x, kind, h], i) => ({ x, x0: x, y: T.ground(x, L.RISE.y0 + 4, 8) ?? L.RISE.y0, kind, h, i, turned: false, seen: false, flip: i % 3 ? 1 : -1, tone: 0.5 + 0.35 * ((i * 7) % 5) / 5, lean: ((i * 13) % 7 - 3) * 0.008 }));
-    this.crawler = { on: false, x: 84, y: L.RISE.y0 - 6, step: 0, jerk: 0, look: 0, t: 0 };
+    this.crawler = { on: false, x: 84, y: L.RISE.y0 - 6, step: 0, jerk: 0, look: 0, t: 0, s: 0, gap: 99, stun: 0, used: 0, n: 0 };
     this.rise = { ...L.RISE, level: L.RISE.y0, on: false, t: 0, done: false, woke: false };
     this.lastPluck = -99;
   }
@@ -64,6 +67,12 @@ export class Deep {
       if (h.ext > 0.3) this.W.emit('recoil', { x: h.tx, y: h.ty });
       h.st = 'back'; h.grab = false; h.cool = again ? HAND.stunAgain : HAND.stun; hit = true;
     }
+    const c = this.crawler;
+    if (c.on && c.gap < 16) {
+      c.used = this.W.time - c.last < 6 ? c.used + 1 : 0; c.last = this.W.time;
+      c.s -= CRAWL.shake * CRAWL.less ** c.used; c.stun = CRAWL.stun; this.W.hurt += CRAWL.cost;
+      this.W.emit('crawlShake', { x: c.x, y: c.y });
+    }
     if (hit) this.lull = this.W.time + HAND.lull;       // a pluck that drove one off quiets the rest of the earth for a moment
   }
 
@@ -71,6 +80,7 @@ export class Deep {
     for (const h of this.hands) { h.ext = 0; h.grab = false; h.st = 'wait'; h.cool = 1; }
     const r = this.rise;
     this.crawler.on = false;
+    this.crawler.s = -1;
     if (r.on || r.level > r.y0) { r.on = false; r.t = 0; r.level = Math.max(r.y0, Math.min(r.level, this.W.checkpoint.y - r.back)); }
   }
 
@@ -173,7 +183,7 @@ export class Deep {
     if (W.ending && !r.done) { r.done = true; r.on = false; }
     if (ci === r.stop && !r.done) { r.done = true; r.on = false; this.crawler.on = false; W.emit('riseStop', { x: p.x, y: p.y }); }
     const last = W.memories.find((m) => m.id === 'm10'), heard = !last.heard ? 0 : last.at !== undefined ? W.time - last.at : 99;
-    if (!r.on && !r.done && ci >= r.peg && ci < r.stop && !p.dead && Math.hypot(p.x - W.checkpoint.x, p.y - W.checkpoint.y) > 2.5 && (heard > r.after || p.y > r.y0 + 34)) {
+    if (!r.on && !r.done && r.legs[ci] && !p.dead && Math.hypot(p.x - W.checkpoint.x, p.y - W.checkpoint.y) > 2.5 && (heard > r.after || p.y > r.y0 + 34)) {
       r.on = true; r.t = 0;
       W.emit('rise', { first: !r.woke, x: p.x, y: p.y });
       r.woke = true;
@@ -181,25 +191,50 @@ export class Deep {
     }
     if (r.on) {
       r.t += dt;
-      if (r.t > r.delay) r.level = Math.min(r.y1, Math.max(r.level, Math.min(r.level + 6 * dt, p.y - r.lag)) + r.speed * dt);
+      const [speed, lag] = r.legs[ci] || [1, 14], S = r.surge, u = r.t > r.delay + 4 ? (r.t - r.delay) % S.every : 0;
+      const warn = u > S.every - S.warn - S.len, heave = u > S.every - S.len;
+      if (warn && !r.warned) W.emit('surgeWarn', { x: p.x, y: r.level });
+      if (heave && !r.heaved) W.emit('surge', { x: p.x, y: r.level });
+      r.warned = warn; r.heaved = heave; r.heave = heave ? 1 : warn ? 0.35 : 0;
+      if (r.t > r.delay) r.level = Math.min(r.y1, Math.max(r.level, Math.min(r.level + 7 * dt, p.y - lag)) + speed * (heave ? S.k : 1) * dt);
       // it takes her once it has really risen and closed over her (the floor it starts from is not flat to the centimetre)
       if (!p.dead && r.level > r.y0 + 0.4 && p.y < r.level - 0.25 && p.x > r.x0 && p.x < r.x1) W._die('dark');
-      // it comes up the far wall on all fours: still, then three quick steps, then still
-      const c = this.crawler;
-      if (r.t > r.delay + 5) {
-        if (!c.on) { c.on = true; c.y = r.level - 4; c.step = 0; }
-        c.t += dt;
-        const u = c.t % 2.3, moving = u < 0.9;
-        c.jerk = moving ? 1 : 0;
-        const goal = Math.max(r.level + 3, p.y - 7);
-        if (moving) c.y += Math.min(9 * dt, Math.max(0, goal - c.y));
-        const st = Math.floor(u / 0.3);
-        if (moving && st !== c.step) { c.step = st; W.emit('crawl', { x: c.x, y: c.y }); } else if (!moving) c.step = -1;
-        c.look += ((moving ? 0 : 1) - c.look) * Math.min(1, dt * 2.5);
-        const tx = p.x > 60 ? 100 : p.x + 19;
-        c.x += (tx - c.x) * Math.min(1, dt * 0.25);
-      }
+      this._crawl(dt);
     } else if (r.done) r.level = Math.max(r.y0, r.level - dt * 3);
+  }
+
+  // along the thread, from far behind her up to her: still, then quick, then still
+  _crawl(dt) {
+    const W = this.W, p = W.player, c = this.crawler, th = W.thread, P = th.poly, n = th.polyN, r = this.rise;
+    if (n < 3) return;
+    const total = P[(n - 1) * 5 + 3];
+    if (r.t < r.delay + 4) return;
+    if (!c.on || c.s < 0) { c.on = true; c.s = total - CRAWL.from; c.stun = 0; c.last = -99; c.used = 0; c.peg = W.checkpoint.i; c.snap = true; }
+    // (reaching a pole, she gains a little on it)
+    if (c.peg !== W.checkpoint.i) { c.peg = W.checkpoint.i; c.s = Math.min(c.s, total - CRAWL.peg); }
+    c.t += dt; c.stun = Math.max(0, c.stun - dt);
+    const u = c.t % CRAWL.per, moving = u < CRAWL.move && c.stun <= 0 && !p.dead;
+    c.jerk = moving ? 1 : c.stun > 0 ? 1.6 : 0;
+    if (moving) c.s += CRAWL.v * dt;
+    c.s = Math.max(total - 34, Math.min(c.s, total));
+    c.gap = total - c.s;
+    const st = Math.floor(u / 0.3);
+    if (moving && st !== c.step) { c.step = st; W.emit('crawl', { x: c.x, y: c.y, gap: c.gap }); } else if (!moving) c.step = -1;
+    c.look += ((c.gap < CRAWL.near ? 1 : moving ? 0 : 0.6) - c.look) * Math.min(1, dt * 3);
+    const near = c.gap < CRAWL.near;
+    if (near && !c.near) W.emit('crawlNear', { x: c.x, y: c.y });
+    c.near = near;
+    const [x, y] = this.alongThread(c.s); c.x = x; c.y = y;
+    if (!p.dead && !W.ending && c.gap < CRAWL.grab && c.stun <= 0) W._die('thing');
+  }
+  // the point of the thread `s` metres from its far end (the drawn line is kept from her hand backward)
+  alongThread(s) {
+    const P = this.W.thread.poly, n = this.W.thread.polyN;
+    s = Math.max(0, P[(n - 1) * 5 + 3] - s);
+    let lo = 0, hi = n - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (P[m * 5 + 3] < s) lo = m + 1; else hi = m; }
+    const b = Math.max(1, lo) * 5, a = b - 5, sa = P[a + 3], sb = P[b + 3], t = clamp((s - sa) / Math.max(1e-4, sb - sa), 0, 1);
+    return [P[a] + (P[b] - P[a]) * t, P[a + 1] + (P[b + 1] - P[a + 1]) * t];
   }
 
   // the stamper's whole body at this moment (rest rect stretched along its direction)
