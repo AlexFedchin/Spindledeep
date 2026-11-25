@@ -84,6 +84,7 @@ function createWindow() {
   win.on('enter-full-screen', () => win.webContents.send('fullscreen', true));
   win.on('leave-full-screen', () => win.webContents.send('fullscreen', false));
   const q = new URLSearchParams();
+  q.set('v', app.getVersion());
   if (SMOKE) q.set('smoke', '1');
   if (DEV) q.set('dev', '1');
   if (arg('from')) q.set('from', String(arg('from')));       // a pole to start from: adds a line to the title menu

@@ -233,6 +233,7 @@ function enterTitle() {
   const titleMenu = () => menu($('menu'), items);
   titleMenu();
   show($('title'), true);
+  $('ver').textContent = Q.get('v') || '';
   A.stormStop(); A.fadeMaster(A.volume, 0.6); A.endMusic = false;
   ambient = L.AREAS[0].amb.slice(); moon = L.AREAS[0].moon;
   A.setArea('brink');

@@ -1,7 +1,7 @@
 {
   "name": "spindledeep",
   "productName": "Spindledeep",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Spindledeep - a small, lonely descent on a single red thread.",
   "author": "Alex",
   "license": "MIT",
@@ -12,7 +12,8 @@
     "dev": "electron . --dev",
     "dist": "electron-builder --win portable nsis --x64 --publish never",
     "dist:portable": "electron-builder --win portable --x64 --publish never",
-    "smoke": "electron . --smoke"
+    "smoke": "electron . --smoke",
+    "play": "node --experimental-default-type=module scripts/checks/play.mjs"
   },
   "devDependencies": {
     "electron": "45.2.3",
@@ -21,12 +22,33 @@
   "build": {
     "appId": "com.spindledeep.game",
     "productName": "Spindledeep",
-    "copyright": "Copyright (c) 2026",
-    "directories": { "output": "release", "buildResources": "build" },
-    "files": ["electron/**/*", "app/**/*", "package.json"],
+    "copyright": "Copyright (c) 2026 Alex",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "app/**/*",
+      "!app/assets/voice_young/**",
+      "package.json"
+    ],
     "asar": true,
-    "win": { "icon": "build/icon.ico", "artifactName": "Spindledeep-${version}-${arch}-${target}.${ext}" },
-    "portable": { "artifactName": "Spindledeep-${version}-portable.exe" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "Spindledeep-${version}-setup.exe" }
+    "win": {
+      "icon": "build/icon.ico",
+      "artifactName": "Spindledeep-${version}-${arch}-${target}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Spindledeep-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Spindledeep-${version}-setup.exe"
+    },
+    "electronLanguages": [
+      "en-US"
+    ],
+    "compression": "maximum"
   }
 }

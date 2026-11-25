@@ -63,9 +63,9 @@ does, and what became of the knitter and the doll are all said in plain words, i
 | Bell Gallery | m4 | the bells rang for everyone it took, then for the ringer | one hung · one fell short |
 | Ink Mere | m5 | her husband said her name, and it heard | one on the first island · one in the ink |
 | Down to the Loom | m6 | something speaking with her voice | — |
-| Hall of Chairs | m7 | how it has the names | dolls in the chairs' laps |
-| The Hush | m8 | the voice wants you dead; the arms | dolls held in the walls |
-| The Treadles | m9 | the child: "it says everything I say" | dolls crushed in the heddles |
+| Hall of Chairs | m7, m11 | how it has the names; they said them aloud and thought it was prayer | dolls in the chairs' laps, in the pews |
+| The Hush | m8, m12 | the voice wants you dead; the arms | dolls held in the walls |
+| The Treadles | m9, m13 (it has been listening for your feet) | the child: "it says everything I say" | dolls crushed in the heddles |
 | The Loom | m10, fin_*, cut*, names | what it wants, what to do, and the choice | the called; her |
 
 ## Where it lives

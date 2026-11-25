@@ -102,11 +102,22 @@ the Hush, people only from the Hush down.
 
 ## Keepsakes and skeins (2026-11-25)
 
-Flat drawings of found things looked cartoonish full screen to the user: they are real models (`props3d.js`, `PROP_WGSL`, `_prop` in renderer.js).
+**The user wants everything 2D; found things are 2-2.5D, never realistic models.** The shapes are models, but `PROP_WGSL` draws them flat: one grey, three steps of
+light, ink where print or relief is (high-pass of the baked maps), red only for the thread; ENGRAVE hatches them like the doll and inks their outline. They rock a
+little, never turn round (`HOLD`: `blur` = how much surface is left out, `flat` for paper). (`props3d.js`, `_prop` in renderer.js).
 `scripts/props3d`: `maps.py` (prints, writing, relief; art venv) → `build.py` (Blender, `-- <names|all> [--draft]`: solids baked to one atlas with
 object-space normals, yarn as untextured tubes, plies spun in the shader) → `pack.py` → `app/assets/props/<kind>.bin/.webp/_n.jpg` (ours, in git).
 How each is held up: `HOLD` in props3d.js. A new keepsake needs an `item_<kind>` in build.py, a `HOLD` entry and, as a stand-in, a `KEEP` drawing.
 Faces must wind outward (bakes of inside-out faces come out black): see `flip` in `lathe`, `outward`. Nothing may glow over a held thing (emission washes it out).
+
+## The chase and the whole-game bot (2026-11-25)
+
+`npm run play [plain|frayed] [seed]` (`scripts/checks/play.mjs`; `FROM=pole`, `V=1`, `TRIES=n`) plays cottage to choice in one world: **run it, both modes, after any
+change to level, physics or machines** (it found a gate id used twice, which no room test could). Gate ids must be unique.
+Loom: `RISE.legs` (speed and lag per pole), `RISE.surge`; `CRAWL` in deep.js: the thing follows `thread.poly` (kept from her hand backward: `alongThread`). Gates with `give` are
+cloth strips. Climb poles: 24 25 26 44 45 46 47 48 27 28. Ring bots must hold grip in the frame they jump off (else no lift).
+Keepsakes: 11. Voices m11-m13 stand at the end of MEMORIES (saves index it). `scripts/audio_rooms.py` synthesises the rooms' one-shots. `LIFE` per room: `roomAt` in sound.js.
+Builds: `build.cmd` bumps the patch version. Trailer: `scripts/trailer/capture.py` → smoke run → `cut.py`.
 
 ## The thread's machinery and the six rooms (2026-11-25)
 

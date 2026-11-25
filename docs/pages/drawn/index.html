@@ -1,0 +1,293 @@
+<title>Spindledeep · Drawn</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    .wide { max-width: 900px; margin: 0 auto; }
+    .fig { margin: 8px 0 26px; }
+    .fig img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+    .fig figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); margin-top: 10px; }
+    details.seal { max-width: 900px; margin: 34px auto; border: 1px solid var(--rule); padding: 18px 22px; }
+    details.seal summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); }
+    details.seal summary:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    details.seal[open] summary { margin-bottom: 22px; }
+    table.windows td, table.windows th { vertical-align: top; white-space: normal; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; drawn, not modelled</div>
+    <h1>Drawn</h1>
+    <p class="tag">Flat things again<span></span>and something on the thread</p>
+  </header>
+
+  <p class="ask">I actually like that everything looks 2D, I would probably ask you to even make the collectibles kind of like 2-2.5D, I don't know how though. The game is not supposed to be super realistic, it has its visual styles and super detailed 3d models do not fit. So please do points 2, 4, 5, 6 (actually the whole loom chase should be more intense) and 9. Point 3 do with my comments.</p>
+
+  <h2>The collectibles, drawn</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Flat tones and ink.</b> Each thing is now one flat grey with three steps of light, an ink outline as thick as the doll&rsquo;s, and the same hatching. Nothing reflects any more.</li>
+      <li><b>What is on them is ink too.</b> Writing, scratches, pits and stitches are drawn as lines, so you can still read them.</li>
+      <li><b>No colour but the thread&rsquo;s.</b> Only red yarn is red.</li>
+      <li><b>Two and a half dimensions.</b> They rock a little like a thing cut out of card. The mouse can tip one, but not turn it round, and it swings back when you let go.</li>
+      <li><b>The same everywhere.</b> Held up, lying in the caves and on her shelf.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/skein_before.jpg" alt="Before: the realistic ball of yarn">
+      <img class="after" src="img/skein_after.jpg" alt="Now: drawn">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-skein" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/thimble_before.jpg" alt="Before: the realistic thimble">
+      <img class="after" src="img/thimble_after.jpg" alt="Now: drawn">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-thimble" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/button_before.jpg" alt="Before: the realistic button">
+      <img class="after" src="img/button_after.jpg" alt="Now: drawn">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-button" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/seeds_before.jpg" alt="Before: the realistic packet">
+      <img class="after" src="img/seeds_after.jpg" alt="Now: drawn">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-seeds" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <details class="seal">
+    <summary>Sealed: the other five. What is on them is part of the story</summary>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/spool_before.jpg" alt="Before">
+      <img class="after" src="img/spool_after.jpg" alt="Now">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-spool" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/eye_before.jpg" alt="Before">
+      <img class="after" src="img/eye_after.jpg" alt="Now">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-eye" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/mitten_before.jpg" alt="Before">
+      <img class="after" src="img/mitten_after.jpg" alt="Now">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-mitten" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/pattern_before.jpg" alt="Before">
+      <img class="after" src="img/pattern_after.jpg" alt="Now">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-pattern" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/shoe_before.jpg" alt="Before">
+      <img class="after" src="img/shoe_after.jpg" alt="Now">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shoe" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  </details>
+
+  <h2>The Loom chase</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>It follows your thread.</b> What used to crawl up the far wall now comes hand over hand along the thread you have laid, and kills when it reaches you. A pluck shakes it back down, less far each time, and costs yarn.</li>
+      <li><b>The dark heaves.</b> It stays closer than before, and every eight and a half seconds it gathers itself and lunges. Your thread goes out where it has closed over it.</li>
+      <li><b>A longer way.</b> Instead of straight up, the climb now goes out across the Loom over strips of cloth that tear away under you, up a third rope on the far side, and back along the top. There are five new poles.</li>
+      <li><b>Three tools at once.</b> The way back is a machine: wind in a handle to lift a door, get past a bobbin by fouling it on your thread, then hang from a sinking ring over the dark to lift the last door.</li>
+    </ul>
+  </div>
+  <div class="wide"><figure class="fig"><img src="img/l_n2.jpg" alt="A long-limbed figure hauling itself along the red thread toward the doll"><figcaption>on the thread, behind her</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/l_gap.jpg" alt="A bobbin wound with thread, a ring over a gap, and hands rising out of the dark"><figcaption>the machine &middot; the bobbin, the sinking ring and its door, the dark below</figcaption></figure></div>
+
+  <h2>Story and sound for the new rooms</h2>
+  <div class="col">
+    <p>The rooms under the Hall, round the Hush and below the Treadles now have one knot of her voice and one hidden room per pair, each with a keepsake. There are eleven keepsakes now, and the reward for finding them all needs all eleven. The shelf has room for them. Each of the six rooms has its own quiet noises. The ratchets, the bobbin, the spindles and the heaving dark have sounds made for them. Everything is a single short sound and nothing lasts.</p>
+  </div>
+  <details class="seal">
+    <summary>Sealed: the three lines and the three new keepsakes</summary>
+    <div class="col">
+      <ul class="what">
+        <li><b>Under the Hall.</b> &ldquo;They sat in rows down here, little one, and said them aloud. The names of everyone they had lost. They thought that they were praying.&rdquo;</li>
+        <li><b>Round the Hush.</b> &ldquo;When it moves in the walls, be still. I was still for a whole winter, once. It sat beside me the whole time.&rdquo;</li>
+        <li><b>Below the Treadles.</b> &ldquo;I can hear you coming down. Such small feet. ...I never gave you feet that make a sound.&rdquo;</li>
+      </ul>
+    </div>
+  <div class="wide"><figure class="fig"><img src="img/weight.jpg" alt="An iron weight with scratches"><figcaption>the Tally</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/tag.jpg" alt="A luggage tag with the name cut out"><figcaption>the Held Breath</figcaption></figure></div>
+  <div class="wide"><figure class="fig"><img src="img/scissors.jpg" alt="Embroidery scissors with one point snapped off"><figcaption>the Cut</figcaption></figure></div>
+  </details>
+
+  <h2>A bot that plays the whole game</h2>
+  <div class="col">
+    <p>It starts at the cottage and goes pole to pole to the choice at the top, in one world, with the real thread, hands, machines and the chase. When it dies it tries again, as a person would. It paid for itself at once: one strip of cloth had the same name as the veil in the Root Gardens, so in a real run it would already have been torn away when you arrived, and no test of a single room could have shown that. It also showed that two ropes hung too high to catch from the floor.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Run</th><th>Reached the choice</th><th>Time</th><th>Deaths</th></tr></thead>
+        <tbody>
+          <tr><td>Plain, first seed</td><td>yes</td><td>10.7 min</td><td>15</td></tr>
+          <tr><td>Plain, second seed</td><td>yes</td><td>10.4 min</td><td>12</td></tr>
+          <tr><td>Plain, third seed</td><td>yes</td><td>10.3 min</td><td>14</td></tr>
+          <tr><td>Frayed, three seeds</td><td>yes</td><td>7.9 min each</td><td>4 each</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:18px">The bot knows the way and skips every secret, so a person takes longer. Moths are switched off for it. It also taught me that my older ring tests had been letting go without the lift a jump gives, so those rings are easier for you than the figures on the last page said.</p>
+  </div>
+
+  <h2>Release</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Version numbers.</b> This is 1.1.0, shown on the title screen, and <code>build.cmd</code> raises it with every build.</li>
+      <li><b>Smaller.</b> The portable exe is 277 MB instead of 298. Most of the rest is the engine and the three films, which I left at full quality.</li>
+      <li><b>A trailer.</b> 67 seconds at 1080p, recorded from the game, in <code>release/Spindledeep-trailer.mp4</code>. It shows places, the chase and the opening premise, and nothing of the plot after that.</li>
+      <li><b>Not signed.</b> Windows will still warn people. Signing needs a certificate bought in your name; once you have one, <code>build.cmd</code> says which two settings to fill in and the build will sign itself.</li>
+    </ul>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/shaders.js</code> <code>props3d.js</code></b><span>The drawn look of the collectibles.</span></div>
+      <div><b><code>app/src/deep.js</code> <code>stage.js</code></b><span>The chase: what follows the thread, the heaving dark.</span></div>
+      <div><b><code>app/src/rig.js</code> <code>level.js</code></b><span>The cloth strips, the machine, the hidden rooms.</span></div>
+      <div><b><code>scripts/audio_rooms.py</code></b><span>The new sounds.</span></div>
+      <div><b><code>scripts/checks/play.mjs</code></b><span>The bot. <code>npm run play</code></span></div>
+      <div><b><code>scripts/trailer/</code></b><span>Recording and cutting the trailer.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/JVz86QFmxLkkRDhP4QLHUn">further</a> &middot; <a href="https://claude.ai/artifact/1Nw7Pg3WD3HzuWupWjqqWn">things</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>
