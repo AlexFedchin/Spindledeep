@@ -3,3 +3,5 @@ release/
 scripts/**/.cache/
 __pycache__/
 *.log
+# made from a model that is not ours to hand out (scripts/figures/export.py)
+app/assets/figures/

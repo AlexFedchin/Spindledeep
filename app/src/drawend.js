@@ -1,15 +1,11 @@
 // Drawing for the bottom of the world: the arms that come out of the earth, the people who came when they were called,
-// the dark that rises, and the thing that calls. Pictures (assets/art/sprites) are lit tone on nothing, made by
+// the dark that rises, and what is left of her. The thing itself is a real figure (stage.js, figure.js). Pictures (assets/art/sprites) are lit tone on nothing, made by
 // scripts/art (caller.py, facework.py, cutout.py); the engraving and the lights do the rest, so most of it is never seen.
 import * as L from './level.js';
-import { clamp, mulberry, smooth, TAU } from './util.js';
+import { clamp, TAU } from './util.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
-export const SPRITES = ['arm0', 'arm1', 'arms', 'back0', 'back1', 'back2', 'back3', 'front0', 'front1', 'front2', 'front3',
-  'crawl', 'crawlhead', 'call0', 'call1', 'call2', 'call3', 'call4', 'call5'];
-
-// the thing's picture is 13 m tall at `scale 1`; places in it, as fractions of the picture (see cutout.py META)
-export const THING = { h: 12.4, x: 18.6, aspect: 1.1706, neck: [0.192, 0.29] };
+export const SPRITES = ['arm0', 'arm1', 'arms', 'back0', 'back1', 'back2', 'back3', 'front0', 'front1', 'front2', 'front3'];
 
 function img(D, ctx, im, x, y, h, { flip = 1, rot = 0, alpha = 1, dark = 1, ax = 0.5, ay = 1, w = 0 } = {}) {
   if (!im || alpha <= 0) return false;
@@ -140,22 +136,6 @@ export function drawDark(D, ctx, ectx) {
   ectx.save(); ectx.globalCompositeOperation = 'destination-out'; ectx.fillStyle = '#000'; below(ectx); ectx.restore();
 }
 
-// it comes up the far wall after her on all fours, in jerks, never quite in the light
-export function drawCrawler(D, ctx, ectx) {
-  const c = D.w.deep.crawler;
-  if (!c || !c.on || D.cam[1] > -430 || !D.vis(c.x, c.y, 14)) return;
-  const im = D.img?.crawl, hd = D.img?.crawlhead, s = 11;
-  const tw = 0.05 * Math.sin(D.time * 31) * c.jerk;
-  const rot = Math.PI / 2 - 0.12 + tw;
-  for (const [cx, a, d] of [[ctx, 1, 0.62], [ectx, 0.05, 1]]) {
-    img(D, cx, im, c.x, c.y, s, { rot, ax: 0.5, ay: 0.5, alpha: a, dark: d });
-    // the head, hung from the neck, twisted round to look
-    const W = s * (im ? im.width / im.height : 1.5), nx = (THING.neck[0] - 0.5) * W, ny = (THING.neck[1] - 0.5) * s;
-    const px = c.x + (nx * Math.cos(rot) - ny * Math.sin(rot)), py = c.y - (nx * Math.sin(rot) + ny * Math.cos(rot));
-    img(D, cx, hd, px, py, s * 0.24, { rot: rot - 0.9 + c.look * 1.2, ax: 0.78, ay: 0.3, alpha: a, dark: d });
-  }
-}
-
 // ── what is left of her ──────────────────────────────────────────────────
 export function drawRemains(D, ctx, ectx) {
   const w = D.w, f = w.finale, x = L.REMAINS.x;
@@ -191,84 +171,9 @@ export function drawRemains(D, ctx, ectx) {
     return;
   }
   // the flame leans away from the dark, toward her, and shrinks as the thing comes down
-  const th = w.thing, low = th ? th.head : 0, fl = (1 + Math.sin(D.time * 15) * 0.1) * (1 - low * 0.45), lean = 0.04 + low * 0.1;
+  const th = w.thing, low = th ? Math.min(0.6, th.lean || 0) : 0, fl = (1 + Math.sin(D.time * 15) * 0.1) * (1 - low * 0.45), lean = 0.04 + low * 0.1;
   const gr = ectx.createRadialGradient(CX, CY - 0.5 * k, 0, CX, CY - 0.5 * k, 1.5 * k);
   gr.addColorStop(0, `rgba(255,200,120,${0.8 * fl})`); gr.addColorStop(0.15, `rgba(255,140,60,${0.28 * fl})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
   ectx.fillStyle = gr; ectx.fillRect(CX - 1.5 * k, CY - 2 * k, 3 * k, 3 * k);
   ectx.fillStyle = `rgba(255,220,150,${fl})`; ectx.beginPath(); ectx.ellipse(CX + lean * k, CY - 0.5 * k, 0.04 * k, 0.1 * k * fl, lean * 3, 0, TAU); ectx.fill();
-}
-
-// ── the thing over the gallery ───────────────────────────────────────────
-// It has been standing over the place the whole time: what look like pale pillars are its arms and legs. `w.thing`
-// { head 0..1 (how far its head has come down), face 0..1 (turned to her), mouth 0..1, lift (a camera-space zoom), gone }
-export function thingAt(w) {
-  const T = THING, y0 = w.remainsY - 0.12, W = T.h * T.aspect;
-  const x0 = T.x - W / 2;
-  return { x0, y0, W, nx: x0 + T.neck[0] * W, ny: y0 + T.h * (1 - T.neck[1]) };
-}
-export function drawThing(D, ctx, ectx) {
-  const w = D.w, th = w.thing, f = w.finale;
-  if (!th || th.gone || !D.vis(16, f.y + 6, 16)) return;
-  const A = thingAt(w), im = D.img?.crawl, t = D.time, k = D.k;
-  const breathe = 1 + 0.006 * Math.sin(t * 0.9);
-  if (!th.bare) img(D, ctx, im, THING.x, A.y0, THING.h * breathe, { dark: (0.8 + 0.2 * smooth(0.4, 0.9, th.head)) * (1 - 0.85 * (th.only || 0)) });
-  if (th.glow && !th.bare) img(D, ectx, im, THING.x, A.y0, THING.h * breathe, { alpha: th.glow * 0.06 });
-  // the neck: as long as it needs to be
-  const sway = 0.12 * Math.sin(t * 0.7) * (1 - th.face);
-  const hx = A.nx + (th.hx - A.nx) * th.head + sway, hy = A.ny + (th.hy - A.ny) * th.head;
-  const n = 22, P = [];
-  for (let i = 0; i <= n; i++) {
-    const s = i / n, bend = Math.sin(s * Math.PI) * (-2.4 * th.head);
-    P.push([A.nx + (hx - A.nx) * s + bend, A.ny + (hy - A.ny) * s + Math.sin(s * Math.PI) * 0.5 * th.head]);
-  }
-  if (th.head > 0.02 && !th.bare) {
-    const wd = (s) => (0.62 - 0.22 * Math.sin(s * Math.PI) * th.head + (1 - s) * 0.5 * (1 - s)) * 0.75;
-    for (let i = 0; i < n; i++) {
-      const s = (i + 0.5) / n, [ax, ay] = P[i], [bx, by] = P[i + 1], l = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / l, ny = (bx - ax) / l;
-      const w0 = wd(i / n), w1 = wd((i + 1) / n);
-      const G = ctx.createLinearGradient(D.sx(ax + nx * w0), D.sy(ay + ny * w0), D.sx(ax - nx * w0), D.sy(ay - ny * w0));
-      const v = (0.36 + 0.06 * Math.sin(i * 2.1)) * (1 - 0.6 * (th.only || 0) * (1 - s * s));                         // rings of skin, tendons
-      G.addColorStop(0, g(0.02)); G.addColorStop(0.22, g(v * 0.45)); G.addColorStop(0.45, g(v)); G.addColorStop(0.58, g(v * 0.6)); G.addColorStop(0.7, g(v * 0.95)); G.addColorStop(1, g(0.03));
-      ctx.fillStyle = G;
-      ctx.beginPath(); ctx.moveTo(D.sx(ax + nx * w0), D.sy(ay + ny * w0)); ctx.lineTo(D.sx(bx + nx * w1), D.sy(by + ny * w1)); ctx.lineTo(D.sx(bx - nx * w1), D.sy(by - ny * w1)); ctx.lineTo(D.sx(ax - nx * w0), D.sy(ay - ny * w0)); ctx.closePath();
-      ctx.fill(); ctx.strokeStyle = g(v * 0.5); ctx.lineWidth = 0.5; ctx.stroke();
-    }
-  }
-  // the head: hanging in profile until it turns
-  const hh = 4.0 * (th.size || 1), prof = 1 - smooth(0.2, 0.65, th.face);
-  if (prof > 0) img(D, ctx, D.img?.crawlhead, hx, hy, 2.9, { ax: 0.78, ay: 0.3, alpha: prof, dark: 0.95, rot: 0.25 * th.head + 0.05 * Math.sin(t * 2.2) * th.head });
-  if (th.face > 0.2) {
-    const a = smooth(0.2, 0.65, th.face), m = clamp(th.mouth, 0, 1) * 5, i = Math.min(4, Math.floor(m)), fr = m - i;
-    const j = th.jit ? (Math.random() - 0.5) * 0.06 * th.jit : 0;
-    const o = { ax: 0.5, ay: 0.36, rot: 0.04 * Math.sin(t * 1.1) + j, alpha: a };
-    img(D, ctx, D.img?.['call' + i], hx + j, hy, hh, o);
-    if (fr > 0.02) img(D, ctx, D.img?.['call' + (i + 1)], hx + j, hy, hh, { ...o, alpha: a * fr });
-    if (th.glow) { ectx.save(); ectx.globalAlpha = 1; img(D, ectx, D.img?.['call' + Math.round(m)], hx + j, hy, hh, { ...o, alpha: a * th.glow * 0.35 }); ectx.restore(); }
-  }
-}
-
-// ── coming up the thread ─────────────────────────────────────────────────
-// after the two threads are tied. What can be seen of it is arms: each takes hold of the thread ahead, holds that very
-// place while the rest is hauled past it, lets go, and reaches over the others for the next. Where they come from there
-// is only a place with no light in it. `w.climber` { x, y (its middle), hands: [[x, y, grip 0..1]...], a }
-export function drawClimber(D, ctx, ectx) {
-  const c = D.w.climber;
-  if (!c || !c.hands || !D.vis(c.x, c.y, 18)) return;
-  const k = D.k, t = D.time, X = D.sx(c.x), Y = D.sy(c.y), R = 3.6 * k;
-  const line = (h, i) => {
-    const [hx, hy] = h, dx = hx - c.x, dy = hy - c.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, pts = [];
-    const bow = (i % 2 ? 1 : -1) * (0.5 + 0.35 * (i % 3)) * Math.min(1.4, l * 0.28);
-    for (let q = 0; q <= 10; q++) { const s = q / 10, b = Math.sin(s * Math.PI) * bow; pts.push([c.x + dx * s + nx * b, c.y + dy * s + ny * b]); }
-    return pts;
-  };
-  c.hands.forEach((h, i) => arm(D, ctx, D.img?.[i % 2 ? 'arm1' : 'arm0'], line(h, i), 1.25, 0.72, 1, 0.9));
-  // the dark it comes out of covers the arms from the elbow back
-  const G = ctx.createRadialGradient(X, Y, R * 0.2, X, Y, R);
-  G.addColorStop(0, g(0, 1)); G.addColorStop(0.62, g(0, 0.98)); G.addColorStop(1, g(0, 0));
-  ctx.fillStyle = G; ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill();
-  ectx.save(); ectx.globalCompositeOperation = 'destination-out';
-  const G2 = ectx.createRadialGradient(X, Y, R * 0.2, X, Y, R); G2.addColorStop(0, 'rgba(0,0,0,1)'); G2.addColorStop(0.7, 'rgba(0,0,0,0.9)'); G2.addColorStop(1, 'rgba(0,0,0,0)');
-  ectx.fillStyle = G2; ectx.beginPath(); ectx.arc(X, Y, R, 0, TAU); ectx.fill(); ectx.restore();
-  // just the hands give back a little light
-  c.hands.forEach((h, i) => { const P = line(h, i); arm(D, ectx, D.img?.[i % 2 ? 'arm1' : 'arm0'], P.slice(5), 1.25, 0.72, 0.06); });
 }

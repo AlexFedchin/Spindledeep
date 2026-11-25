@@ -5,7 +5,8 @@
 // Timelines are in seconds from the choice. Nothing is loud except one moment; most of it happens in silence.
 import * as L from './level.js';
 import { clamp, damp, lerp, smooth } from './util.js';
-import { THING, thingAt } from './drawend.js';
+import { neckDown } from './stage.js';
+import { V3 } from './figure.js';
 
 const HOLD = 1.3;                      // s a choice key is held
 export const CARDS = {
@@ -33,7 +34,7 @@ export class Ending {
   approach(dt, live) {
     const { W, A, I, $, show } = this.c, w = W(), p = w.player, f = w.finale;
     const top = w.checkpoint.i === 28 && p.y > f.y - 3 && p.x < 46 && !p.dead;
-    if (!top) { if (this.open) { this.open = false; show($('choice'), false); document.body.classList.remove('choosing'); } w.thing = p.y > f.y - 12 && p.y < f.y + 30 ? (w.thing || this.thing()) : null; return; }
+    if (!top) { if (this.open) { this.open = false; show($('choice'), false); document.body.classList.remove('choosing'); } if (w.extraLights) w.extraLights = null; w.thing = p.y > f.y - 12 && p.y < f.y + 30 ? (w.thing || this.thing()) : null; return; }
     const th = (w.thing = w.thing || this.thing());
     this.once('top', () => A.beds({ amb_breath: 0.55 }));
     const d = Math.hypot(p.x - f.x, p.y - f.y);
@@ -44,8 +45,11 @@ export class Ending {
     if (near && free && this.wait > 15) this.once('love', () => this.c.playLine('fin_love', L.FINALE.love));
     if (near && free && this.wait > 29) this.once('mama', () => this.c.playLine('fin_mama', L.FINALE.mama));
     if (near && free && this.wait > 40) this.once('tieit', () => this.c.playLine('fin_tieit', L.FINALE.tieit));
-    // it leans down a little, as long as she stays: never enough to be sure
-    th.head = damp(th.head, near ? Math.min(0.42, 0.06 + this.wait / 90) : 0, 0.5, dt);
+    // she leans a little nearer, as long as the doll stays: her neck is never quite the length it was
+    th.lean = damp(th.lean, near ? Math.min(0.75, 0.08 + this.wait / 60) : 0, 0.5, dt);
+    th.mouth = damp(th.mouth, free ? 0 : 0.1 + 0.1 * Math.abs(Math.sin(this.c.time?.() ?? w.time * 9)), 14, dt);
+    // what there is to see her by comes from behind her
+    w.extraLights = [{ x: 17.2, y: f.y + 2.2, z: 1.2, r: 6.5, i: 0.42, c: [0.86, 0.84, 0.95], soft: 0 }];
     // the choice
     const want = near && this.done.has('a') && (free || this.open || this.wait > 14);
     if (want !== this.open) {
@@ -65,7 +69,11 @@ export class Ending {
       if (this.hold[k] >= HOLD) { this.choose(k === 'act' ? 'tie' : 'cut'); return; }
     }
   }
-  thing() { return { head: 0, face: 0, mouth: 0, glow: 0, size: 1, jit: 0, hx: 15.0, hy: L.FINALE.y + 2.5, gone: false }; }
+  thing() {
+    const y = this.c.W().remainsY, x = 14.6;
+    return { x, y, k: 1.65, yaw: 1.05, lean: 0, mouth: 0, head: null, reach: null, gone: false, gain: 1, hollow: 0.9,
+      lights: [{ x: x - 1.8, y: y + 2.6, z: -1.6, r: 5, i: 1.3, c: [0.7, 0.76, 1] }, { x: x + 2.2, y: y + 1.1, z: 1.4, r: 4, i: 0.55, c: [1, 0.82, 0.72] }] };
+  }
 
   choose(mode) {
     const { W, A, $, show, log } = this.c, w = W();
@@ -75,7 +83,7 @@ export class Ending {
     show($('choice'), false); show($('prompt'), false); show($('hint'), false); show($('sub'), false);
     w.ending = { t: 0, cut: mode === 'cut' };
     w.thing = w.thing || this.thing();
-    this.h0 = w.thing.head;
+    this.h0 = w.thing.lean; w.extraLights = null;
     this.c.setState('ending');
     A.endMusic = true; A.setMusic(null, 1);
     A.stopVoices();
@@ -97,27 +105,32 @@ export class Ending {
       this.lights = [];
       this.at(1.6, 'candle', () => { w.candleOut = w.time; w.lamps = w.lamps.filter((l) => !l.finale); A.play('release', { vol: 0.5, rate: 0.45 }); });
       this.at(4.0, 'mama', () => playLine('fin_mama', L.FINALE.mama));
-      // the light in the place comes from nowhere, and shows what has been standing over her
-      const up = smooth(6.6, 9.6, t), close = smooth(11.2, 13.6, t);
-      if (up > 0) this.lights.push({ x: lerp(18, th.hx + 1.6, close), y: lerp(f.y + 9, th.hy + 1.0, close), r: lerp(17, 7, close), i: lerp(1.5, 0.75, close) * up, c: [0.82, 0.86, 1.0], soft: 0 });
+      // in the dark she grows; then a light from nowhere shows her still kneeling there, holding the thread, and how far up the
+      // neck goes
+      const up = smooth(6.6, 9.6, t), close = smooth(11.2, 13.6, t), grown = smooth(2.2, 5.5, t);
+      th.k = lerp(1.65, 2.7, grown); th.x = lerp(14.6, 13.6, grown); th.yaw = lerp(1.05, 0.95, grown); th.lean = lerp(this.h0, 0.2, grown); th.hollow = 1;
+      th.gain = Math.max(0.0, 1 - smooth(1.6, 2.2, t)) + smooth(6.4, 8, t);
       for (const [s, j] of [[7.0, 1], [7.9, 2], [8.5, 1], [9.4, 2], [10.1, 1], [10.5, 2]]) this.at(s, 'b' + s, () => A.play('bone' + j, { vol: 0.75, rate: 0.6 + Math.random() * 0.2, verb: 1.3 }));
       this.at(8.0, 'inh', () => A.play('inhale', { vol: 0.8, verb: 1 }));
-      // down in jerks, a joint at a time
+      // the head comes down in jerks, a joint at a time
       let k = 0; for (const s of [7.0, 7.9, 8.5, 9.4, 10.1, 10.5]) k += smooth(s, s + 0.28, t) / 6;
-      th.head = Math.max(this.h0, this.h0 + (1 - this.h0) * k);
-      th.face = smooth(11.6, 13.4, t); th.only = close;
       this.at(12.0, 'b12', () => A.play('bone1', { vol: 0.8, rate: 0.45, verb: 1.2 }));
       this.at(13.9, 'chorus', () => playLine('fin_b', L.FINALE.after));
       const talk = smooth(14.2, 14.6, t) * (1 - smooth(18.8, 19.3, t));
-      th.mouth = talk * (0.12 + 0.12 * Math.abs(Math.sin(t * 5.3)) + 0.06 * Math.sin(t * 11));
+      th.mouth = talk * (0.16 + 0.2 * Math.abs(Math.sin(t * 5.3)) + 0.08 * Math.sin(t * 11));
       // one second in which nothing happens; then it calls
-      const go = smooth(21.0, 21.75, t);
-      th.mouth = Math.max(th.mouth, go); th.size = 1 + go * go * 2.1; th.jit = go; th.glow = go * 0.5;
+      const go = smooth(21.0, 21.75, t), roll = smooth(11.8, 12.9, t);
+      th.mouth = Math.max(th.mouth, go * 2.3 + 0.1 * smooth(19.6, 20.8, t));
+      if (t > 2.2) th.head = neckDown(th.x, th.y, th.k, [p.x, th.y], k, roll, lerp(0.95, 1.75, smooth(0.2, 1, k)) * (1 + go * 0.25), go * 9);
+      const [hx, hy] = th.head ? th.head.at : [15, th.y + 3];
+      th.lights = [{ x: th.x - 2.2, y: th.y + 4, z: -2.4, r: 9, i: 0.9 * (1 - grown + up), c: [0.7, 0.76, 1] }, { x: hx + 0.9, y: hy + 1.1, z: 1.7 + go * 10, r: 4, i: 0.85 * close, c: [0.92, 0.9, 0.98] }];
+      th.slack = go > 0;
+      if (up > 0) this.lights.push({ x: lerp(18, hx + 2.2, close), y: lerp(th.y + 8, hy + 1.4, close), z: 3, r: lerp(17, 8, close), i: lerp(1.5, 0.35, close) * up, c: [0.82, 0.86, 1.0], soft: 0 });
       this.at(21.05, 'call', () => { A.play('thud', { vol: 1.2, verb: 1 }); A.play('tear', { vol: 1.0, rate: 0.3, verb: 1.4 }); A.play('inhale', { vol: 1.2, rate: 2.2 }); A.play('drag', { vol: 0.9, rate: 0.6 }); cam.shake = 1.1; });
       this.at(20.6, 'nosub', () => this.c.sub('', 0.01));
       if (t > 21.8) { this.dark = 1; th.gone = true; this.lights = []; }
       const out = smooth(6.2, 9.8, t) * (1 - close);
-      this.view = { x: lerp(lerp(p.x, 18, out), th.hx + 0.25, close), y: lerp(lerp(f.y + 1.6, f.y + 6.1, out), th.hy - 0.75, close), vh: lerp(lerp(8.5, 16.5, out), 4.6, close) - go * 0.9 };
+      this.view = { x: lerp(lerp(p.x, 17.4, out), hx + 0.55, close), y: lerp(lerp(f.y + 1.6, f.y + 5.2, out), hy - 0.15, close), vh: lerp(lerp(8.5, 13.5, out), 3.3, close) };
       return;
     }
     if (!this.pulse) this.startClimb();
@@ -133,8 +146,14 @@ export class Ending {
     const P = [[31, -243.2, 13, [46.4, -262], [15, -224], 2.6, 6.5], [62.5, -188.6, 15, [84, -191.5], [42, -190], 1.8, 5.0],
       [62, -119.2, 17, [88, -120.5], [38, -122], 1.4, 4.2], [56, -20, 19, [66, -38], [42.6, -3], 1.0, 3.2], [20.5, 3.0, 12.5, [38, 1], [18.8, 1.4], 3.0, 6.0]];
     this.pulse = { arc, total: arc[0], gi, s: 0, slap: 0, drag: 0, k: -1, t: 0, places: P.map(([x, y, vh, a, b, wait, dur]) => ({ x, y, vh, s0: near(...a), s1: near(...b), wait, dur })) };
-    this.hands = Array.from({ length: 9 }, () => ({ cell: null, x: 0, y: 0, fx: 0, fy: 0, t: 1 }));
-    w.climber = { x: -90, y: 0, hands: null };
+    const T = w.T;
+    w.climber = { x: -90, y: 0, s: 0, k: 2.6, lift: 0.46, step: 0.95, spread: 0.12, neck: 0.5, head: 1.25, mouth: 0.5, twitch: 1, look: 0, quick: 7, view: [0, 0, 0.75], lights: [],
+      path: (s) => { const [x, y] = this.pt(clamp(s, 0, this.pulse.total)); return [x, y, 0]; },
+      // away from the rock the thread lies on; hanging free, it has its back to the far wall
+      // its head stays out of the rock
+      clear: (q, r) => { let [x, y] = q; for (let i = 0; i < 4; i++) { const d = T.d(x, y); if (d >= r) break; const [gx, gy] = T.grad(x, y); x += gx * (r - d) * 0.8; y += gy * (r - d) * 0.8; } return [x, y, q[2]]; },
+      out: (s) => { const [x, y] = this.pt(clamp(s, 0, this.pulse.total)), d = T.d(x, y), [gx, gy] = T.grad(x, y), m = smooth(3, 0.4, d); return V3.norm([gx * m + 0.001, gy * m + 0.25 * (1 - m), 0.35]); },
+      grip: (at, key) => { if (key[0] === 'h' && this.moving) A.pick(['palm1', 'palm2', 'palm3'], { vol: 0.6 + Math.random() * 0.3, rate: 0.75, vary: 0.25, x: at[0], y: at[1], verb: 0.8 }); } };
     w.hideDoll = true; w.stillAir = true;
     this.c.log('it climbs');
   }
@@ -149,9 +168,9 @@ export class Ending {
     const last = P.k === P.places.length - 1;
     if (P.k < 0 || (!last && P.t > P.places[P.k].wait + P.places[P.k].dur + 0.5)) {
       // the next place (cut in the dark)
-      P.k++; P.t = 0; c.hands = null;
+      P.k++; P.t = 0; c.jump = true; c.look = 0;
       const q = P.places[P.k];
-      P.s = q.s0; for (const h of this.hands) h.cell = null;
+      P.s = q.s0;
       this.view = { x: q.x, y: q.y, vh: q.vh }; cam.x = q.x; cam.y = q.y; cam.viewH = q.vh; this.snap = true;
       A.beds(P.k === 0 ? { amb_hall: 0.6 } : P.k === 1 ? { amb_ink: 0.3, amb_drips: 0.2 } : P.k === 4 ? {} : { amb_cave: 0.25 });
       if (P.k === 4) { P.drag = 99; }
@@ -161,30 +180,22 @@ export class Ending {
     const u = clamp((P.t - q.wait) / q.dur, 0, 1), end = P.k === P.places.length - 1;
     P.s = lerp(q.s0, q.s1, end ? 1 - Math.pow(1 - u, 1.6) : u);
     this.dark = Math.max(1 - smooth(0.0, 0.7, P.t), end ? 0 : smooth(q.wait + q.dur - 0.1, q.wait + q.dur + 0.4, P.t));
-    const [bx, by] = this.pt(Math.max(0, P.s - 5));
-    if (c.hands === null) { c.x = bx; c.y = by; c.hands = []; }
-    c.x += (bx - c.x) * Math.min(1, dt * 9); c.y += (by - c.y) * Math.min(1, dt * 9);
-    // hand over hand: each grip is a fixed place on the thread, 4.5 m to the next
-    const STEP = 4.5;
-    this.hands.forEach((h, i) => {
-      const off = i * STEP / 9 * 2.0, cell = Math.floor((P.s - off) / STEP);
-      const [gx, gy] = this.pt(clamp((cell + 1) * STEP + off % STEP + 0.6, 0, P.total));
-      if (h.cell !== cell) {
-        if (h.cell === null) { h.x = h.fx = gx; h.y = h.fy = gy; h.t = 1; } else { h.fx = h.x; h.fy = h.y; h.t = 0; if (u > 0 && u < 1) A.pick(['palm1', 'palm2', 'palm3'], { vol: 0.6 + Math.random() * 0.3, rate: 0.8, vary: 0.25, x: gx, y: gy, verb: 0.8 }); }
-        h.cell = cell;
-      }
-      h.t = Math.min(1, h.t + dt * 6);
-      const e = smooth(0, 1, h.t), dx = gx - h.fx, dy = gy - h.fy, l = Math.hypot(dx, dy) || 1, lift = Math.sin(e * Math.PI) * 0.9 * (i % 2 ? 1 : -1);
-      h.x = h.fx + dx * e - dy / l * lift; h.y = h.fy + dy * e + dx / l * lift;
-      c.hands[i] = [h.x, h.y];
-    });
+    // it goes in pulls: each reach hauls the whole of it a length further
+    const G = c.step * c.k;
+    this.moving = u > 0 && u < 1;
+    c.s = Math.max(1, P.s - 2.5 - (u < 1 ? Math.sin(P.s / G * Math.PI * 2) * G * 0.11 : 0));
+    const [bx, by] = this.pt(c.s);
+    c.x = bx; c.y = by;
+    // half way across each place it looks out at you, once; at the end it has all the time there is
+    c.look = damp(c.look, end ? (u > 0.97 ? 1 : 0) : u > 0.42 && u < 0.62 ? 1 : 0, 9, dt);
+    c.mouth = 0.35 + c.look * 1.3; c.neck = 0.5 + 0.25 * c.look + 0.06 * Math.sin(P.t * 3.1); c.rear = 0.35 + (end ? 1.6 * c.look : 0.2 * c.look);
     const out = u <= 0 ? 1 : 0;
     const [fx, fy] = this.pt(Math.min(P.total, P.s + 4));
     const [mx, my] = this.pt((q.s0 + q.s1) / 2);
     // the thread ahead is lit; behind it there is no light at all
     this.lights = [{ x: fx, y: fy + 0.4, r: 7, i: 1.0, c: [1, 0.25, 0.18], soft: 8 }, { x: lerp(mx, fx, u), y: lerp(my, fy, u) + 0.8, r: 11, i: 0.5 * (1 - u * 0.7), c: [1, 0.3, 0.22], soft: 8 }];
     if (out) this.lights.shift();
-    else this.lights.push({ x: c.x + (fx - c.x) * 0.75, y: c.y + (fy - c.y) * 0.75 + 0.6, r: 5.5, i: 0.75, c: [0.8, 0.84, 1.0], soft: 0 });
+    c.lights = [{ x: c.x + 1.2, y: c.y + 3.2, z: 2.6, r: 8, i: 0.8, c: [0.8, 0.84, 1.0] }, { x: c.x - 2, y: c.y + 1.5, z: -2.5, r: 7, i: 0.7, c: [0.75, 0.8, 1.0] }];
     const dist = (o, oy = 0) => Math.hypot(o.x - c.x, o.y + oy - c.y);
     if (u > 0) {
       for (const b of w.bells) {
@@ -201,7 +212,7 @@ export class Ending {
     if (end && u >= 1) {
       this.once('arrive', () => { this.arriveT = P.t; this.c.log('it is out'); });
       const s = P.t - this.arriveT;
-      this.lights = this.lights.slice(0, 1);
+      this.lights = this.lights.slice(0, 1); c.lights = c.lights.map((l) => ({ ...l, i: l.i * (1 - 0.6 * smooth(1.6, 3, s)) }));
       if (s > 1.6) this.once('win', () => { w.lamps = []; w.windowOut = true; A.play('release', { vol: 0.6, rate: 0.4 }); });
       if (s > 3.2) this.once('door', () => A.play('gate', { vol: 0.3, rate: 0.4, verb: 0.6 }));
       this.dark = smooth(4.0, 6.0, s);
@@ -224,7 +235,8 @@ export class Ending {
     this.black = smooth(14.2, 16, t);
     w.snuff = this.black;
     if (t > 15.6) { th.gone = true; w.hideDoll = true; }
-    th.head = lerp(this.h0, 0.5, smooth(4, 14, t));
+    th.lean = lerp(this.h0, 0.95, smooth(4, 13.5, t)); th.hollow = 1; th.mouth = 0.5 * smooth(12.6, 14, t);
+    this.lights.push({ x: 17.2, y: f.y + 2.2, z: 1.2, r: 6.5, i: 0.42 * (1 - this.black), c: [0.86, 0.84, 0.95], soft: 0 });
     // hands on the floor, looking for her
     for (const [s, dx] of [[17.6, -9], [18.5, 8], [19.4, -6.5], [19.75, -5.6], [21.0, 6], [21.35, 5], [21.65, 4], [23.2, -2.6], [23.5, -1.9], [23.9, 1.4], [24.2, 0.8], [24.9, 0.3]])
       this.at(s, 'p' + s, () => A.pick(['palm1', 'palm2', 'palm3'], { vol: 0.95, vary: 0.2, x: cam.x + dx, y: cam.y, verb: 0.8 }));
@@ -234,9 +246,10 @@ export class Ending {
     // half a second of light, and no sound at all: it is right there. It is only listening.
     const fl = t > 39.6 && t < 40.15 ? 1 - Math.abs((t - 39.85) / 0.3) * 0.6 : 0;
     if (fl > 0) {
-      th.gone = false; w.hideDoll = false; th.head = 1; th.face = 1; th.mouth = 0.0; th.size = 0.82; th.jit = 0; th.glow = 0; th.bare = true; w.snuff = 0;
-      th.hx = p.x - 1.02; th.hy = p.y + 0.78;
-      this.lights.push({ x: p.x + 0.2, y: p.y + 1.0, r: 2.5, i: 0.62 * fl, c: [0.95, 0.93, 1.0], soft: 0 });
+      th.gone = false; w.hideDoll = false; w.snuff = 0; th.x = p.x; th.y = p.y; th.gain = 1;
+      th.reach = { k: 1.5, from: [p.x - 4.2, p.y + 0.4, -3], yaw: 1.0, at: [p.x - 0.8, p.y + 0.62, 0.05], face: [0.9, -0.1, 0.42], up: [0.18, 1, 0], size: 1.25, mouth: 0.0, bend: [[p.x - 4.2, p.y + 3.4, -3], [p.x - 1.9, p.y + 0.3, -1.2]] };
+      th.lights = [{ x: p.x + 0.3, y: p.y + 1.3, z: 1.0, r: 2.6, i: 0.5 * fl, c: [0.95, 0.93, 1.0] }];
+      this.lights.push({ x: p.x + 0.2, y: p.y + 1.0, r: 2.5, i: 0.5 * fl, c: [0.95, 0.93, 1.0], soft: 0 });
       this.once('flash', () => log('flash'));
     } else if (t > 40.15) { th.gone = true; w.hideDoll = true; w.snuff = 1; }
     this.at(42.4, 'breath', () => A.play('inhale', { vol: 0.9, rate: 0.9, verb: 0.5 }));

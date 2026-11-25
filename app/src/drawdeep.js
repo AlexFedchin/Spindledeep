@@ -3,7 +3,7 @@
 // Grey tone on the sprite canvas like everything else (the engraving shader lights it); glows on the additive one.
 import * as L from './level.js';
 import { clamp, mulberry, TAU } from './util.js';
-import { SPRITES, drawHands, drawCalled, drawDark, drawCrawler, drawRemains, drawThing, drawClimber } from './drawend.js';
+import { SPRITES, drawHands, drawCalled, drawDark, drawRemains } from './drawend.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 export function loadSprites() {
@@ -19,18 +19,15 @@ export function loadSprites() {
 
 export function drawDeep(D, ctx, ectx) {
   const w = D.w;
-  if (w.climber) drawClimber(D, ctx, ectx);
   if (D.cam[1] > -200) return;
   D._ectx = ectx;
   drawChairs(D, ctx, ectx);
   drawOldThread(D, ctx, ectx);
   drawWarpBack(D, ctx);
-  drawCrawler(D, ctx, ectx);
   drawCalled(D, ctx, ectx);
   drawRopes(D, ctx, ectx);
   drawStampers(D, ctx, ectx);
   drawDark(D, ctx, ectx);
-  drawThing(D, ctx, ectx);
   drawRemains(D, ctx, ectx);
   drawHands(D, ctx, ectx);
 }

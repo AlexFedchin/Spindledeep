@@ -29,14 +29,14 @@ does, and what became of the knitter and the doll are all said in plain words, i
   round (no eyes, mouth stretched open) and comes a little nearer. She can only walk among them.
 - **The dark.** When she leaves the peg (and m10 has been heard out) every mouth calls at once and a dark full of arms rises.
   Something on all fours comes up the far wall after her, in jerks.
-- **The top.** A high dark place. Her candle, what is left of her under the shawl, her spectacles. What look like pale pillars
-  are the legs and arms of the thing, standing over the place. Her voice begs from the dark (fin_a; if she lingers fin_love,
-  fin_mama in the child's voice, fin_tieit). The choice is shown as two columns that say what each does; the key is held.
+- **The top.** A high dark place. Her candle, what is left of her under the shawl, her spectacles. Past the light
+  the knitter kneels, holding out the end of the grey thread: the thing, with her voice and her face (her body is the one under the shawl). She begs (fin_a; if she lingers fin_love,
+  fin_mama in the child's voice, fin_tieit). As the doll stays she leans nearer on a neck that is never quite the length it was. The choice is shown as two columns that say what each does; the key is held.
 
 ## The two endings (`app/src/ending.js`)
-- **Tie.** Silence; the candle goes; "Mama?". Light comes up on the thing, standing over her; its head comes down on a neck that
-  keeps lengthening, turns, thanks her with every voice it has, waits, and calls. Then five places she came through, seen from a
-  camera that doesn't move, as it comes hand over hand up the thread and everything goes out behind it; the last is the
+- **Tie.** Silence; the candle goes; "Mama?". Light comes up on her, still kneeling, grown; the neck goes up into the dark and comes down
+  over the doll, the head the wrong way up; it turns over, thanks her with every voice it has, waits, and calls. Then five places she came through, seen from a
+  camera that doesn't move, as it comes, still in her shape, hand over hand up the thread and everything goes out behind it; the last is the
   cottage. Film (`plates.py`). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
   the doll sits in her window, still holding the thread.
 - **Bite.** The red goes out of the thread. "What have you done?", twice, the second time not in her voice. It breathes the candle

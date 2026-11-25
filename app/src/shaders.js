@@ -122,6 +122,8 @@ export const ENGRAVE_WGSL = COMMON + /* wgsl */ `
 @group(0) @binding(4) var bgTex: texture_2d_array<f32>;
 @group(0) @binding(5) var spriteTex: texture_2d<f32>;
 @group(0) @binding(6) var emitTex: texture_2d<f32>;
+@group(0) @binding(7) var figTex: texture_2d<f32>;
+@group(0) @binding(8) var figNrm: texture_2d<f32>;
 
 struct VO { @builtin(position) pos: vec4f, @location(0) uv: vec2f };
 @vertex fn vs(@builtin(vertex_index) i: u32) -> VO {
@@ -270,6 +272,23 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     tint = mix(tint, light / max(lum(light), 1e-3), sc.a);
   }
 
+  // ── figures (3D, already lit): lines that bend round the form, heavier where it turns away, hidden by rock ─────
+  let fc = textureSampleLevel(figTex, linSamp, uv, 0.0);
+  if (fc.a > 0.004) {
+    let fn3 = textureSampleLevel(figNrm, linSamp, uv, 0.0).xyz / fc.a;
+    let nx = fn3.xy * 2.0 - 1.0;
+    let fl = fc.rgb / fc.a;
+    let fa = fc.a * smoothstep(-0.30, -0.05, d);
+    let spF = sp * 0.62;
+    let ph = dirPhase(px, 0.5, spF) + nx.y * 1.3 + nx.x * 0.7 + wob * 0.3;
+    let ph2f = dirPhase(px, -0.75, spF) + nx.x * 1.1 + wob * 0.3;
+    var sm = engrave(expose(lum(fl) * 1.5), ph, ph2f, 1.1 / spF, 1.0);
+    sm *= smoothstep(0.0, 0.22, fn3.z);
+    paperMask = mix(paperMask, sm, fa);
+    tint = mix(tint, fl / max(lum(fl), 1e-3), fa);
+    bgDim = mix(bgDim, 0.0, fa);
+  }
+
   // vignette as burnt plate edges
   let vg = length((uv - 0.5) * vec2f(1.0, 0.85));
   paperMask *= 1.0 - smoothstep(0.5, 0.82, vg) * 0.85;
@@ -347,5 +366,66 @@ fn toScreen(p: vec2f) -> vec2f {
   let twist = 0.85 + 0.15 * sin((dot(i.sp, normalize(ba + 1e-4)) ) * 0.9);
   let a = core * i.col.a;
   return vec4f(i.col.rgb * twist * a, a);
+}
+`;
+
+// FIGURES: skinned models, lit; colour and normal resolved into two textures that ENGRAVE draws with lines.
+export const FIGURE_WGSL = /* wgsl */ `
+struct L { p: vec4f, c: vec4f };           // xyz, radius · rgb*intensity
+struct F { cam: vec2f, viewH: f32, aspect: f32, nl: f32, hollow: f32, gain: f32, dist: f32, amb: vec4f, lights: array<L, 14> };
+@group(0) @binding(0) var<uniform> f: F;
+@group(0) @binding(1) var<storage, read> M: array<mat4x4f>;
+@group(0) @binding(2) var tex: texture_2d<f32>;
+@group(0) @binding(3) var nrm: texture_2d<f32>;
+@group(0) @binding(4) var samp: sampler;
+struct VO { @builtin(position) pos: vec4f, @location(0) w: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) @interpolate(flat) kind: f32 };
+@vertex fn vs(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) j: vec4u, @location(4) wt: vec4f, @location(5) kind: f32) -> VO {
+  var w = vec3f(0.0); var nn = vec3f(0.0);
+  for (var k = 0; k < 4; k++) {
+    if (wt[k] <= 0.0) { continue; }
+    let m = M[j[k]];
+    w += (m * vec4f(p, 1.0)).xyz * wt[k];
+    nn += normalize((m * vec4f(n, 0.0)).xyz) * wt[k];
+  }
+  var o: VO;
+  let s = f.dist / (f.dist - min(w.z, f.dist * 0.8));
+  let q = (w.xy - f.cam) * s / vec2f(f.viewH * f.aspect, f.viewH) * 2.0;
+  o.pos = vec4f(q, 0.5 - w.z / 60.0, 1.0);
+  o.w = w; o.n = nn; o.uv = uv; o.kind = kind;
+  return o;
+}
+struct FO { @location(0) c: vec4f, @location(1) n: vec4f };
+@fragment fn fs(i: VO, @builtin(front_facing) ff: bool) -> FO {
+  var n = normalize(i.n);
+  let g = normalize(n - vec3f(0.0, 0.0, min(n.z, 0.0) * 1.2));
+  let t = textureSample(nrm, samp, i.uv).xyz * 2.0 - 1.0;
+  var alb = pow(textureSample(tex, samp, i.uv).r, 2.2) * 1.5;
+  // tangent frame from derivatives
+  let dp1 = dpdx(i.w); let dp2 = dpdy(i.w); let du1 = dpdx(i.uv); let du2 = dpdy(i.uv);
+  let a = cross(dp2, n); let b = cross(n, dp1);
+  let T = a * du1.x + b * du2.x; let B = a * du1.y + b * du2.y;
+  let im = inverseSqrt(max(max(dot(T, T), dot(B, B)), 1e-12));
+  if (i.kind != 4.0 && i.kind != 1.0) { let bump = select(2.0, 0.55, i.kind == 3.0); n = normalize(T * im * t.x * bump - B * im * t.y * bump + n * max(t.z, 0.2)); }
+  if (n.z < 0.0) { n = normalize(n - vec3f(0.0, 0.0, n.z * 1.2)); }
+  var sp = 0.22; var pw = 18.0;
+  if (i.kind == 1.0) { alb = mix(alb, 0.0, f.hollow); sp = 1.6; pw = 90.0; }
+  if (i.kind == 2.0) { alb *= 0.06; sp = 0.02; }
+  if (i.kind == 0.0 && !ff) { alb = 0.0; sp = 0.0; }      // the inside of a mouth
+  if (i.kind == 3.0) { sp = 0.02; alb = mix(alb, 0.32, 0.6); }
+  if (i.kind == 4.0) { alb = max(alb, 0.34); }
+  var col = f.amb.rgb * alb * (0.4 + 0.6 * n.y);
+  for (var k = 0; k < i32(f.nl); k++) {
+    let l = f.lights[k];
+    let v = l.p.xyz - i.w; let d2 = length(v.xy); let x = d2 / l.p.w;
+    if (x >= 1.0) { continue; }
+    let fall = (1.0 - x * x) * (1.0 - x * x) / (1.0 + d2 * d2 * 0.35);
+    let dir = normalize(v); let dif = max(0.0, (dot(n, dir) + 0.12) / 1.12);
+    let h = normalize(dir + vec3f(0.0, 0.0, 1.0));
+    col += l.c.rgb * fall * (alb * dif * 1.5 + sp * 0.5 * pow(max(dot(n, h), 0.0), pw) * step(0.0, dot(n, dir)));
+  }
+  var o: FO;
+  o.c = vec4f(max(col, vec3f(0.0)) * f.gain, 1.0);
+  o.n = vec4f(g.xy * 0.5 + 0.5, clamp(g.z, 0.0, 1.0), 1.0);
+  return o;
 }
 `;

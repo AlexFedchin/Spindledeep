@@ -1,5 +1,6 @@
 // Spindledeep — boot, loop, camera, events → sound/fx/ui, menus, saves, the ending.
 import { Renderer } from './renderer.js';
+import { Stage } from './stage.js';
 import { buildTerrain } from './terrain.js';
 import { World } from './world.js';
 import { Drawer } from './draw.js';
@@ -81,6 +82,7 @@ let voicePlaying = 0;
 let subTimer = 0, cardTimer = 0, toastTimer = 0;
 let settings = { volume: 1, fullscreen: true };
 let E = null;              // the ending (ending.js)
+let STAGE = null;          // the 3D figures (stage.js)
 let SC = null;             // what the place sounds like (sound.js)
 
 async function boot() {
@@ -112,6 +114,7 @@ async function boot() {
     }));
     R.setBackdrops(layers);
     Drawer.IMG = await loadSprites();
+    await (STAGE = new Stage(R, log)).load();
     await step('listening for her voice…', 0.6);
     W = new World(T);
     D = new Drawer(W);
@@ -750,7 +753,7 @@ function updateCamera(dt) {
     camOpen = damp(camOpen, openness(p.x, p.y + 1.2), 0.8, dt);
     const room = clamp(Math.pow(Math.exp(camOpen) / OPEN.mid, OPEN.pow), OPEN.lo, OPEN.hi);
     vh = Math.min(OPEN.vhMax, a.viewH * room) + (W.thread.locked && !p.grounded ? 2.5 : 0);
-    if (a.id === 'loom' && p.y > -452) vh = 10.5 - 1.8 * smooth(22, 16, p.x);          // at the top of the Loom: close, so little of the place is seen
+    if (a.id === 'loom' && p.y > -452) { const q = smooth(25, 17, p.x); vh = 10.5 - 4.0 * q; tx -= 1.3 * q; }         // at the top of the Loom: close, so little of the place is seen
     if (a.id === 'loom' && p.y < -528 && !W.deep.rise.woke) vh = Math.min(vh, 11);     // among the called
     if (SHOW) {
       const k = SHOW.phase === 'in' ? smooth(0, 1.2, SHOW.t) : 1 - smooth(0.2, 1.25, SHOW.o);
@@ -792,6 +795,13 @@ function buildPts(viewW, viewH, k) {
     if (redTo > 0 && i <= E.pulse.gi && E.pulse.arc[i] <= redTo) { const gone = E.pulse.arc[i] < E.pulse.s; r = gone ? 0.12 : 0.85; gg = 0.1; b = 0.1; a = gone ? 0.5 : 1; w = wLive * 0.85; }
     a *= lit;
     put(x, y, w, a, r, gg, b); open = true;
+  }
+  // its end, in the hands of whoever is holding it out
+  const hd = W.thing && !W.thing.gone && !W.thing.slack && W.thing.hands;
+  if (hd && state !== 'title' && inV(hd[0], hd[1])) {
+    const gx = g.x[g.n - 1], gy = g.y[g.n - 1], a = 0.75 * lit * (W.thing.gain ?? 1);
+    for (let i = 0; i <= 12; i++) { const u = i / 12; put(lerp(gx, hd[0], u), lerp(gy, hd[1], u) - Math.sin(u * Math.PI) * 0.12, Math.max(1, k * 0.014), a, 0.6, 0.58, 0.55); }
+    open = true;
   }
   brk();
   // the red thread, doll → home
@@ -896,7 +906,7 @@ function tick(now) {
   const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
     1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({
-    cam: [cx, cy], viewH: cam.viewH, time, ambient, moon,
+    cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time) : [],
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),
     inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1,
   });

@@ -1,9 +1,10 @@
-// WebGPU renderer: light (compute) → engrave (fullscreen) → threads (instanced). No libraries.
-import { LIGHT_WGSL, ENGRAVE_WGSL, THREAD_WGSL } from './shaders.js';
+// WebGPU renderer: light (compute) → figures (skinned models, when there are any) → engrave (fullscreen) → threads (instanced). No libraries.
+import { LIGHT_WGSL, ENGRAVE_WGSL, THREAD_WGSL, FIGURE_WGSL } from './shaders.js';
 
 const MAX_LIGHTS = 160;
 const MAX_PTS = 16384;
 const LIGHT_DIV = 3;
+const FIG_LIGHTS = 14, FIG_UBO = 48 + FIG_LIGHTS * 32;
 
 export class Renderer {
   async init(canvas) {
@@ -51,6 +52,21 @@ export class Renderer {
       },
       primitive: { topology: 'triangle-strip' },
     });
+    const fg = mod(FIGURE_WGSL, 'figure');
+    this.figPipe = d.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module: fg, entryPoint: 'vs', buffers: [{ arrayStride: 44, attributes: [
+        { shaderLocation: 0, offset: 0, format: 'float32x3' }, { shaderLocation: 1, offset: 12, format: 'float32x3' }, { shaderLocation: 2, offset: 24, format: 'float32x2' },
+        { shaderLocation: 3, offset: 32, format: 'uint8x4' }, { shaderLocation: 4, offset: 36, format: 'unorm8x4' }, { shaderLocation: 5, offset: 40, format: 'float32' }] }] },
+      fragment: { module: fg, entryPoint: 'fs', targets: [{ format: 'rgba16float' }, { format: 'rgba8unorm' }] },
+      primitive: { topology: 'triangle-list', cullMode: 'none' },
+      depthStencil: { format: 'depth24plus', depthCompare: 'less', depthWriteEnabled: true },
+      multisample: { count: 4 },
+    });
+    this.figSamp = d.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat' });
+    this.figs = new Map();           // figure → its GPU side
+    const none = () => d.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
+    this.figNone = [none(), none()]; this.figOn = false;
     // placeholders until the world and art arrive
     this.sdfTex = d.createTexture({ size: [4, 4], format: 'r16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     this.bgTex = d.createTexture({ size: [4, 4, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
@@ -79,6 +95,7 @@ export class Renderer {
     this.emitTex = d.createTexture({ size: [this.emitCanvas.width, this.emitCanvas.height], format: 'rgba8unorm', usage: tu });
     this.sctx = this.spriteCanvas.getContext('2d');
     this.ectx = this.emitCanvas.getContext('2d');
+    this.figT?.forEach((t) => t.destroy()); this.figT = null; this.figOn = false;
     this._bind();
   }
 
@@ -123,12 +140,54 @@ export class Renderer {
         { binding: 2, resource: this.samp }, { binding: 3, resource: this.lightTex.createView() },
         { binding: 4, resource: this.bgTex.createView({ dimension: '2d-array' }) },
         { binding: 5, resource: this.spriteTex.createView() }, { binding: 6, resource: this.emitTex.createView() },
+        { binding: 7, resource: (this.figOn ? this.figT[0] : this.figNone[0]).createView() }, { binding: 8, resource: (this.figOn ? this.figT[1] : this.figNone[1]).createView() },
       ],
     });
     this.threadBG = d.createBindGroup({
       layout: this.threadPipe.getBindGroupLayout(0),
       entries: [{ binding: 0, resource: { buffer: this.ubo } }, { binding: 1, resource: { buffer: this.ptBuf } }],
     });
+  }
+
+  // a model's buffers and textures, made once
+  addModel(m) {
+    const d = this.device;
+    const buf = (data, usage) => { const b = d.createBuffer({ size: (data.byteLength + 3) & ~3, usage: usage | GPUBufferUsage.COPY_DST }); d.queue.writeBuffer(b, 0, data.buffer, data.byteOffset, data.byteLength); return b; };
+    const tex = (im) => { const t = d.createTexture({ size: [im.width, im.height], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT }); d.queue.copyExternalImageToTexture({ source: im }, { texture: t }, [im.width, im.height]); return t; };
+    m.gpu = { vb: buf(m.vb, GPUBufferUsage.VERTEX), ib: buf(m.ib, GPUBufferUsage.INDEX), tex: tex(m.tex), nrm: tex(m.nrm) };
+  }
+  _figures(enc, f) {
+    const d = this.device, list = f.figs || [];
+    if (!list.length) { if (this.figOn) { this.figOn = false; this._bind(); } return; }
+    if (!this.figT) {
+      const U = GPUTextureUsage, size = [this.w, this.h];
+      this.figT = [d.createTexture({ size, format: 'rgba16float', usage: U.TEXTURE_BINDING | U.RENDER_ATTACHMENT }), d.createTexture({ size, format: 'rgba8unorm', usage: U.TEXTURE_BINDING | U.RENDER_ATTACHMENT }),
+        d.createTexture({ size, format: 'rgba16float', sampleCount: 4, usage: U.RENDER_ATTACHMENT }), d.createTexture({ size, format: 'rgba8unorm', sampleCount: 4, usage: U.RENDER_ATTACHMENT }),
+        d.createTexture({ size, format: 'depth24plus', sampleCount: 4, usage: U.RENDER_ATTACHMENT })];
+    }
+    if (!this.figOn) { this.figOn = true; this._bind(); }
+    const [c0, c1, m0, m1, dz] = this.figT.map((t) => t.createView()), clearValue = [0, 0, 0, 0];
+    const rp = enc.beginRenderPass({ colorAttachments: [{ view: m0, resolveTarget: c0, loadOp: 'clear', storeOp: 'discard', clearValue }, { view: m1, resolveTarget: c1, loadOp: 'clear', storeOp: 'discard', clearValue }],
+      depthStencilAttachment: { view: dz, depthLoadOp: 'clear', depthStoreOp: 'discard', depthClearValue: 1 } });
+    rp.setPipeline(this.figPipe);
+    for (const F of list) {
+      let G = this.figs.get(F);
+      const g = F.m.gpu;
+      if (!G) {
+        G = { ubo: d.createBuffer({ size: FIG_UBO, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }), u: new Float32Array(FIG_UBO / 4), mats: d.createBuffer({ size: F.mats.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }) };
+        G.bg = d.createBindGroup({ layout: this.figPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: G.ubo } }, { binding: 1, resource: { buffer: G.mats } }, { binding: 2, resource: g.tex.createView() }, { binding: 3, resource: g.nrm.createView() }, { binding: 4, resource: this.figSamp }] });
+        this.figs.set(F, G);
+      }
+      // the lights that matter most where it is (a light can say how near the viewer it hangs: z)
+      const u = G.u, [hx, hy] = F.focus || F.at;
+      const ls = f.lights.concat(F.lights).map((l) => { const x = Math.hypot(l.x - hx, l.y - hy); return [l.i * Math.max(0, 1.6 - x / l.r) / (1 + x * x * 0.12), l]; }).filter((a) => a[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, FIG_LIGHTS);
+      u[0] = f.cam[0]; u[1] = f.cam[1]; u[2] = f.viewH; u[3] = this.w / this.h; u[4] = ls.length; u[5] = F.hollow; u[6] = F.gain; u[7] = F.D;
+      u[8] = f.ambient[0]; u[9] = f.ambient[1]; u[10] = f.ambient[2];
+      ls.forEach(([, l], k) => { const o = 12 + k * 8; u[o] = l.x; u[o + 1] = l.y; u[o + 2] = l.z ?? 1.5; u[o + 3] = l.r; u[o + 4] = l.c[0] * l.i; u[o + 5] = l.c[1] * l.i; u[o + 6] = l.c[2] * l.i; });
+      d.queue.writeBuffer(G.ubo, 0, u); d.queue.writeBuffer(G.mats, 0, F.mats);
+      rp.setBindGroup(0, G.bg); rp.setVertexBuffer(0, g.vb); rp.setIndexBuffer(g.ib, 'uint32'); rp.drawIndexed(F.m.ni);
+    }
+    rp.end();
   }
 
   // f: { cam:[x,y], viewH, time, ambient:[r,g,b], moon, lights:[{x,y,r,i,c,soft}], pts:[...flat 8-float], nPts,
@@ -163,6 +222,7 @@ export class Renderer {
     d.queue.copyExternalImageToTexture({ source: this.emitCanvas }, { texture: this.emitTex }, [this.emitCanvas.width, this.emitCanvas.height]);
 
     const enc = d.createCommandEncoder();
+    this._figures(enc, f);
     const cp = enc.beginComputePass();
     cp.setPipeline(this.lightPipe); cp.setBindGroup(0, this.lightBG);
     cp.dispatchWorkgroups(Math.ceil(this.lw / 8), Math.ceil(this.lh / 8));

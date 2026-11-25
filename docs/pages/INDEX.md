@@ -29,6 +29,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 21. Kept out of the rock: thread vs rock, harder hands, earth sounds, no rope creak, no brass (`rockthread/`) | https://claude.ai/artifact/R161kCaf6HSZvYkHuLaabt |
 | 22. What is down there: the Loom, both endings and the film remade (`ending/`, plot sealed) | https://claude.ai/artifact/J1avXLArMvcKdXb2hRBTGz |
 | 23. Listen: two keepsakes drawn, rooms that open in time, sound that follows the cave (`listen/`) | https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7 |
+| 24. A Real Body: the monster is a live 3D figure (`face/`, plot sealed) | https://claude.ai/artifact/8soWEEYQZJFzENtU2f5s7K |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -108,6 +109,10 @@ pegs; thread >6 cm in rock 31.4 % -> 0-0.2 % of frames), `gal.mjs` (12 ring gaps
 drops from the Loom ledge to about x 76, so anything further east on the floor can be flown past unheard. `--from=N`
 (`to-the-loom.cmd`) adds a title-menu line that starts at pole N with the thread laid. Runs keep their save after an ending.
 Test pitfall: `__SD.begin()` during end cards leaves the cards' timers running over the new run.
+
+## Her face (2026-11-25)
+3D figures (see CLAUDE.md). Shots: scratchpad `mk3.py`/`mkba.py` (every ending moment), crawler forced on with a setInterval. Jumping
+`__SD.end().t` leaves the camera behind (it is damped): let the timeline run for framing. 60 fps before and after.
 
 ## Items, rooms, sound (2026-11-24)
 Keepsakes `pattern` and `shoe` had no `KEEP` drawing and an empty fallback hid it; the fallback is gone, so a missing kind now

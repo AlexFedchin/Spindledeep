@@ -138,13 +138,14 @@ The user's rigged "Old Lady" (Auto-Rig Pro FBX) lives in `../old-lady-fbx/` (not
 `scripts/cine/.cache/old_lady/`). `lib.knitter` builds her via `oldlady.build`: the old control skeleton (empties) is built
 at her joints and each deforming bone follows a helper under its control (Copy Transforms), so `arm_to`/`hand_pose`/shot keys
 work unchanged. Her right hand is anatomical: values written for the old figure's s = -1 hand go through `lib.hand_local`.
-`USE_MODEL = False` in lib.py brings back the hand-built figure. She appears only in the prologue: the user does not want the
-old-lady model anywhere in the ending. `clipcheck.py` splits her meshes by bone weight.
+`USE_MODEL = False` in lib.py brings back the hand-built figure. She is in the prologue and, since 2026-11-25 (the user: it
+should be the knitter, the monster pretending to be her), she is the shape the thing wears in the game's ending. The film after it still has no
+old-lady model. `clipcheck.py` splits her meshes by bone weight.
 
 ## The deep and the end (2026-11-24)
 
 Below the Ink Mere: Hall of Chairs → the Hush → the Treadles → the Loom (world h 604). Rules in `app/src/deep.js` (swinging
-rings, ropes, hands `HAND`, stampers, the called, the rising dark `RISE`, the crawler), drawing in `drawdeep.js` and `drawend.js`,
+rings, ropes, hands `HAND`, stampers, the called, the rising dark `RISE`, the crawler), drawing in `drawdeep.js`, `drawend.js` and `stage.js` (the thing itself),
 data in `level.js`. The ending is `app/src/ending.js` (approach, the held choice, two timelines, `CARDS`); test with
 `__SD.end().choose('tie'|'cut')` at peg 28 and set `__SD.end().t` to jump. Sprites: `scripts/art/caller.py` (SDXL) →
 `facework.py` (the face) → `cutout.py` → `app/assets/art/sprites/`.
@@ -155,6 +156,16 @@ Teleport tests must re-tie the thread at a nearby peg first, or the overstretche
 
 Rules from the user: no brass anywhere ("Peaceful Desolation" is banned); no thread/rope sound that keeps playing (never play
 `creak` whole: 28 s; use `dur`); hands sound like earth; the thread must never pass through rock.
+
+## 3D figures (2026-11-25)
+
+The user finds a monster made of still pictures cringe: the thing is a skinned 3D model drawn live. `scripts/figures/export.py`
+(`blender -b -P`) turns a rigged FBX into `app/assets/figures/<name>.bin/.jpg/_n.jpg` (git-ignored: the repo is public and the model is not
+ours to hand out; without the files the figures are just absent). `figure.js`: joints, two-bone limbs that stretch, a neck of
+any length, poses (`poseKneel`, `poseClimb`, `poseReach`), no baked clips. `stage.js`: which figure is where, from `W.thing`, `W.climber`,
+`deep.crawler`. Renderer: `_figures` pass (4x MSAA, lit per pixel by the game's lights, a light's optional `z` = nearer the viewer), engraved in
+ENGRAVE (figTex/figNrm), hidden by rock. A new model: an entry in export.py's MODELS (its bone names), then `STAGE.load(name)`.
+Still pictures left: the hands in the Hush, the called, the arms in the rising dark. Any monster the user supplies goes through this.
 
 ## The thread and rock
 
