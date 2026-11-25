@@ -1,6 +1,6 @@
 """Spindledeep cinematics: cut the graded shots into a film, lay the soundtrack, encode for the game.
 
-    <art venv>/python scripts/cine/edit.py intro|outro [--draft]
+    <art venv>/python scripts/cine/edit.py intro|outro|cut [--draft]
 
 Picture: graded PNG frames per shot (post.py) joined with cuts and dissolves; the prologue ends on an engraved
 title card, the epilogue fades to paper. Sound: the game's own recordings (app/assets/audio, credited in its
@@ -27,6 +27,7 @@ INK = np.array([0.045, 0.04, 0.06]); PAPER = np.array([0.91, 0.86, 0.75]); RED =
 # (shot, transition into this shot in frames: 0 = cut)
 FILMS = {
     'intro': [('I1', 0), ('I2', 16), ('I3', 0), ('I4', 0), ('I5', 10), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],
+    'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0), ('C5', 0)],      # shots_cut.py: the bitten ending
     'outro': [('O1', 0), ('O2', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # plates.py; hard cuts through black
 }
 
@@ -119,7 +120,7 @@ def picture(film, draft):
                 seq[j] = ('mix', seq[j], ('png', p), k)
             else:
                 seq.append(('png', p))
-    if film == 'outro':
+    if film in ('outro', 'cut'):
         seq.extend(('black', None) for _ in range(60))
     return seq, cuts
 
@@ -247,6 +248,31 @@ def soundtrack(film, cuts, nframes):
         M.add(decode('harp', rate=0.5), at('TITLE', 14), 0.6)
         M.add(decode('chime', rate=0.75), at('TITLE', 30), 0.25)
         M.bed(wind, at('TITLE'), T, 0.35, fi=0.5, fo=2.5)
+    elif film == 'cut':
+        # the storm lets go; water; the title's music, for the only time since; then the well, and the names
+        V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')
+        soft = decode('amb_wind', af='lowpass=f=700'); far = decode('amb_wind', af='lowpass=f=260')
+        M.bed(wind, 0, 3.4, 0.5, fi=1.2, fo=2.6)
+        M.bed(soft, 1.0, at('C4') + 0.5, 0.22, fi=3, fo=1.0)
+        M.add(decode('mus_title'), 1.2, 0.36, fade_in=4, fade_out=3.0, dur=at('C4') - 0.4 - 1.2)
+        drips = decode('amb_drips')
+        M.bed(drips, at('C1', 70), at('C4', 1), 0.5, fi=3, fo=0.6)
+        rng = np.random.default_rng(5)
+        for k in range(26):
+            M.add(decode('drip', rate=0.9 + 0.5 * rng.random()), at('C1', 80) + rng.random() * (at('C3', 60) - at('C1', 80)), 0.1 + 0.16 * rng.random(), pan=float(rng.uniform(-0.7, 0.7)))
+        for f in (60, 78, 101, 119):
+            M.add(decode('trickle%d' % (f % 3 + 1)), at('C1', f), 0.22, fade_in=0.2, fade_out=0.4)
+        M.add(decode('land', rate=0.6), at('C1', 120), 0.35); M.add(decode('snow2', rate=0.7), at('C1', 121), 0.6)       # the roof lets its snow go
+        for f in (20, 52, 90):
+            M.add(decode('leaf%d' % (f % 4 + 1)), at('C2', f), 0.2, pan=0.2)
+        M.bed(far, at('C3', 60), at('C5', 40), 0.9, fi=2.5, fo=3.0)
+        M.add(breath(4.5), at('C3', 84), 0.5)
+        M.bed(decode('amb_drips', af='lowpass=f=900,aecho=0.8:0.7:400|900:0.5|0.3'), at('C4'), at('C5', 60), 0.5, fi=1, fo=2)
+        M.bed(decode('amb_breath'), at('C5', 20), at('C5', 246), 0.32, fi=3, fo=0.1)
+        M.add(decode('wood', rate=0.5), at('C5', 34), 0.35)
+        M.add(decode(V('names'), af='lowpass=f=3200'), at('C5', 66), 0.75, fade_in=1.0, fade_out=0.06, dur=(246 - 66) / FPS)
+        M.add(decode('bone1', rate=0.55), at('C5', 246), 0.9)
+        M.add(decode('inhale', rate=1.1), at('C5', 250), 0.5, fade_out=0.3, dur=1.2)
     else:
         # no music. Snow falling, hands on stone, her voice, and the names
         V = lambda n: os.path.join(ROOT, 'app', 'assets', 'voice', n + '.ogg')

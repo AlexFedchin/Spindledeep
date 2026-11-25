@@ -404,6 +404,7 @@ export class World {
       if (vis(x, y)) out.push({ x, y: y + 0.6, r: 3.2, i: 0.32, c: [0.75, 0.8, 0.95], soft: 0 });
     }
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
+    for (const [sx0, sx1, sy] of L.SHELVES) if (vis((sx0 + sx1) / 2, sy)) out.push({ x: (sx0 + sx1) / 2, y: sy + 0.7, r: 2.8, i: 0.2, c: [0.72, 0.76, 0.88], soft: 0 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });

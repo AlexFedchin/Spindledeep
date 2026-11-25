@@ -2,6 +2,7 @@
 import { clamp, damp } from './util.js';
 
 const R = 0.3;
+const STICK = 0.24, COYOTE = 0.13;
 const RUN = 5.0, ACC_G = 42, ACC_A = 20, GRAV = 30, JUMP = 10.6, MAXFALL = 21;
 // swinging: the doll is small and weak. A catch soaks up most of her speed, the arc is slow (low
 // swing gravity, a little slack on the catch), and she only builds height by leaning into each swing:
@@ -145,6 +146,14 @@ export class Player {
           if (gy > 0.55) { this.grounded = true; this.nx = gx; this.ny = gy; }
         }
       }
+      // walking over a bump she keeps to the ground instead of flying off its far side (airborne there, a jump pressed at a lip
+      // was lost); real edges still drop her, since there is no walkable rock this close underneath
+      if (!this.grounded && g && !this.jumping && !th.locked && this.vy <= 3) {
+        const y0 = this.y;
+        for (let k = 0; k < 4; k++) { const dd = T.d(this.x, this.y) - R; if (dd < 0.01 || y0 - this.y > STICK) break; this.y -= Math.min(dd, 0.1); }
+        const [gx, gy] = T.grad(this.x, this.y - 0.08);
+        if (y0 - this.y <= STICK && T.d(this.x, this.y) < R + 0.05 && gy > 0.55) { this.grounded = true; this.nx = gx; this.ny = gy; this.vy = Math.min(this.vy, 0); } else this.y = y0;
+      }
       // the thread
       if (th.locked && !th.forced && ctx.budgetLeft() > 0) {
         // on the ground a held thread still pays out as you walk; it only catches once you fall.
@@ -169,7 +178,7 @@ export class Player {
       }
     }
     // jump
-    if (this.grounded) { this.coyote = 0.1; this.jumping = false; } else this.coyote -= dt;
+    if (this.grounded) { this.coyote = COYOTE; this.jumping = false; } else this.coyote -= dt;
     this.jumpBuf -= dt;
     if (this.jumpBuf > 0) {
       if (this.coyote > 0) {

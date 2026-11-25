@@ -1,7 +1,7 @@
 // World builder: rasterise level primitives → erode with noise → exact signed distance field (metres).
 // sdf > 0 in air, < 0 in rock. Shared by physics (collision, rope, raycasts) and the GPU (engraving, shadows).
 import { fbm, clamp } from './util.js';
-import { WORLD, OPS, QUIET, surfaceY } from './level.js';
+import { WORLD, OPS, QUIET, LEVEL, surfaceY } from './level.js';
 
 function shapeDist(s, x, y) {
   switch (s.s) {
@@ -144,6 +144,11 @@ export function buildTerrain() {
       for (const q of QUIET) if (x > q[0] && x < q[2] && y > q[1] && y < q[3]) { amp = Math.min(amp, 0.22); break; }
       solid[k] = d + n * amp < 0 ? 1 : 0;
     }
+  }
+  // take-off ledges: planed flat after the erosion, so no bump sits where a jump has to be made
+  for (const [lx0, lx1, ly] of LEVEL) {
+    for (let j = clamp(Math.floor((top - ly - 1.0) * ppm), 0, H - 1); j <= clamp(Math.ceil((top - ly + 0.6) * ppm), 0, H - 1); j++)
+      for (let i = Math.floor((lx0 - x0) * ppm); i <= Math.ceil((lx1 - x0) * ppm); i++) if (wx(i) >= lx0 && wx(i) <= lx1) solid[j * W + i] = wy(j) < ly ? 1 : 0;
   }
   const sdf = sdfFromMask(W, H, solid);
   const T = new Terrain(W, H, sdf);

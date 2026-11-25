@@ -459,10 +459,9 @@ function makeEnding() {
   E = new Ending({
     W: () => W, D: () => D, A, cam, I: () => I, $, show, log, playLine, voiceBusy: () => voicePlaying > 0, sub: subtitle,
     setState: (s) => { state = s; },
-    // tied: the film, then what became of everyone, then the credits
+    // that ending's film, then what became of everyone, then the credits
     // the run's save stays at its last pole, so Continue goes back to the choice
-    film: (cards) => { passage(() => { E.dark = 1; playCine('outro', () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => rollCredits(false)); }); return 'keep'; }, { out: 0.6 }); },
-    cards: (cards) => { E.mode = 'over'; E.dark = 1; endCards(cards, () => rollCredits(true)); },
+    film: (cards, name = 'outro', cut = false) => { passage(() => { E.dark = 1; playCine(name, () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => rollCredits(cut)); }); return 'keep'; }, { out: 0.6 }); },
   });
 }
 function endCards(lines, done) {
@@ -789,10 +788,15 @@ function buildPts(viewW, viewH, k) {
   const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1);      // the threads go out with the picture
   const redTo = E && E.pulse ? E.pulse.total : -1;
   for (let i = 0; i < g.n; i++) {
-    const x = g.x[i], y = g.y[i];
+    const x = g.x[i]; let y = g.y[i];
     if (!inV(x, y)) { brk(); continue; }
     let r = 0.6, gg = 0.58, b = 0.55, a = 0.75, w = Math.max(1, k * 0.014);
-    if (redTo > 0 && i <= E.pulse.gi && E.pulse.arc[i] <= redTo) { const gone = E.pulse.arc[i] < E.pulse.s; r = gone ? 0.12 : 0.85; gg = 0.1; b = 0.1; a = gone ? 0.5 : 1; w = wLive * 0.85; }
+    if (redTo > 0 && i <= E.pulse.gi && E.pulse.arc[i] <= redTo) { const gone = E.pulse.arc[i] < E.pulse.s; if (!gone || !E.pulse.bite) { r = gone ? 0.12 : 0.85; gg = 0.1; b = 0.1; a = gone ? 0.5 : 1; w = wLive * 0.85; } }
+    // bitten: the length of it that came down with the thing
+    if (E && E.parted && i <= E.pulse.gi && E.pulse.arc[i] < E.pulse.cut && y > -470) {
+      y -= E.pulse.drop; a *= clamp(1 - (E.pulse.drop - 3) / 12, 0, 1);
+      if (a <= 0 || !inV(x, y) || (i > 0 && E.pulse.arc[i - 1] >= E.pulse.cut)) { brk(); if (a <= 0 || !inV(x, y)) continue; }
+    }
     a *= lit;
     put(x, y, w, a, r, gg, b); open = true;
   }
@@ -806,7 +810,7 @@ function buildPts(viewW, viewH, k) {
   brk();
   // the red thread, doll → home
   // cull by segment, not by point: a long taut stretch (doll to a pivot far off screen) must still draw
-  const th = W.thread, P = th.poly, N = th.polyN;
+  const th = W.thread, P = th.poly, N = state === 'ending' && E.pulse && E.pulse.bite && !E.pulse.hang ? 0 : th.polyN;      // (while the red goes out only the long thread is drawn)
   const segV = (a, b) => {
     if (a < 0 || b >= N || P[b * 5 + 2] === 4) return false;
     const x0 = P[a * 5], y0 = P[a * 5 + 1], x1 = P[b * 5], y1 = P[b * 5 + 1];

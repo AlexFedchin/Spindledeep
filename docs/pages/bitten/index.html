@@ -1,0 +1,227 @@
+<title>Spindledeep · Bitten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    .clip { margin: 8px 0 26px; }
+    .clip video { display: block; width: 100%; height: auto; border: 1px solid var(--rule); background: var(--ink-2); }
+    .clip video:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+    .clip figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); margin-top: 10px; }
+    .wide { max-width: 900px; margin: 0 auto; }
+    table.windows td, table.windows th { vertical-align: top; white-space: normal; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the bitten ending</div>
+    <h1>Bitten</h1>
+    <p class="tag">She bites the thread in two<span></span>and then it goes looking</p>
+  </header>
+
+  <p class="ask">I don't like the way the game ends when I bite the thread, it's basically just this thing saying "What have you done?" and then black screen, that is disappointing. Add some cinematic for it as well please</p>
+  <div class="col summary">
+    <p>The bitten ending is now about a minute and a half of scenes: one minute played by the game, then a rendered film of 37 seconds, then the same cards as before. The clips have the game&rsquo;s sound; the subtitles are not in the recordings.</p>
+  </div>
+
+  <h2>In the game</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>The bite.</b> Close on the doll as the red goes out of the thread. It asks what you have done, twice, and the second time her neck comes forward in three jerks.</li>
+      <li><b>The red goes out.</b> The light dies up the whole thread, from the bottom to the top: the Hall of Chairs, the Bell Gallery, the Throat, and over the snow to her door. A bell it passes rings once more. When it reaches the door, the wind drops for the first time in the game.</li>
+      <li><b>It tries the thread.</b> In the well above the Loom it comes up what is left, hand over hand. The thread parts above it. It hangs there with the end in its hand, turns to look at you, and falls.</li>
+      <li><b>It asks.</b> The doll walks back along her dead thread to the candle and what is left of the knitter. The face comes in beside her and asks for her name, goes over her head and down the other side to ask again, and blows the candle out.</li>
+    </ul>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-bite" controls playsinline preload="none" poster="img/p_bite.jpg" src="vid/bite.mp4" style="aspect-ratio: 1280 / 696"></video><figcaption>the whole scene as the game plays it &middot; 63 seconds</figcaption></figure></div>
+
+  <h2>The film</h2>
+  <div class="col">
+    <p>Rendered like the prologue, from the same places, so it reads as that night undone. The storm ends and the snow melts off the Brink. Her window is empty, with the spinning wheel still in it and sweet peas coming up past the sill. Her grey thread lies through the grass to the pit; the camera goes over the edge and down the well. At the bottom, what is in her chair has the doll in its lap and whispers names in its ear, until it notices you.</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-film" controls playsinline preload="none" poster="img/p_film.jpg" src="vid/film.mp4" style="aspect-ratio: 16 / 9"></video><figcaption>the new film &middot; 37 seconds</figcaption></figure></div>
+
+  <h2>No more growing in the dark</h2>
+  <p class="ask">When I am tying a thread to it, I can see it scale up in the dark, it should either happen slower and smoother so that it is less noticable, or just not at all</p>
+  <div class="col">
+    <p>Not at all. She used to grow from 1.65 to 2.70 times life size in 3.3 seconds, hidden only by the dark, so on a bright screen it showed. Her body now keeps one size through the whole scene. Her head also used to jump up out of the picture in a single frame; it now rises over 4.4 seconds. I checked the frames with the brightness pushed up: nothing pops.</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/reveal_before.jpg" alt="Before: she has grown by the time the light comes up">
+      <img class="after" src="img/reveal_after.jpg" alt="Now: the same size as when she was holding out the thread">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-reveal" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide"><figure class="clip"><video id="v-tie" controls playsinline preload="none" poster="img/p_tie.jpg" src="vid/tie.mp4" style="aspect-ratio: 1280 / 696"></video><figcaption>the moment of tying &middot; 13 seconds</figcaption></figure></div>
+
+  <h2>The bump at the first ring</h2>
+  <p class="ask">the jump with the first ring in the map has a small bump right before it in the exact place i am trying to jump, and apparently because of this bump I am falling for a split second and cannot jump</p>
+  <div class="col">
+    <p>You were right. The bump threw her off the ground, and by the time she landed past it the jump was already lost, half a metre before the edge.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Running off the edge at</th><th>Last moment a jump worked, before</th><th>Now</th></tr></thead>
+        <tbody>
+          <tr><td>The first ring (Bell Gallery)</td><td>0.6 m before the edge</td><td>0.8 m past it</td></tr>
+          <tr><td>The spare ring in the Throat</td><td>0.2 m before the edge</td><td>0.5 m past it</td></tr>
+          <tr><td>The other eleven rings</td><td>0.6 to 0.8 m past it</td><td>0.7 to 1.1 m past it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="what" style="margin-top:18px">
+      <li><b>The two ledges are level now,</b> right up to the edge.</li>
+      <li><b>Bumps anywhere no longer throw her.</b> While walking she keeps to the ground over small bumps; real edges still drop her. Before this, small bumps took her off the ground on the way to twelve of the thirteen take-offs.</li>
+      <li><b>A jump pressed a little late counts for longer:</b> 0.13 s after leaving the ground instead of 0.10 s.</li>
+      <li><b>The swings are unchanged.</b> All 12 ring gaps were run again: the same let-go times work, give or take one step in a few gaps, and one gap in the Mere is more forgiving.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/lip_before.jpg" alt="Before: the ground humps up right where you jump">
+      <img class="after" src="img/lip_after.jpg" alt="Now: level to the edge">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lip" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Two rooms, two new ways</h2>
+  <p class="ask">there are also 2 hidden rooms which I see but cannot reach, they are behind a hole which is larger than my jump [...] could you please add an alternative separate path to this room on top (parkour over platforms) which leads me just to this room?</p>
+  <div class="col">
+    <p>Your play logs showed which two: the Last Basket, past the hole in the Hall of Chairs, was the only room you never opened, and the alcove with a skein in the Root Gardens, past the drop, was the only skein you never took. A search through every run and jump the doll can make confirmed that neither could be reached on foot. The holes are as wide as they were.</p>
+    <ul class="what">
+      <li><b>The Root Gardens.</b> Seven shelves hung in roots lead along the roof from where you come in to the alcove. Five more lead up to them from the floor, so a fall is not the end of it.</li>
+      <li><b>The Hall of Chairs.</b> Nine chair seats hung on yarn climb from among the chairs and cross over the hole to a ledge in the far wall. A chute goes down through the roof of the room. You come out by the old crawl, past a new pole, and drop down the hole to go on.</li>
+      <li><b>Checked</b> with the real thread on both ways, from the nearest poles and with no extra yarn. The thread never runs short.</li>
+    </ul>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/g1_before.jpg" alt="Before: the alcove top left, over the drop, with no way to it">
+      <img class="after" src="img/g1_after.jpg" alt="Now: shelves along the roof and up from the floor">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-g1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+  <div class="wide">
+    <div class="reveal">
+      <img src="img/hall_before.jpg" alt="Before: the hole in the Hall of Chairs">
+      <img class="after" src="img/hall_after.jpg" alt="Now: hanging seats up and over it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-hall" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col">
+    <div class="files">
+      <div><b><code>app/src/ending.js</code></b><span>The bitten ending, part by part; the tied one at a constant size.</span></div>
+      <div><b><code>scripts/cine/shots_cut.py</code></b><span>The five shots of the film; <code>render_cut.sh</code> renders them, <code>edit.py cut</code> cuts it.</span></div>
+      <div><b><code>app/src/level.js</code></b><span>SHELVES, LEVEL (planed ledges), the chute, pole 30.</span></div>
+      <div><b><code>app/src/drawshelf.js</code></b><span>What the shelves hang by.</span></div>
+      <div><b><code>app/src/player.js</code></b><span>Keeping to the ground over bumps.</span></div>
+    </div>
+  </div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7">listen</a> &middot; <a href="https://claude.ai/artifact/8soWEEYQZJFzENtU2f5s7K">the ending</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

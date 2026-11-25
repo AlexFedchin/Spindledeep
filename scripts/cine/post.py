@@ -149,6 +149,8 @@ def process(fdir, f, exposure, boil, first_k=None):
     wob = (vnoise(xx * 0.012 + bseed, yy * 0.012 - bseed) - 0.5) * 0.35 + (vnoise(xx * 0.05 - bseed, yy * 0.05) - 0.5) * 0.12
     # tone
     lumv = (beauty_bg * torch.tensor([0.3, 0.52, 0.18], device=dev).view(3, 1, 1)).sum(0)
+    if AUTO.get(fdir) is None and 'fixed' in AUTO:
+        AUTO[fdir] = AUTO['fixed']        # --auto=V: shots that start in the dark (the first frame decides otherwise)
     if AUTO.get(fdir) is None:
         sel = (~sky0) & (aux[1] < 0.02)
         med = torch.quantile(lumv[sel][::7], 0.6) if sel.any() else torch.tensor(0.05, device=dev)
@@ -257,6 +259,8 @@ def main():
     if 'size' in opts:
         OUT_W, OUT_H = (int(x) for x in opts['size'].split('x'))
     DEBUG = opts.get('debug')
+    if 'auto' in opts:
+        AUTO['fixed'] = float(opts['auto'])
     CONTRAST = float(opts.get('contrast', CONTRAST))
     kfix = None
     for f in frames:

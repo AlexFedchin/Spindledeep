@@ -5,6 +5,7 @@ import * as L from './level.js';
 import { SNAG_R } from './player.js';
 import { drawLore, drawKeepsakes, drawHusks, drawShowItem } from './props.js';
 import { drawDeep } from './drawdeep.js';
+import { drawShelves } from './drawshelf.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -59,6 +60,7 @@ export class Drawer {
     this.drawCottage(ctx, ectx);
     drawLore(this, ctx, ectx);
     drawHusks(this, ctx, ectx);
+    drawShelves(this, ctx, ectx);
     this.drawThorns(ctx, ectx);
     this.drawGates(ctx, ectx);
     this.drawHooks(ctx, ectx);

@@ -22,6 +22,18 @@ export function surfaceY(x) {
   return base + (COTTAGE.y - base) * yard;
 }
 
+// Shelves hanging in the air [x0, x1, top]: the upper ways to the two rooms nobody could jump to. 'root' hangs in the roots of
+// the Gardens, 'seat' on yarn from the roof of the Hall (drawn by drawShelves). Rises stay under 1.45 m, gaps under 2.5.
+export const SHELVES = [
+  // the Root Gardens: along under the roof from where you come in to the alcove over the drop, and a way up from the floor
+  [31.4, 33.6, -52.4, 'root'], [27.6, 29.3, -51.4, 'root'], [24.0, 25.7, -51.0, 'root'], [20.5, 22.2, -52.1, 'root'], [17.0, 18.5, -51.6, 'root'],
+  [13.4, 14.8, -52.3, 'root'], [9.4, 12.0, -51.8, 'root'],
+  [24.4, 26.4, -59.2, 'root'], [21.2, 23.0, -57.9, 'root'], [24.4, 26.1, -56.5, 'root'], [21.0, 22.7, -55.1, 'root'], [24.4, 26.0, -53.6, 'root'],
+  // the Hall of Chairs: from the chairs up and over the hole, to a chute in the east wall
+  [24.4, 26.6, -245.2, 'seat'], [28.4, 30.0, -243.8, 'seat'], [31.8, 33.4, -242.4, 'seat'], [35.4, 37.0, -241.2, 'seat'], [39.2, 40.8, -240.0, 'seat'],
+  [43.2, 44.6, -239.2, 'seat'], [47.0, 48.4, -238.6, 'seat'], [50.8, 52.2, -239.3, 'seat'], [54.6, 56.2, -238.6, 'seat'],
+];
+
 export const OPS = [
   // ── the Throat: the pit under the Brink ────────────────────────────────────
   ['carve', P([[41.5, 2], [43, -5], [46, -11], [44.5, -20], [46.5, -29], [45, -38], [46.5, -46], [49, -58], [52, -63],
@@ -39,6 +51,7 @@ export const OPS = [
   ['carve', E(23, -54.5, 13.5, 6.8)],          // G1
   ['carve', E(9.5, -48.5, 3.2, 2.4)],          // alcove with a skein, up and left
   ['carve', T([[13, -53, 1.3], [10, -49, 1.4]])],
+  ['carve', E(12.6, -49.9, 1.3, 1.2)],         // no tooth of rock over the last jump of its upper way
   ['carve', T([[12.5, -59, 2.1], [13, -66, 2.0], [15, -71, 2.2]])],  // drop into G2
   ['carve', E(25, -76.5, 16, 6.6)],            // G2
   ['carve', T([[39, -80, 1.7], [41.5, -86, 1.7], [37, -93, 1.8], [31, -99, 2.0], [29, -105, 2.2]])], // down to the Gallery
@@ -148,12 +161,16 @@ export const OPS = [
   // the Last Basket: a crawl at the foot of the Loom's east slope
   ['carve', T([[56.6, -243.65, 0.6], [58.6, -243.75, 0.62], [62.5, -243.6, 0.6], [66.4, -243.25, 0.62], [69.6, -243.55, 0.62]])],
   ['carve', E(70, -242.4, 3.2, 1.8)],
+  // and its upper way: a ledge over the east slope, and a chute down through the roof of the room
+  ['fill', B(58.2, -241.4, 66, -239.6, 0.4)],
+  ['carve', T([[61.4, -238.9, 0.7], [64.0, -239.0, 0.66], [66.8, -239.7, 0.64], [69.0, -241.4, 0.7]])],
   // the Quiet Room: a crawl at the west end of the Hush's long gallery, past where the way goes down
   ['carve', T([[17.2, -325.4, 0.6], [12.5, -325.45, 0.6], [8.4, -325.25, 0.62]])],
   ['carve', E(5.4, -324.4, 3.0, 1.6)],
   // the Shoe: a crawl at the far end of the Treadles' west ledge
   ['carve', T([[13.2, -365.4, 0.6], [9.5, -365.45, 0.6], [6.6, -365.25, 0.62]])],
   ['carve', E(3.9, -364.4, 2.6, 1.55)],
+  ...SHELVES.map(([x0, x1, y]) => ['fill', B(x0, y - 0.55, x1, y, 0.22)]),
 ];
 
 // erosion stays calm in these rects [x0, y0, x1, y1] so the narrow cracks keep their shape
@@ -162,6 +179,15 @@ export const QUIET = [
   [0.5, -5.2, 12.8, 3.0], [74, -17.2, 89.6, -12.3], [0.4, -86.8, 12.6, -79.2], [1.2, -118.2, 13.2, -113.8],
   [109.8, -157.6, 119.6, -152.6], [57.6, -244.8, 73.8, -240.0],
   [0.4, -327.2, 18.6, -322.0], [0.4, -367.2, 14.6, -362.0],
+  [57.8, -241.6, 72, -238.0], [6.6, -53.2, 12.2, -49.6],
+  ...SHELVES.map(([x0, x1, y]) => [x0 - 0.9, y - 1.4, x1 + 0.9, y + 0.8]),
+];
+
+// [x0, x1, y]: ground planed level at y, where a jump has to be made
+export const LEVEL = [
+  [22.5, 29.5, -117.75],     // B0: the first ring
+  [35.0, 39.0, -52.6],       // the way into the Root Gardens, over the drop (the first shelf is a jump from here)
+  [51.0, 54.2, -25.4],       // L3, under the spare ring
 ];
 
 // Areas: title card on first entry, ambience/music state, camera framing.
@@ -225,6 +251,7 @@ export const PEGS = [
   { x: 37, y: -470 },       // 27
   { x: 32, y: -444 },       // 28: the breast beam (the cloth stops)
   { x: 108.5, y: -404.6 },  // 29: the ledge halfway down the well
+  { x: 53.2, y: -245.6 },   // 30: the Hall, east of the hole, outside the Last Basket
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
@@ -272,7 +299,7 @@ export const SECRETS = [
     text: "Her mother's thimble. There was a name inside it once. Someone has filed it away, all the way through the silver." },
   { name: 'The Sill', at: 2.2, hide: [112.6, -157.0, 119.8, -152.8], r: [116.4, -154.7, 2.7, 1.6], x: 116.0, y: -156.1, kind: 'eye', what: 'a spare button eye',
     text: 'A button eye, not yours. You have been passing them all the way down.' },
-  { name: 'The Last Basket', hide: [62.4, -244.6, 74.0, -240.0], r: [70, -242.4, 3.2, 1.8], x: 69.4, y: -244.0, kind: 'mitten', what: 'a half-knitted mitten',
+  { name: 'The Last Basket', hide: [65.4, -244.6, 74.0, -238.8], r: [70, -242.4, 3.2, 1.8], x: 69.4, y: -244.0, kind: 'mitten', what: 'a half-knitted mitten',
     text: "Half-knitted, needles still in it, sized for a hand with no fingers. It isn't for you. It's for the next one." },
   { name: 'The Quiet Room', hide: [0.3, -327.0, 11.6, -321.8], r: [5.4, -324.4, 3.0, 1.6], x: 4.6, y: -325.8, kind: 'pattern', what: 'a knitting pattern',
     text: "A pattern for a doll, in her hand. At the bottom, underlined twice: 'Sew the mouth shut, so it can tell it nothing. No name, so it can't be called.'" },

@@ -48,7 +48,7 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
   player's save. `__SD.cont()` continues from the save like the title's Continue.
 - Real input for tests: a shots step can take `click: '<css selector>'` and `keys: ['Enter', 'Space', ...]`
   (`sendInputEvent`, so focus and default actions behave like a real player's). Session logs land in
-  `<profile>/logs/session-*.log` (player: `%APPDATA%\Spindledeep\logs`); read them first when the user reports a bug.
+  `<profile>/logs/session-*.log` (player: `%APPDATA%\Spindledeep\logs`); read them first when the user reports a bug (they also say what the user has and has not found).
 - Overlays hide with opacity, so `show()` in main.js also sets `inert`: never hide UI with opacity alone (a focused
   hidden menu button once restarted the game whenever Enter/Space was pressed in play).
 - When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
@@ -91,6 +91,10 @@ walkable both ways (no side-view switchbacks: a hairpin always leaves a ledge ta
 A room's rock crumbles at the mouth of its crack (`open`, `mouthZone` in world.js, `at` per room), before the doll can be inside
 it; keep zones off poles and the main way. Every `SECRETS.kind` needs a `KEEP` drawing in props.js.
 
+`SHELVES` (level.js) are the upper ways to two places no jump reaches (Root Gardens alcove, the Last Basket): rises under 1.45 m, gaps under
+2.5; drawn by `drawshelf.js`; floor searches (chairs, lore) must not land on them. `LEVEL` planes ledges flat where a jump is made. New poles go
+at the **end** of `PEGS` (indices are used in code). After touching the level or `player.js`: `scripts/checks` (lip, gal, reach, shelfrun, fuzz, hands).
+
 ## Sound (app/src/sound.js)
 
 `Sound` feels out the cave at 10 Hz (size, walls, roof, drop) and drives audio.js: four reverbs (`setSpace`), wall echoes, muffling
@@ -106,6 +110,9 @@ Offline-rendered films: `app/assets/cine/intro.mp4` (prologue, plays on Begin) a
 (epilogue of the 'tie' ending; since 2026-11-24 made of engraved SDXL plates by `plates.py`, not Blender shots; E2–E7 in shots.py are retired). The user asked not to be told what the ending
 film shows; keep its content out of pages and summaries.
 
+- `cut.mp4` (2026-11-25): the film of the bitten ending, Blender again: `shots_cut.py` (C1-C5), `render_cut.sh` (`--prev=F,F` stills; `# auto=` on a
+  shot's decorator fixes its exposure, since post.py otherwise takes it from the first frame), `edit.py cut`. Run the flicker metric on the
+  finished mp4: it catches whole seconds that stills at round frames miss.
 - Blender 4.2.3 portable lives in `scripts/cine/.cache/blender-4.2.3-windows-x64/` (ignored by git).
 - `lib.py` (materials, doll, knitter, snow, threads), `sets.py` (exterior, interior, Loom, shaft),
   `shots.py` (one function per shot, `INTRO`/`OUTRO` lists, per-shot post exposure).
@@ -148,9 +155,9 @@ old-lady model. `clipcheck.py` splits her meshes by bone weight.
 Below the Ink Mere: Hall of Chairs → the Hush → the Treadles → the Loom (world h 604). Rules in `app/src/deep.js` (swinging
 rings, ropes, hands `HAND`, stampers, the called, the rising dark `RISE`, the crawler), drawing in `drawdeep.js`, `drawend.js` and `stage.js` (the thing itself),
 data in `level.js`. The ending is `app/src/ending.js` (approach, the held choice, two timelines, `CARDS`); test with
-`__SD.end().choose('tie'|'cut')` at peg 28 and set `__SD.end().t` to jump. Sprites: `scripts/art/caller.py` (SDXL) →
+`__SD.end().choose('tie'|'cut')` at peg 28 and set `__SD.end().t` to jump (bitten: parts bite/dies/well/ask, `.startWell()`, `.s`). Nothing may visibly change size in the dark. Sprites: `scripts/art/caller.py` (SDXL) →
 `facework.py` (the face) → `cutout.py` → `app/assets/art/sprites/`.
-Route checks run in plain node: `node --experimental-default-type=module` can import `app/src` (`buildTerrain`, `World`), far
+Route checks (now in `scripts/checks`) run in plain node: `node --experimental-default-type=module` can import `app/src` (`buildTerrain`, `World`), far
 faster than the Electron harness; scratchpad `run.mjs` runs `route2.js`, `gaps.js`, `mere.js`; `hands.mjs` (bots crossing the Hush),
 `fuzz.mjs` (thread inside rock). Any change to the deep's geometry or timing must be re-run through them.
 Teleport tests must re-tie the thread at a nearby peg first, or the overstretched thread pulls the doll back.

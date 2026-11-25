@@ -679,3 +679,6 @@ def K3(out, preview):
     cam_keys(cam, tgt, [(1, V((-1.85, 0.55, 1.05)), c, 28, 1.9)])
     light('AREA', 'k3key', (0.4, 1.0, 1.9), 80, color=(1.0, 0.8, 0.6), size=1.2, rot=(0.9, 0, 0.6))
     return sc
+
+
+import shots_cut  # noqa: E402,F401  (the bitten ending)

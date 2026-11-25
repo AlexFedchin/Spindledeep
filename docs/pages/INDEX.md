@@ -30,6 +30,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 22. What is down there: the Loom, both endings and the film remade (`ending/`, plot sealed) | https://claude.ai/artifact/J1avXLArMvcKdXb2hRBTGz |
 | 23. Listen: two keepsakes drawn, rooms that open in time, sound that follows the cave (`listen/`) | https://claude.ai/artifact/NZ8LqQVJhCyzqS1shjTGD7 |
 | 24. The Ending: the monster is a live 3D figure; both endings scene by scene, with clips (`face/`, open) | https://claude.ai/artifact/8soWEEYQZJFzENtU2f5s7K |
+| 25. Bitten: the bitten ending's scenes and film, no growing in the dark, first ring's lip, upper ways (`bitten/`, open) | https://claude.ai/artifact/6bqJt6HgPBpE5bcSrLgANS |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,
@@ -124,3 +125,13 @@ patch: teleport to the mouth instead. Scratchpad `run8.json` runs into all eight
 `zones.mjs` checks no pole or grey thread lies in a zone. Sound tests: record the game's output with a MediaRecorder on
 `__SD.A.out`; `rt.json` (one footstep per place, beds disconnected), `soak.json` (3 simulated minutes per area). Moths that sit
 on the doll come along when it is teleported and spoil recordings.
+
+## Bitten (2026-11-25)
+The player's session logs answered "which two rooms": the only secret never opened and the only skein never taken in both runs.
+Checks now live in `scripts/checks` (plain node: `node --experimental-default-type=module scripts/checks/<x>.mjs [old app/src url]`):
+`lip` (last possible jump at all 13 ring take-offs), `gal` (12 ring gaps, release windows), `reach` (search over run/jump macros without
+the thread: what can be reached on foot), `shelfrun` (the two upper ways with the real thread and yarn), `fuzz`, `hands`.
+Fixed lips: bot off the first ring could last jump 0.59 m before the edge, now 0.77 m past. Bitten timeline: `__SD.end().part` is bite,
+dies, well, ask; jump with `__SD.end().startDies()`, `.startWell()`, `.s = seconds`. Film: C5's camera began behind the cave wall for a second;
+only the flicker metric showed it (contact sheets every N frames missed it).
+

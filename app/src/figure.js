@@ -149,7 +149,9 @@ export function poseKneel(F, o, t) {
   else {
     // the head where a head would be, only a little farther along its neck than it should go
     const h0 = F.p('head'), up = norm(sub(h0, F.p('neck'))), at = add(add(h0, fwd, o.lean * 0.42 * k), up, o.lean * 0.1 * k);
-    F.headTo(at, norm(add(add(fwd, [0, -0.55 + o.lean * 0.5, 0]), [0, 0, 1], 0.22 + o.lean * 0.5)), [0.2 * o.lean, 1, 0], 1 + o.lean * 0.06);
+    const face = norm(add(add(fwd, [0, -0.55 + o.lean * 0.5, 0]), [0, 0, 1], 0.22 + o.lean * 0.5)), hu = [0.2 * o.lean, 1, 0], size = 1 + o.lean * 0.06;
+    F.headTo(at, face, hu, size);
+    o.h0 = { at, face, up: hu, size, neck: F.p('neck') };      // where it starts from, for whoever moves it next
   }
   F.jaw(o.mouth || 0);
   F.fk();

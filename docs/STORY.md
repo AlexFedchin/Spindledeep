@@ -34,15 +34,19 @@ does, and what became of the knitter and the doll are all said in plain words, i
   fin_mama in the child's voice, fin_tieit). As the doll stays she leans nearer on a neck that is never quite the length it was. The choice is shown as two columns that say what each does; the key is held.
 
 ## The two endings (`app/src/ending.js`)
-- **Tie.** Silence; the candle goes; "Mama?". Light comes up on her, still kneeling, grown; the neck goes up into the dark and comes down
+- **Tie.** Silence; the candle goes; "Mama?". Light comes up on her, still kneeling (the same size: the user saw her grow in the dark and disliked it); the neck goes up into the dark and comes down
   over the doll, the head the wrong way up; it turns over, thanks her with every voice it has, waits, and calls. Then five places she came through, seen from a
   camera that doesn't move, as it comes, still in her shape, hand over hand up the thread and everything goes out behind it; the last is the
   cottage. Film (`plates.py`). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
   the doll sits in her window, still holding the thread.
-- **Bite.** The red goes out of the thread. "What have you done?", twice, the second time not in her voice. It breathes the candle
-  out. Hands on the floor in the dark, looking. "That isn't a name. What is your name?" Half a second of light without a sound:
-  the face beside the doll, listening. Cards: it can never climb out, no one will be called again; she had been dead since the
-  first night; the snow melted; the doll is still down there, nameless, so it cannot call her; it is trying every name there is.
+- **Bite** (remade 2026-11-25: the user found "What have you done?" and then black disappointing). The red goes out of the thread. "What
+  have you done?", twice, the second time not in her voice. The red dies up the whole thread (Hall, Gallery, Throat, her door); the wind
+  drops. It comes up the well on what is left of the thread; the thread parts; it hangs, looks, falls. The doll walks back to the candle
+  and what is left of the knitter. The face comes, asks ("That isn't a name. What is your name?"), goes over her head, asks again, blows the
+  candle out. Film (`shots_cut.py`, cut.mp4): the Brink thaws, her empty window with the sweet peas, the dead thread into the pit, down the
+  well, and what sits in her chair with the doll in its lap, whispering names, until it looks up. Cards: it can never climb out, no one will
+  be called again; she had been dead since the first night; the snow melted; the doll is still down there, nameless, so it cannot call
+  her; it is trying every name there is.
   After the credits: black, and the names, whispered, in alphabetical order.
 
 ## The deep

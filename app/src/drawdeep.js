@@ -73,7 +73,9 @@ function drawChairs(D, ctx, ectx) {
     for (const [row, s, tone, x0, x1, step] of [[2, 0.55, 0.22, 9, 41, 1.6], [1, 0.75, 0.34, 10, 41, 2.1], [0, 1.0, 0.5, 11, 40, 2.9]]) {
       for (let x = x0; x <= x1; x += step * (0.85 + r() * 0.3)) {
         if (row === 0 && Math.abs(x - L.CHAIR.x) < 2.2) continue;
-        const gy = T.ground(x, -240, 12);
+        let gy = T.ground(x, -240, 12);
+        const sh = L.SHELVES.find(([a, b, top]) => x > a - 0.2 && x < b + 0.2 && gy !== null && Math.abs(gy - top) < 0.4);
+        if (sh) gy = T.ground(x, sh[2] - 0.9, 6);
         if (gy === null) continue;
         rows.push({ x, y: gy - 0.04 + row * 0.25, s, tone, ph: r() * 6, doll: r() < 0.25, row });
       }
