@@ -88,6 +88,7 @@ body.choosing #sub { bottom: auto; top: 15vh; }
   font-size: clamp(22px, 2vw, 34px); color: var(--paper); text-shadow: 0 2px 16px #000; transition: opacity 2s; pointer-events: none; z-index: 25; }
 /* no pointer over the game: shown only while a menu (title, pause) is up */
 body.nocursor, body.nocursor * { cursor: none !important; }
+body.turning { cursor: grab; } body.turning:active { cursor: grabbing; }
 
 /* the passage between screens: a black veil over everything (even the films), with a caption and a thread that
    runs while something loads; captions fade in late, so a quick passage is just black */
@@ -106,7 +107,7 @@ body.nocursor, body.nocursor * { cursor: none !important; }
 /* a found keepsake or skein: the world darkens around the thing she holds up (the item itself is drawn by the game,
    engraved like everything else, at the bright centre of this vignette); the words come in one after another */
 #show { position: fixed; inset: 0; z-index: 15; pointer-events: none; transition: opacity 1s ease-in-out;
-  background: radial-gradient(ellipse 34% 30% at 50% 36%, rgba(8,7,12,0) 0%, rgba(8,7,12,0.5) 55%, rgba(8,7,12,0.84) 100%),
+  background: radial-gradient(ellipse 44% 46% at 50% 33%, rgba(8,7,12,0) 42%, rgba(8,7,12,0.5) 74%, rgba(8,7,12,0.86) 100%),
     linear-gradient(180deg, rgba(8,7,12,0.35) 0%, rgba(8,7,12,0) 30%, rgba(8,7,12,0.55) 58%, rgba(8,7,12,0.92) 100%); }
 #show .stext { position: absolute; left: 50%; top: 59vh; transform: translateX(-50%); width: min(1040px, 86vw); text-align: center; }
 #show .sname { font-family: 'FellSC'; font-size: clamp(34px, 3.4vw, 60px); letter-spacing: 0.14em; color: var(--paper); text-shadow: 0 2px 18px #000, 0 0 2px #000; }

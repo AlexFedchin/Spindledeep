@@ -413,7 +413,7 @@ export class World {
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     if (this.extraLights) out.push(...this.extraLights);
     // a found item held up in the showcase: a warm light on it (and on her face below it)
-    if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.55 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
+    if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.3 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
     // the cottage doorway while she walks out: warm room light spilling onto the snow
     if (this.intro && this.intro.door > 0.01) out.push({ x: L.COTTAGE.x + 5.975, y: L.COTTAGE.y + 0.15, r: 3.2, i: 0.28 * this.intro.door, c: [1.0, 0.62, 0.3], soft: 10 });   // low, on the step: a lamp at her height washes her out
     return out;

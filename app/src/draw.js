@@ -7,6 +7,7 @@ import { drawLore, drawKeepsakes, drawHusks, drawShowItem } from './props.js';
 import { drawDeep } from './drawdeep.js';
 import { drawShelves } from './drawshelf.js';
 import { drawBuried, placeBuried } from './buried.js';
+import { READY } from './props3d.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -709,6 +710,7 @@ export class Drawer {
     for (const s of this.w.skeins) {
       if (s.taken || !this.vis(s.x, s.y)) continue;
       const X = this.sx(s.x), Y = this.sy(s.y + 0.22 + Math.sin(this.time * 1.4 + s.bob) * 0.03), r = 0.2 * k;
+      if (READY.has('skein')) continue;      // (props3d.js)
       ctx.fillStyle = g(0.55); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, 0.02 * k);
       ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = g(0.2);

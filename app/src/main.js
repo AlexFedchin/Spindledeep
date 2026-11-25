@@ -1,5 +1,6 @@
 // Spindledeep — boot, loop, camera, events → sound/fx/ui, menus, saves, the ending.
 import { Renderer } from './renderer.js';
+import { Items, WORLD_K, SHOW_K } from './props3d.js';
 import { Stage } from './stage.js';
 import { buildTerrain } from './terrain.js';
 import { World } from './world.js';
@@ -83,6 +84,7 @@ let subTimer = 0, cardTimer = 0, toastTimer = 0;
 let settings = { volume: 1, fullscreen: true };
 let E = null;              // the ending (ending.js)
 let STAGE = null;          // the 3D figures (stage.js)
+let ITEMS = null;          // what she picks up (props3d.js)
 let SC = null;             // what the place sounds like (sound.js)
 
 async function boot() {
@@ -115,6 +117,7 @@ async function boot() {
     R.setBackdrops(layers);
     Drawer.IMG = await loadSprites();
     await (STAGE = new Stage(R, log)).load();
+    ITEMS = new Items(R, log);
     await step('listening for her voice…', 0.6);
     W = new World(T);
     D = new Drawer(W);
@@ -658,12 +661,12 @@ let SHOW = null;
 function startShow(o) {
   const p = W.player, el = $('show');
   SHOW = { ...o, t: 0, o: 0, phase: 'in', from: { x: o.x, y: o.y }, at: { x: p.x, y: p.y + 1.35 }, item: null, click: false };
-  W.showcase = SHOW;
+  W.showcase = SHOW; ITEMS.need(o.kind);
   log(`showcase · ${o.name}`);
   el.querySelector('.sname').textContent = o.name;
   el.querySelector('.sdesc').textContent = o.desc;
   el.querySelector('.scount').textContent = o.count;
-  el.querySelector('.sany').textContent = I.usingPad ? 'press any button' : 'press any key';
+  el.querySelector('.sany').textContent = I.usingPad ? 'press any button' : 'press any key · drag to turn it';
   el.classList.remove('s1', 's2', 's3', 's4', 'sout');
   show(el, true);
   show($('card'), false); cardTimer = 0; show($('toast'), false); toastTimer = 0;
@@ -679,7 +682,7 @@ function showUpdate(dt) {
     const k = smooth(0, 1.15, S.t);
     // rise along a soft arc from where it lay to above her head, growing as it comes
     const ax = S.from.x + (S.at.x - S.from.x) * k, ay = S.from.y + (S.at.y - S.from.y) * k + Math.sin(k * Math.PI) * 0.25;
-    S.item = { kind: S.kind, x: ax, y: ay + bob * k, s: 1 + 1.4 * k, a: 0.4 + 0.6 * k };
+    S.item = { kind: S.kind, x: ax, y: ay + bob * k, s: 1 + 1.4 * k, k: WORLD_K + (SHOW_K - WORLD_K) * k, a: 0.4 + 0.6 * k };
     if (S.t > 0.7) el.classList.add('s1');
     if (S.t > 1.15) el.classList.add('s2');
     if (S.t > 1.7) el.classList.add('s3');
@@ -692,7 +695,7 @@ function showUpdate(dt) {
     // the words go first; then it shrinks and drops into her chest (the red heart), and the dark lifts
     const k = smooth(0.25, 1.0, S.o);
     const hx = p.x + p.facing * 0.06, hy = p.y + 0.12;
-    S.item = { kind: S.kind, x: S.at.x + (hx - S.at.x) * k, y: S.at.y + bob * (1 - k) + (hy - S.at.y) * k, s: 2.4 * (1 - k) + 0.15 * k, a: 1 - 0.6 * k };
+    S.item = { kind: S.kind, x: S.at.x + (hx - S.at.x) * k, y: S.at.y + bob * (1 - k) + (hy - S.at.y) * k, s: 2.4 * (1 - k) + 0.15 * k, k: SHOW_K * (1 - k) + 0.03 * k, a: 1 - 0.6 * k };
     if (S.o > 0.35 && !S.hid) { S.hid = true; show(el, false); }
     if (S.o > 1.0 && !S.done) {
       S.done = true; S.item = null;
@@ -702,7 +705,16 @@ function showUpdate(dt) {
     if (S.o > 1.25) { SHOW = null; W.showcase = null; }
   }
 }
-addEventListener('mousedown', () => { if (SHOW) SHOW.click = true; });
+// held up, a thing can be turned with the mouse; a click that does not drag it puts it away
+let grab = null;
+addEventListener('mousedown', (e) => { if (SHOW) { grab = { x: e.clientX, y: e.clientY, far: 0 }; ITEMS.turn.held = true; } });
+addEventListener('mousemove', (e) => {
+  if (!grab || !SHOW) return;
+  const dx = e.clientX - grab.x, dy = e.clientY - grab.y;
+  grab.x = e.clientX; grab.y = e.clientY; grab.far += Math.abs(dx) + Math.abs(dy);
+  if (grab.far > 5) ITEMS.drag(dx * 0.008, dy * 0.008);
+});
+addEventListener('mouseup', () => { if (grab && SHOW && grab.far <= 5) SHOW.click = true; grab = null; if (ITEMS) ITEMS.turn.held = false; });
 
 let camSnap = false;                   // the next camera update jumps straight to its target (behind black)
 let respawnT = -99;                    // time of the last respawn: the picture comes back from black
@@ -882,7 +894,9 @@ function tick(now) {
     revealStep(gdt);
   }
   updateUI(dt);
-  document.body.classList.toggle('nocursor', !(state === 'title' || state === 'loading' || paused));
+  const turning = !!(SHOW && SHOW.phase === 'in' && SHOW.t > 1.6 && !I.usingPad);        // something can be turned with the mouse
+  document.body.classList.toggle('nocursor', !(state === 'title' || state === 'loading' || paused || turning));
+  document.body.classList.toggle('turning', turning);
 
   // audio continuous layers
   if (A) {
@@ -910,9 +924,9 @@ function tick(now) {
   const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
     1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({
-    cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time) : [],
+    cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time).concat(ITEMS.frame(W, [cx, cy], viewW, cam.viewH, dt, time)) : [],
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),
-    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1,
+    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,
   });
   requestAnimationFrame(tick);
 }

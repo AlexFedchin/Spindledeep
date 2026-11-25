@@ -100,6 +100,14 @@ Nothing may be drawn inside solid rock by accident: after adding props, machines
 rock on purpose are in `buried.js`: sprite layer, drawn blue, engraved into the rock by ENGRAVE (lit and fading as rock does). Beasts only above
 the Hush, people only from the Hush down.
 
+## Keepsakes and skeins (2026-11-25)
+
+Flat drawings of found things looked cartoonish full screen to the user: they are real models (`props3d.js`, `PROP_WGSL`, `_prop` in renderer.js).
+`scripts/props3d`: `maps.py` (prints, writing, relief; art venv) → `build.py` (Blender, `-- <names|all> [--draft]`: solids baked to one atlas with
+object-space normals, yarn as untextured tubes, plies spun in the shader) → `pack.py` → `app/assets/props/<kind>.bin/.webp/_n.jpg` (ours, in git).
+How each is held up: `HOLD` in props3d.js. A new keepsake needs an `item_<kind>` in build.py, a `HOLD` entry and, as a stand-in, a `KEEP` drawing.
+Faces must wind outward (bakes of inside-out faces come out black): see `flip` in `lathe`, `outward`. Nothing may glow over a held thing (emission washes it out).
+
 ## Sound (app/src/sound.js)
 
 `Sound` feels out the cave at 10 Hz (size, walls, roof, drop) and drives audio.js: four reverbs (`setSpace`), wall echoes, muffling

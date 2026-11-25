@@ -12,7 +12,7 @@ struct U {
   ink: vec4f, paper: vec4f,
   hatch: f32, nLights: f32, flash: f32, nBg: f32,
   inkPool: vec4f,          // x0, x1, surface y, enabled
-  lightRes: vec2f, wake: f32, red: f32,
+  lightRes: vec2f, hush: f32, red: f32,
   bgRect: array<vec4f, 4>, // cx, cy, w, h
   bgPar: array<vec4f, 4>,  // parallax, layer, alpha, style
 };
@@ -296,19 +296,27 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   // ── figures (3D, already lit): lines that bend round the form, heavier where it turns away, hidden by rock ─────
   let fc = textureSampleLevel(figTex, linSamp, uv, 0.0);
   if (fc.a > 0.004) {
-    let fn3 = textureSampleLevel(figNrm, linSamp, uv, 0.0).xyz / fc.a;
+    let fnA = textureSampleLevel(figNrm, linSamp, uv, 0.0) / fc.a;
+    let fn3 = fnA.xyz;
     let nx = fn3.xy * 2.0 - 1.0;
     let fl = fc.rgb / fc.a;
-    let fa = fc.a * smoothstep(-0.30, -0.05, d);
-    let spF = sp * 0.62;
+    // (a figure writes 1 in its normal's alpha, a thing lying about 0.5, a thing held up 0: that one is in front of the rock)
+    let prop = step(fnA.a, 0.75);
+    let fa = fc.a * mix(smoothstep(-0.30, -0.05, d), 1.0, step(fnA.a, 0.25));
+    let spF = mix(sp * 0.62, max(2.4, sp * 0.5), prop);
     let ph = dirPhase(px, 0.5, spF) + nx.y * 1.3 + nx.x * 0.7 + wob * 0.3;
     let ph2f = dirPhase(px, -0.75, spF) + nx.x * 1.1 + wob * 0.3;
     var sm = engrave(expose(lum(fl) * 1.5), ph, ph2f, 1.1 / spF, 1.0);
     sm *= smoothstep(0.0, 0.22, fn3.z);
+    // things are seen close: finer lines over a continuous tone, so what is on them can be read
+    if (prop > 0.5) { let tv = expose(lum(fl) * 1.15); sm = mix(engrave(tv, ph, ph2f, 1.2 / spF, 0.8), tv, 0.72); }
     paperMask = mix(paperMask, sm, fa);
     tint = mix(tint, fl / max(lum(fl), 1e-3), fa);
     bgDim = mix(bgDim, 0.0, fa);
   }
+
+  // something is being held up: everything else goes quiet
+  if (u.hush > 0.0) { let pr = textureSampleLevel(figNrm, linSamp, uv, 0.0); let held = fc.a * step(pr.a, 0.25 * fc.a); paperMask *= 1.0 - 0.72 * u.hush * (1.0 - held); }
 
   // vignette as burnt plate edges
   let vg = length((uv - 0.5) * vec2f(1.0, 0.85));
@@ -321,7 +329,7 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
   let inkC = u.ink.rgb * (0.85 + vnoise(px * 0.3) * 0.3);
   var col = mix(inkC, paperC, paperMask);
   // a breath of coloured light in the ink (the glow of the thread on wet rock)
-  col += light * vec3f(0.11, 0.035, 0.03) * u.red + light * 0.02;
+  col += (light * vec3f(0.11, 0.035, 0.03) * u.red + light * 0.02) * (1.0 - 0.85 * u.hush);
 
   // emissive layer (half res): window light, knots, sparks
   let e = textureSampleLevel(emitTex, linSamp, uv, 0.0);
@@ -387,6 +395,104 @@ fn toScreen(p: vec2f) -> vec2f {
   let twist = 0.85 + 0.15 * sin((dot(i.sp, normalize(ba + 1e-4)) ) * 0.9);
   let a = core * i.col.a;
   return vec4f(i.col.rgb * twist * a, a);
+}
+`;
+
+// PROPS: the things she picks up (props3d.js): baked solids, and yarn whose plies are spun here from u (along) and v (round).
+export const PROP_WGSL = /* wgsl */ `
+struct L { p: vec4f, c: vec4f };
+struct F { cam: vec2f, viewH: f32, aspect: f32, nl: f32, env: f32, gain: f32, dist: f32, amb: vec4f, r0: vec4f, r1: vec4f, r2: vec4f, at: vec4f, lights: array<L, 8> };
+@group(0) @binding(0) var<uniform> f: F;
+@group(0) @binding(1) var tex: texture_2d<f32>;
+@group(0) @binding(2) var nrm: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+struct VO { @builtin(position) pos: vec4f, @location(0) w: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) c: vec4f, @location(4) @interpolate(flat) kind: f32, @location(5) metal: f32 };
+fn turn(v: vec3f) -> vec3f { return f.r0.xyz * v.x + f.r1.xyz * v.y + f.r2.xyz * v.z; }
+@vertex fn vs(@location(0) p: vec3f, @location(1) n: vec4f, @location(2) uv: vec2f, @location(3) c: vec4f, @location(4) m: vec4f) -> VO {
+  let w = turn(p) * f.r0.w + f.at.xyz;
+  var o: VO;
+  let s = f.dist / (f.dist - min(w.z - f.at.z, f.dist * 0.8));
+  let q = (f.at.xy + (w.xy - f.at.xy) * s - f.cam) / vec2f(f.viewH * f.aspect, f.viewH) * 2.0;
+  o.pos = vec4f(q, 0.5 - w.z / 60.0, 1.0);
+  o.w = w; o.n = turn(n.xyz); o.uv = uv; o.c = c; o.kind = round(m.x * 255.0); o.metal = m.y;
+  return o;
+}
+fn h2(p: vec2f) -> f32 { var q = fract(p * vec2f(123.34, 456.21)); q += dot(q, q + 45.32); return fract(q.x * q.y); }
+fn vn(p: vec2f) -> f32 {
+  let i = floor(p); let g = fract(p); let u = g * g * (3.0 - 2.0 * g);
+  return mix(mix(h2(i), h2(i + vec2f(1.0, 0.0)), u.x), mix(h2(i + vec2f(0.0, 1.0)), h2(i + vec2f(1.0, 1.0)), u.x), u.y);
+}
+// what a polished thing sees round it: a dark room, a window high on the left, a strip of cold light on the right, a low glow
+fn room(r: vec3f, rough: f32) -> vec3f {
+  let s = mix(0.05, 0.55, rough);
+  let up = r.y * 0.5 + 0.5;
+  var c = mix(vec3f(0.018, 0.016, 0.018), vec3f(0.16, 0.15, 0.15), smoothstep(0.3, 1.0, up));
+  let w1 = dot(r, normalize(vec3f(-0.62, 0.55, 0.56)));
+  c += vec3f(1.5, 1.28, 0.98) * smoothstep(0.86 - s, 0.86 + s * 0.6, w1) * (1.0 - 0.45 * rough);
+  let w2 = dot(r, normalize(vec3f(0.9, 0.12, 0.25)));
+  c += vec3f(0.55, 0.65, 0.9) * smoothstep(0.9 - s, 0.9 + s * 0.5, w2) * smoothstep(-0.7, -0.3, r.y) * (1.0 - 0.4 * rough);
+  c += vec3f(0.3, 0.12, 0.08) * smoothstep(0.75 - s, 0.95, dot(r, normalize(vec3f(0.2, -0.85, 0.4))));
+  return c;
+}
+struct FO { @location(0) c: vec4f, @location(1) n: vec4f };
+@fragment fn fs(i: VO, @builtin(front_facing) ff: bool) -> FO {
+  let t = textureSample(tex, samp, i.uv); let tn = textureSample(nrm, samp, i.uv).xyz * 2.0 - 1.0;
+  let V = normalize(vec3f(f.at.xy, f.at.z + f.dist) - i.w);
+  let g = normalize(i.n);
+  let dp1 = dpdx(i.w); let dp2 = dpdy(i.w); let du1 = dpdx(i.uv); let du2 = dpdy(i.uv);
+  var n = g; var alb = pow(t.rgb, vec3f(2.2)); var rough = clamp(1.0 - t.a, 0.08, 1.0); var metal = i.metal; var sheen = 0.0; var ao = i.c.a;
+  if (i.kind < 0.5) {
+    n = normalize(turn(tn));
+    if (dot(n, V) < 0.0) { n = normalize(n - V * dot(n, V) * 1.25); }
+  } else {
+    alb = pow(i.c.rgb, vec3f(2.2)); metal = 0.0; rough = 0.9;
+    if (i.kind < 1.5) {
+      // two plies, and the fibres lying along them
+      let fw = max(abs(du1.x) + abs(du2.x), 1e-4);
+      let fine = smoothstep(1.6, 0.35, fw);                // far away the twist is too fine to draw
+      let ph = i.uv.y * 2.0 + i.uv.x * 0.16;
+      let ridge = cos(ph * 6.2832);
+      let a = dp1; let b = dp2;
+      let pa = cross(b, g); let pb = cross(g, a);
+      let Tt = pa * du1.x + pb * du2.x; let Bb = pa * du1.y + pb * du2.y;
+      let Tn = Tt / max(length(Tt), 1e-6); let Bn = Bb / max(length(Bb), 1e-6);
+      let hv = -sin(ph * 6.2832);
+      let fib = vn(vec2f(ph * 13.0, i.uv.x * 0.55 - i.uv.y * 2.0)); let fib2 = vn(vec2f(ph * 29.0 + 7.0, i.uv.x * 1.1));
+      let k = fine * 0.75;
+      n = normalize(g - (Bn * (hv * 0.9 + (fib - 0.5) * 1.5) + Tn * (hv * 0.28 + (fib2 - 0.5) * 0.9)) * k);
+      let groove = smoothstep(-1.0, 0.1, ridge);
+      alb *= mix(1.0, mix(0.35, 1.0, groove) * (0.72 + 0.5 * fib) * (0.82 + 0.32 * fib2), fine * 0.95 + 0.05);
+      ao *= mix(1.0, mix(0.55, 1.0, groove), fine);
+      sheen = 0.5;
+    } else { sheen = 0.8; alb *= 1.1; ao = 1.0; }
+    if (dot(n, V) < 0.0) { n = normalize(n - V * dot(n, V) * 1.25); }
+  }
+  let nv = max(dot(n, V), 0.02);
+  let F0 = mix(vec3f(0.04), alb, metal); let dalb = alb * (1.0 - metal);
+  let a2 = pow(max(rough, 0.12), 4.0);
+  var col = f.amb.rgb * dalb * (0.5 + 0.5 * n.y) * ao;
+  for (var k = 0; k < i32(f.nl); k++) {
+    let l = f.lights[k];
+    let v = l.p.xyz - i.w; let d2 = length(v); let x = length(v.xy) / l.p.w;
+    if (x >= 1.0) { continue; }
+    let fall = (1.0 - x * x) * (1.0 - x * x) / (1.0 + d2 * d2 * 0.22);
+    let dir = v / max(d2, 1e-4); let nl = dot(n, dir);
+    let wrap = mix(0.0, 0.35, step(0.5, i.kind));
+    let dif = max(0.0, (nl + wrap) / (1.0 + wrap)) * mix(ao, 1.0, 0.25);
+    let h = normalize(dir + V); let nh = max(dot(n, h), 0.0); let nl0 = max(nl, 0.0);
+    let dn = nh * nh * (a2 - 1.0) + 1.0;
+    let vis = 0.25 / max(mix(nl0 * nv, 1.0, rough * 0.35), 0.04);
+    let fr = F0 + (1.0 - F0) * pow(1.0 - max(dot(h, V), 0.0), 5.0);
+    col += l.c.rgb * fall * (dalb * dif + fr * min(a2 / (3.1416 * dn * dn), 60.0) * vis * nl0 * ao * 0.8);
+    col += l.c.rgb * fall * alb * sheen * pow(1.0 - nv, 2.5) * max(0.0, nl * 0.6 + 0.4) * ao;
+  }
+  let r = reflect(-V, n);
+  let fr = F0 + (max(vec3f(1.0 - rough), F0) - F0) * pow(1.0 - nv, 5.0);
+  col += (room(r, rough) * fr * mix(0.9, 1.0, metal) * mix(ao, 1.0, 0.2) + room(n, 1.0) * dalb * 0.35 * ao) * f.env;
+  var o: FO;
+  o.c = vec4f(max(col, vec3f(0.0)) * f.gain, 1.0);
+  o.n = vec4f(n.xy * 0.5 + 0.5, clamp(nv, 0.0, 1.0), f.at.w);
+  return o;
 }
 `;
 

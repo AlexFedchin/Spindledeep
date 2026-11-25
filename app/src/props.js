@@ -2,6 +2,7 @@
 // there so each ledge has a past. Drawn in grey tone like every sprite (the engraving shader lights them,
 // so in the caves they only show up inside the thread's light). Positions snap to the real rock floor.
 import { mulberry, TAU } from './util.js';
+import { READY } from './props3d.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 const INK = 0.035;
@@ -51,7 +52,7 @@ export const LORE = [
   ['baskets', 8.2, -4, 1],             // the Cellar
   ['lantern', 83.8, -15, 1], ['bucket', 87.2, -15, -1],         // the Diggers' Cache
   ['markers', 2.1, -85, 1], ['pots', 4.8, -85, -1],              // the Seed Hollow
-  ['candles', 2.9, -116, 1], ['stool', 4.6, -116, -1],          // the Ringer's Cell
+  ['candles', 2.4, -116, 1], ['stool', 4.6, -116, -1],          // the Ringer's Cell
   ['letters', 117.0, -155, 1], ['boots', 115.2, -155, 1],       // the Sill
   ['baskets', 71.2, -243, 1],                                   // the Last Basket
 ];
@@ -165,13 +166,14 @@ export function drawKeepsakes(D, ctx, ectx) {
     ctx.globalAlpha = ectx.globalAlpha = k.fade;
     // a wide faint halo: the light in world.js shows the thing itself (a strong one washed it out to a white dot)
     P.glow(0, 0.14, 0.5, `rgba(255,228,180,${0.05 + 0.02 * Math.sin(D.time * 1.7 + k.bob)})`);
-    KEEP[k.kind](P, D.time);
+    if (!READY.has(k.kind)) KEEP[k.kind](P, D.time);
     ctx.globalAlpha = ectx.globalAlpha = 1;
   }
 }
 // a found item held up in the showcase (main.js startShow): drawn at scale it.s, centred on (it.x, it.y), lit warm
 export function drawShowItem(D, ctx, ectx, it) {
   const P = new Pen(D, ctx, ectx, { x: it.x, y: it.y, flip: 1, s: it.s });
+  if (READY.has(it.kind)) return;
   P.glow(0, 0, 0.55, `rgba(255,214,160,${(it.kind === "skein" ? 0.08 : 0.16) * it.a})`);
   if (it.kind === 'skein') {
     // a ball of her red yarn: wound turns, a loose end, the red of the thread in its light

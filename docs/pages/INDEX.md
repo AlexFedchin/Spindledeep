@@ -32,6 +32,7 @@ House style and rule: see `CLAUDE.md`. Template: `_template.html`, builder: `mkp
 | 24. The Ending: the monster is a live 3D figure; both endings scene by scene, with clips (`face/`, open) | https://claude.ai/artifact/8soWEEYQZJFzENtU2f5s7K |
 | 25. Bitten: the bitten ending's scenes and film, no growing in the dark, first ring's lip, upper ways (`bitten/`, open) | https://claude.ai/artifact/6bqJt6HgPBpE5bcSrLgANS |
 | 26. Buried: nothing in the rock by accident, bones and shells on purpose (`buried/`, open) | https://claude.ai/artifact/BC9NNRnJbHDSzwdFnwnxjF |
+| 27. Things: keepsakes and skeins as real models (`things/`, five sealed) | https://claude.ai/artifact/1Nw7Pg3WD3HzuWupWjqqWn |
 
 ## Swing verification (2026-11-21)
 All 12 ring gaps pass with `SWING` in `app/src/player.js`, simulated for grip-held-early and grip-at-ring,

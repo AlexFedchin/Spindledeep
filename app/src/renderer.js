@@ -1,10 +1,10 @@
 // WebGPU renderer: light (compute) → figures (skinned models, when there are any) → engrave (fullscreen) → threads (instanced). No libraries.
-import { LIGHT_WGSL, ENGRAVE_WGSL, THREAD_WGSL, FIGURE_WGSL } from './shaders.js';
+import { LIGHT_WGSL, ENGRAVE_WGSL, THREAD_WGSL, FIGURE_WGSL, PROP_WGSL } from './shaders.js';
 
 const MAX_LIGHTS = 160;
 const MAX_PTS = 16384;
 const LIGHT_DIV = 3;
-const FIG_LIGHTS = 14, FIG_UBO = 48 + FIG_LIGHTS * 32;
+const FIG_LIGHTS = 14, FIG_UBO = 48 + FIG_LIGHTS * 32, PROP_LIGHTS = 8, PROP_UBO = 112 + PROP_LIGHTS * 32;
 
 export class Renderer {
   async init(canvas) {
@@ -63,6 +63,18 @@ export class Renderer {
       depthStencil: { format: 'depth24plus', depthCompare: 'less', depthWriteEnabled: true },
       multisample: { count: 4 },
     });
+    const pg = mod(PROP_WGSL, 'prop');
+    this.propPipe = d.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module: pg, entryPoint: 'vs', buffers: [{ arrayStride: 32, attributes: [
+        { shaderLocation: 0, offset: 0, format: 'float32x3' }, { shaderLocation: 1, offset: 12, format: 'snorm8x4' }, { shaderLocation: 2, offset: 16, format: 'float32x2' },
+        { shaderLocation: 3, offset: 24, format: 'unorm8x4' }, { shaderLocation: 4, offset: 28, format: 'unorm8x4' }] }] },
+      fragment: { module: pg, entryPoint: 'fs', targets: [{ format: 'rgba16float' }, { format: 'rgba8unorm' }] },
+      primitive: { topology: 'triangle-list', cullMode: 'none' },
+      depthStencil: { format: 'depth24plus', depthCompare: 'less', depthWriteEnabled: true },
+      multisample: { count: 4 },
+    });
+    this.propSamp = d.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 8 });
     this.figSamp = d.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat' });
     this.figs = new Map();           // figure → its GPU side
     const none = () => d.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
@@ -156,6 +168,35 @@ export class Renderer {
     const tex = (im) => { const t = d.createTexture({ size: [im.width, im.height], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT }); d.queue.copyExternalImageToTexture({ source: im }, { texture: t }, [im.width, im.height]); return t; };
     m.gpu = { vb: buf(m.vb, GPUBufferUsage.VERTEX), ib: buf(m.ib, GPUBufferUsage.INDEX), tex: tex(m.tex), nrm: tex(m.nrm) };
   }
+  // a thing to pick up (props3d.js): the same, with the textures' smaller sizes ready made
+  addProp(m) {
+    const d = this.device;
+    const buf = (data, usage) => { const b = d.createBuffer({ size: (data.byteLength + 3) & ~3, usage: usage | GPUBufferUsage.COPY_DST }); d.queue.writeBuffer(b, 0, data.buffer, data.byteOffset, data.byteLength); return b; };
+    const tex = (ims) => {
+      const t = d.createTexture({ size: [ims[0].width, ims[0].height], mipLevelCount: ims.length, format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+      ims.forEach((im, i) => { d.queue.copyExternalImageToTexture({ source: im }, { texture: t, mipLevel: i }, [im.width, im.height]); im.close(); });
+      return t;
+    };
+    m.gpu = { vb: buf(m.vb, GPUBufferUsage.VERTEX), ib: buf(m.ib, GPUBufferUsage.INDEX), tex: tex(m.tex), nrm: tex(m.nrm) };
+  }
+  _prop(rp, P, f) {
+    const d = this.device, g = P.m.gpu;
+    let G = this.figs.get(P);
+    if (!G) {
+      G = { ubo: d.createBuffer({ size: PROP_UBO, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }), u: new Float32Array(PROP_UBO / 4) };
+      G.bg = d.createBindGroup({ layout: this.propPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: G.ubo } }, { binding: 1, resource: g.tex.createView() }, { binding: 2, resource: g.nrm.createView() }, { binding: 3, resource: this.propSamp }] });
+      this.figs.set(P, G);
+    }
+    const u = G.u, [hx, hy] = P.at;
+    const ls = (P.own ? [] : f.lights).map((l) => { const x = Math.hypot(l.x - hx, l.y - hy); return [l.i * Math.max(0, 1.6 - x / l.r) / (1 + x * x * 0.12), l]; }).filter((a) => a[0] > 0).sort((a, b) => b[0] - a[0]).slice(0, PROP_LIGHTS - P.lights.length).map((a) => a[1]).concat(P.lights);
+    u[0] = f.cam[0]; u[1] = f.cam[1]; u[2] = f.viewH; u[3] = this.w / this.h; u[4] = ls.length; u[5] = P.env; u[6] = P.gain; u[7] = Math.max(2, P.k * 7);
+    u[8] = f.ambient[0]; u[9] = f.ambient[1]; u[10] = f.ambient[2];
+    for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++) u[12 + c * 4 + r] = P.R[c][r];
+    u[15] = P.k; u[24] = P.at[0]; u[25] = P.at[1]; u[26] = P.at[2]; u[27] = P.over ? 0 : 0.5;
+    ls.forEach((l, k) => { const o = 28 + k * 8; u[o] = l.x; u[o + 1] = l.y; u[o + 2] = l.z ?? 1.5; u[o + 3] = l.r; u[o + 4] = l.c[0] * l.i; u[o + 5] = l.c[1] * l.i; u[o + 6] = l.c[2] * l.i; });
+    d.queue.writeBuffer(G.ubo, 0, u);
+    rp.setPipeline(this.propPipe); rp.setBindGroup(0, G.bg); rp.setVertexBuffer(0, g.vb); rp.setIndexBuffer(g.ib, 'uint32'); rp.drawIndexed(P.m.ni);
+  }
   _figures(enc, f) {
     const d = this.device, list = f.figs || [];
     if (!list.length) { if (this.figOn) { this.figOn = false; this._bind(); } return; }
@@ -169,8 +210,9 @@ export class Renderer {
     const [c0, c1, m0, m1, dz] = this.figT.map((t) => t.createView()), clearValue = [0, 0, 0, 0];
     const rp = enc.beginRenderPass({ colorAttachments: [{ view: m0, resolveTarget: c0, loadOp: 'clear', storeOp: 'discard', clearValue }, { view: m1, resolveTarget: c1, loadOp: 'clear', storeOp: 'discard', clearValue }],
       depthStencilAttachment: { view: dz, depthLoadOp: 'clear', depthStoreOp: 'discard', depthClearValue: 1 } });
-    rp.setPipeline(this.figPipe);
     for (const F of list) {
+      if (F.m.prop) { this._prop(rp, F, f); continue; }
+      rp.setPipeline(this.figPipe);
       let G = this.figs.get(F);
       const g = F.m.gpu;
       if (!G) {
@@ -202,7 +244,7 @@ export class Renderer {
     u[20] = 0.91; u[21] = 0.86; u[22] = 0.75; u[23] = 1;           // paper
     u[24] = Math.max(3.2, this.h / 235); u[25] = Math.min(f.lights.length, MAX_LIGHTS); u[26] = f.flash || 0; u[27] = Math.min(f.bg.length, 4);
     const ip = f.inkPool; u[28] = ip ? ip.x0 : 0; u[29] = ip ? ip.x1 : 0; u[30] = ip ? ip.y : 0; u[31] = ip ? 1 : 0;
-    u[32] = this.lw; u[33] = this.lh; u[34] = 0; u[35] = f.red ?? 1;
+    u[32] = this.lw; u[33] = this.lh; u[34] = f.hush || 0; u[35] = f.red ?? 1;
     for (let k = 0; k < 4; k++) {
       const b = f.bg[k];
       if (!b) continue;
