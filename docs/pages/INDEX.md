@@ -145,3 +145,4 @@ Fixed lips: bot off the first ring could last jump 0.59 m before the edge, now 0
 dies, well, ask; jump with `__SD.end().startDies()`, `.startWell()`, `.s = seconds`. Film: C5's camera began behind the cave wall for a second;
 only the flicker metric showed it (contact sheets every N frames missed it).
 
+| 35. Rock in the Dark: the film after the bitten ending's titles darker, broken rock walls, a soft light from the well (`cavewall/`) | https://claude.ai/artifact/Eehd7dvGNyVFejMfSPhHng |

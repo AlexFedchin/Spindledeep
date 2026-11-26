@@ -1,0 +1,168 @@
+<title>Rock in the Dark: after the titles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    .screen { max-width: 1040px; margin: 34px auto 18px; }
+    .screen video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000; border: 1px solid var(--rule); }
+    video:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    .reveal-cap { margin-top: 10px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; after the titles</div>
+    <h1>Rock in the Dark</h1>
+    <p class="tag">the walls go out<span></span>and turn to broken stone</p>
+  </header>
+
+  <div class="col summary">
+    <p>The film after the bitten ending&rsquo;s titles is darker now. The wall behind the doll used to read as one smooth draped sheet; now it is broken rock, in beds and blocks, with fallen stones at its foot, and only a little light reaches it, so you can barely make it out. The light from the well no longer looks like a spotlight: it fades out softly round the doll.</p>
+  </div>
+
+  <h2>The cave</h2>
+  <p class="ask">Make the 26-second cutscene darker and the wall behind the doll more interesting, it is too smooth now, it should be rocks in the cave. The walls should be much darker, basically they should be barely seeable.</p>
+  <p class="ask">It should not be such an obvious spotlight from top, make it softer and edges more blurred</p>
+  <div class="screen"><video controls playsinline preload="metadata" poster="img/a300.jpg"><source src="vid/names_720.mp4" type="video/mp4"></video>
+    <p class="reveal-cap">The whole film, 26.5 seconds, with sound</p></div>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/b300.jpg" alt="Before: the back wall lit evenly, a smooth folded sheet">
+      <img class="after" src="img/a300.jpg" alt="After: the back wall is broken rock, mostly black">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-r300" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">Halfway through: the thing on the left wall, the doll in the light</p>
+    <div class="reveal">
+      <img src="img/b450.jpg" alt="Before: the whole dome visible">
+      <img class="after" src="img/a450.jpg" alt="After: only the edges of ledges catch the light">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-r450" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">Near the end, when the camera has gone back and the light is already less</p>
+    <ul class="what">
+      <li><b>Beds of rock.</b> The wall is built up of layers that tilt and pinch out. Each one juts a little over the one below and breaks off at its lip, and upright joints split the layers into blocks. Cracked faces and fine grit go over that.</li>
+      <li><b>Fallen blocks</b> lie at the foot of the wall, away from where the thing crawls.</li>
+      <li><b>Much less light on the walls.</b> The rock itself is darker, and the light that used to wash the walls is down to about a quarter. What&rsquo;s left comes from above and grazes down the rock: the tops of the ledges catch it and everything under them stays black. In the engraving, rock that gets no light gets no lines, so most of the cave is simply dark.</li>
+      <li><b>The thing is only just there.</b> A faint light goes with it, so you can make out its shape on the rock but not much more.</li>
+      <li><b>No spotlight.</b> The light that comes down the well falls off gradually from the doll outward, from a source as wide as the opening, so there&rsquo;s no bright disc with a hard rim on the floor any more. The light that picks out the doll from the front is spread the same way.</li>
+      <li><b>The light from the well</b> is now a soft round shaft. Before, it filled a box with hard sides, which showed once the walls behind it went dark.</li>
+      <li><b>The crawl on broken rock.</b> On rock this rough a hold can be out of reach, so now the body leans toward a hand that has to stretch. Along its route the rock is half as broken (a way worn by its hands), and its body rides 2 cm lower.</li>
+    </ul>
+    <div class="tablebox"><table class="windows"><tr><th>Checked</th><th>Before</th><th>After</th></tr>
+      <tr><td>Wall brightness, 0 to 255</td><td class="n">46.6</td><td class="n">16.1</td></tr>
+      <tr><td>Hand or foot sliding</td><td class="n">under 1 mm</td><td class="n">0 mm</td></tr>
+      <tr><td>Hand short of its hold</td><td class="n">2 mm</td><td class="n">0 mm</td></tr>
+      <tr><td>Body nearest the rock</td><td class="n">&ndash;</td><td class="n">24 mm clear</td></tr>
+      <tr><td>Flicker, worst frame</td><td class="n">9.2</td><td class="n">5.8</td></tr>
+      <tr><td>Sound against movement</td><td class="n">0.0 ms</td><td class="n">0.0 ms</td></tr>
+    </table></div>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The film</b><span><code>app/assets/cine/names.mp4</code></span></div>
+    <div><b>The cave, light and crawl</b><span><code>scripts/cine/shots_end.py</code> (<code>N1</code>, <code>Crawler.set</code>)</span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/UxSTG2brFauukhhFqTWdy9">both ends</a> &middot; <a href="https://claude.ai/artifact/RJNXr6n4aYbLTjUQ2XYdte">every name</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

@@ -11,6 +11,7 @@ import bpy
 import numpy as np
 from mathutils import Euler, Matrix, Vector as V
 from mathutils.bvhtree import BVHTree
+from mathutils.kdtree import KDTree
 
 import act
 import lib
@@ -1728,7 +1729,21 @@ class Crawler:
         kp['hips'].rotation_euler = (0, 0, 0)
         kp['torso'].rotation_euler = (-0.06, 0.10 * math.sin(2 * math.pi * x) * bob, 0)
         kp['neck'].rotation_euler = (-0.55, 0, 0); kp['head'].rotation_euler = (-0.45, 0, 0)
-        if look is not None and amount > 0:                    # the head comes back over its own shoulders, as far as it needs to
+        for _ in range(4):                                     # on broken rock a hold can be past its reach: the body leans to it
+            shift = V((0, 0, 0))
+            for sd in (1, -1):
+                p, n, t, lift = self.place(('h', sd), s)
+                out = t.cross(n) * -sd
+                fd = (t * 0.92 + out * 0.38 - n * 0.06).normalized()
+                sh = kp[f'sh{sd}']; S = (A.W(sh.parent) @ Matrix.Translation(sh.location)).translation
+                D = (p + n * 0.034 - fd * 0.07) - S
+                e = D.length - (kp['L1'] + kp['L2']) * 0.985
+                if e > 0:
+                    shift += D.normalized() * e
+            if shift.length < 1e-5:
+                break
+            self.kr.location += shift
+        if look is not None and amount > 0:                   # the head comes back over its own shoulders, as far as it needs to
             h = kp['head']; rest = Euler(h.rotation_euler).to_quaternion()
             kp['neck'].rotation_euler = (-0.55 - 0.40 * amount, 0, 0)
             b = Euler((-1.15, 0, 0)); h.rotation_euler = b
@@ -1827,8 +1842,8 @@ def N1(out, preview):
     cam, tgt = camera(26, (CA, (0.02, 0, 0.42)), (CB, (0.0, 0, 2.38)), N)
     # the cave: a dome over a floor, long toward us, the well in its roof
     H = 5.3
-    vs, fs = [], []; seg = 160
-    zs = list(np.linspace(-0.5, H, 74)) + list(np.linspace(H + 0.15, 12.0, 30))
+    vs, fs, drs = [], [], []; seg = 420
+    zs = list(np.linspace(-0.5, H, 190)) + list(np.linspace(H + 0.15, 12.0, 60))
     for z in zs:
         for k in range(seg):
             a = k / seg * math.tau
@@ -1836,12 +1851,23 @@ def N1(out, preview):
             r0 = 3.5 + 5.8 * max(0.0, -math.sin(a)) ** 1.4 + wob
             nk = 0.92 + 0.10 * math.sin(a * 4 + z) + 0.05 * math.sin(a * 9 - z * 2)
             r = nk if z >= H else nk + (r0 - nk) * math.sqrt(max(0.0, 1 - max(0.0, z / H) ** 2.6))
-            vs.append((math.cos(a) * r, math.sin(a) * r, z))
+            # beds of rock: each sticks out a little over the one below and breaks off at its lip; they tilt and pinch out
+            bed = z * 1.7 + 0.55 * math.sin(a * 2 + 0.7) + 0.3 * math.sin(a * 7 - 1.1) + 0.15 * math.sin(a * 17)
+            fb = bed - math.floor(bed)
+            ok = 0.5 + 0.5 * math.sin(a * 3.3 + math.floor(bed) * 1.9)
+            dr = -(0.05 + 0.20 * ok) * (fb ** 3) * min(1.0, r / 2.0)
+            # upright joints: the beds are split into blocks
+            jt = a * 26 + 0.8 * math.sin(math.floor(bed) * 2.3) + 0.2 * math.sin(z * 3)
+            fj = abs(jt - math.floor(jt) - 0.5) * 2
+            dr += 0.10 * max(0.0, fj - 0.75) * 4 * ok * min(1.0, r / 2.0)
+            vs.append((math.cos(a) * r, math.sin(a) * r, z)); drs.append(dr)
     for j in range(len(zs) - 1):
         for k in range(seg):
             a, b = j * seg + k, j * seg + (k + 1) % seg
             fs.append((a, a + seg, b + seg, b))
-    w = lib.mesh_obj('cavewall', vs, fs, mats['rock'], smooth=True)
+    deep = mats['rock'].copy(); deep.name = 'rockcave'
+    [n for n in deep.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0].inputs['Base Color'].default_value = (0.035, 0.033, 0.036, 1)
+    w = lib.mesh_obj('cavewall', vs, fs, deep, smooth=True)
     lib.displace(w, 0.34, 0.9)
     fl = prim('plane', 'cavefloor', loc=(0, -2, 0), scale=(8, 9, 1), material=mats['rock'])
     lib.displace(fl, 0.10, 0.8, subdiv=7, axis='Z'); fl.location.z = -0.06
@@ -1853,6 +1879,26 @@ def N1(out, preview):
         t = BVHTree.FromPolygons([o.matrix_world @ v.co for v in m.vertices], [tuple(q.vertices) for q in m.polygons]); e.to_mesh_clear()
         return t
     wall, ground = tree(w), tree(fl)
+    # the rock is broken into beds and blocks everywhere but along its way, which its hands and feet have worn down
+    C = V((0, 0.3, 1.5))
+    WAY = [(-14, -14), (14, -15), (40, -10), (66, -3), (92, 8), (116, 14), (138, 17), (158, 25), (168, 37), (150, 45), (122, 50), (98, 52), (78, 55), (60, 59), (30, 64)]
+    s0 = wall_way(wall, C, WAY)
+    kd = KDTree(int(s0.len / 0.08) + 2)
+    for k, q in enumerate(np.arange(0, s0.len, 0.08)):
+        kd.insert(s0(float(q), 0)[0], k)
+    kd.balance()
+    vg = w.vertex_groups.new(name='rough')
+    for k, v in enumerate(w.data.vertices):
+        dist = kd.find(v.co)[2]
+        wt = 0.5 + 0.5 * ss(dist, 0.3, 1.0)
+        x, y = v.co.x, v.co.y; rr = math.hypot(x, y) or 1.0
+        v.co.x += x / rr * drs[k] * wt; v.co.y += y / rr * drs[k] * wt
+        vg.add([k], wt, 'REPLACE')
+    vo = lib.displace(w, 0.30, 0.55, tex='VORONOI')             # broken faces: blocks with cracks between them
+    vo.texture.weight_1, vo.texture.weight_2 = -1.0, 1.0; vo.texture.noise_intensity = 1.6; vo.vertex_group = 'rough'
+    lib.displace(w, 0.07, 0.18).vertex_group = 'rough'
+    w.data.update(); bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    wall = tree(w)
     gz = lambda x, y: ground.ray_cast(V((x, y, 2)), V((0, 0, -1)))[0].z
     rng = np.random.default_rng(21)
     for k in range(46):                                           # what has come down the well: stones
@@ -1862,15 +1908,19 @@ def N1(out, preview):
         q = 0.02 + 0.10 * rng.random() ** 2.5
         b = prim('ico', f'stone{k}', loc=(x, y, gz(x, y) + q * 0.3), rot=tuple(rng.random(3) * 6), scale=(q * 1.3, q, q * 0.8), material=mats['rock'], subdivisions=2)
     # the light that comes down
-    WASH = [((0.0, -0.9, 3.3), (0.0, 3.6, 1.9), 185), ((0.5, -0.6, 3.3), (3.4, 1.2, 1.5), 100), ((-0.5, -0.6, 3.3), (-3.4, 1.2, 1.9), 88), ((0, 0.0, 2.6), (0.0, 0.8, 5.3), 5)]
-    glow = light('POINT', 'shaft', (0.0, -0.1, 7.6), 170, color=(0.80, 0.86, 1.0), size=0.4)
-    key = light('SPOT', 'well', (0.0, 0.05, 11.0), 5200, color=(0.80, 0.86, 1.0), size=0.5, spot=math.radians(13)); aim(key, (0, 0, 0))
-    key.data.spot_blend = 0.75; key.data.volume_factor = 2.2
+    WASH = [((0.0, -0.9, 3.3), (0.0, 3.6, 1.9), 50), ((0.5, -0.6, 3.3), (3.4, 1.2, 1.5), 30), ((-0.5, -0.6, 3.3), (-3.4, 1.2, 1.9), 26), ((0, 0.0, 2.6), (0.0, 0.8, 5.3), 4)]
+    glow = light('POINT', 'shaft', (0.0, -0.1, 7.6), 110, color=(0.80, 0.86, 1.0), size=0.4)
+    key = light('SPOT', 'well', (0.0, 0.05, 11.0), 3600, color=(0.80, 0.86, 1.0), size=1.6, spot=math.radians(22)); aim(key, (0, 0, 0))
+    key.data.spot_blend = 1.0; key.data.volume_factor = 2.6
     bounce = light('AREA', 'bounce', (0, 0.25, 0.10), 26, color=(0.66, 0.74, 1.0), size=1.5); bounce.rotation_euler = (math.pi, 0, 0)
+    GRAZE = [((0.0, 1.5, 4.2), (0.0, 4.6, 1.8), 260), ((1.5, 0.6, 4.2), (4.0, 1.6, 1.6), 270), ((-1.5, 0.6, 4.2), (-4.0, 1.6, 2.0), 250), ((1.5, -0.8, 4.2), (3.6, -0.9, 1.6), 150), ((-1.5, -0.8, 4.2), (-3.6, -0.9, 1.6), 150)]
+    graze = [light('SPOT', f'graze{k}', at, e, color=(0.62, 0.7, 1.0), size=0.8, spot=math.radians(85)) for k, (at, to, e) in enumerate(GRAZE)]
+    for o, (at, to, e) in zip(graze, GRAZE):
+        aim(o, to); o.data.volume_factor = 0.0; o.data.spot_blend = 1.0
     side = [light('AREA', f'side{k}', at, e, color=(0.62, 0.7, 1.0), size=0.9) for k, (at, to, e) in enumerate(WASH)]
     for o, (at, to, e) in zip(side, WASH):
         aim(o, to); o.data.volume_factor = 0.0
-    front = light('SPOT', 'front', (0.75, -1.5, 0.42), 20.0, color=(0.72, 0.8, 1.0), size=0.3, spot=math.radians(17)); aim(front, (0, 0, 0.15)); front.data.volume_factor = 0.0; bounce.data.volume_factor = 0.0
+    front = light('SPOT', 'front', (0.75, -1.5, 0.42), 20.0, color=(0.72, 0.8, 1.0), size=0.6, spot=math.radians(45)); aim(front, (0, 0, 0.15)); front.data.volume_factor = 0.0; front.data.spot_blend = 1.0; bounce.data.volume_factor = 0.0
     # the doll, sitting, its head down, the bitten end of the thread before it
     d, dp = lib.doll('doll', (0, 0, 0), 1.0, mats)
     z0 = gz(0, 0)
@@ -1899,10 +1949,21 @@ def N1(out, preview):
         pf = PetalFall(f'lie{k}', mats['petalfall'], 0.015); pf.set(V((x, y, gz(x, y) + 0.010)), 0.0); pf.o.rotation_euler = (0.2 * math.sin(a), 0.15, a)
     fallp = [(PetalFall('fallA', mats['petalfall'], 0.015), V((-0.20, -0.16, 0)), 40, 118), (PetalFall('fallB', mats['petalfall'], 0.015), V((0.36, 0.05, 0)), 262, 372)]
     # its way: low on the right, round the back, up the left, over the roof to the mouth of the well
-    C = V((0, 0.3, 1.5))
-    surf = wall_way(wall, C, [(-14, -14), (14, -15), (40, -10), (66, -3), (92, 8), (116, 14), (138, 17), (158, 25), (168, 37), (150, 45), (122, 50), (98, 52), (78, 55), (60, 59), (30, 64)])
+    surf = wall_way(wall, C, WAY)
+    on_way = [surf(q, 0)[0] for q in np.arange(0, surf.len, 0.2)]
+    for k in range(70):
+        a = rng.uniform(0, math.tau); v = V((math.cos(a), math.sin(a), 0))
+        h0 = wall.ray_cast(V((0, 0, 0.35)), v)[0]
+        if h0 is None or (h0 - V((0, 0, 0.35))).length < 2.2:
+            continue
+        q = 0.18 + 0.55 * rng.random() ** 2
+        at = h0 - v * q * rng.uniform(0.1, 0.8); at.z = gz(at.x, at.y) + q * 0.25
+        if min((at - p).length for p in on_way) < q + 0.7 or abs(at.x) < 1.6 and at.y < 0:
+            continue
+        b = prim('ico', f'block{k}', loc=at, rot=tuple(rng.random(3) * 6), scale=(q * 1.2, q * rng.uniform(0.7, 1.1), q * rng.uniform(0.5, 0.9)), material=deep, subdivisions=1)
+        lib.displace(b, q * 0.25, 0.4)
     kr, kp = lib.knitter('knitter', (0, 0, 0), mats, seated=False)
-    cr = Crawler(kr, kp, surf)
+    cr = Crawler(kr, kp, surf, height=0.215)
     # the names that are left, and when: it stops to say each, and listens; then goes on
     SAY = [(5, 90), (6, 148), (7, 206), (8, 264), (9, 322), (10, 428), (11, 498)]
     TOT = surf.len - 1.1
@@ -1934,8 +1995,12 @@ def N1(out, preview):
     T_NEAR = SAY[4][1]                                            # the one name that makes it look up
     T_OVER = SAY[6][1] - 30                                        # it comes over the mouth of the well
 
+    near = light('POINT', 'near', (0, 0, 3), 90.0, color=(0.62, 0.7, 1.0), size=0.6); near.data.volume_factor = 0.0
+    light_keys(near, [(1, 0.0), (40, 90.0), (N - 60, 90.0), (N - 22, 0)])
+
     def upd(f):
         j, att = saying(f)
+        p_, n_, t_ = surf(s_of(f), 0); near.location = p_ + n_ * 1.0 + (C - p_).normalized() * 0.3
         cr.set(s_of(f), look=(d.location + V((0, 0, 0.22))), amount=att, jaw=0.75 * j, f=f)
         nod = 0.50 - 0.46 * ss(f, T_NEAR + 14, T_NEAR + 40) * (1 - ss(f, T_NEAR + 66, T_NEAR + 110))
         dp['headpiv'].rotation_euler = (nod + 0.012 * math.sin(f * 0.05), 0.05, 0.10 * ss(f, T_NEAR + 14, T_NEAR + 46) * (1 - ss(f, T_NEAR + 66, T_NEAR + 110)))
@@ -1951,13 +2016,24 @@ def N1(out, preview):
                 pf.set(V((at.x, at.y, g)), (b - a) / 24 * 2.2)
             pf.o.hide_render = f < a
     lib.FRAME_FNS.append(upd)
-    light_keys(key, [(1, 0.0), (26, 5200), (T_OVER, 5200), (T_OVER + 34, 1500), (N - 60, 1300), (N - 22, 0)])
-    light_keys(glow, [(1, 0.0), (26, 170), (N - 60, 170), (N - 22, 0)])
+    light_keys(key, [(1, 0.0), (26, 3600), (T_OVER, 3600), (T_OVER + 34, 1050), (N - 60, 900), (N - 22, 0)])
+    light_keys(glow, [(1, 0.0), (26, 110), (N - 60, 110), (N - 22, 0)])
     light_keys(bounce, [(1, 0.0), (40, 26), (T_OVER, 26), (T_OVER + 34, 2.2), (N - 60, 2.2), (N - 22, 0)])
+    for o, (at, to, e) in zip(graze, GRAZE):
+        light_keys(o, [(1, 0.0), (60, e), (T_OVER, e), (T_OVER + 34, e * 0.5), (N - 60, e * 0.45), (N - 22, 0)])
     for o, (at, to, e) in zip(side, WASH):
         light_keys(o, [(1, 0.0), (60, e), (T_OVER, e), (T_OVER + 34, e * 0.55), (N - 60, e * 0.5), (N - 22, 0)])
     light_keys(front, [(1, 0.0), (30, 20.0), (T_OVER, 20.0), (T_OVER + 34, 3.0), (N - 60, 3.0), (N - 22, 0)])
-    lib.fog_box(0.06, color=(0.8, 0.86, 1.0), aniso=0.3, bounds=((-1.1, -1.1, -0.1), (1.1, 1.1, 11)))
+    fb = lib.fog_box(0.035, color=(0.8, 0.86, 1.0), aniso=0.3, bounds=((-2.0, -2.0, -0.1), (2.0, 2.0, 11)))
+    nt = fb.data.materials[0].node_tree                          # thickest down the middle of the shaft, nothing at the box's sides
+    vol = [n for n in nt.nodes if n.type == 'PRINCIPLED_VOLUME'][0]
+    g = nt.nodes.new('ShaderNodeNewGeometry'); sp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(g.outputs['Position'], sp.inputs[0])
+    cx = nt.nodes.new('ShaderNodeCombineXYZ'); nt.links.new(sp.outputs['X'], cx.inputs['X']); nt.links.new(sp.outputs['Y'], cx.inputs['Y'])
+    ln = nt.nodes.new('ShaderNodeVectorMath'); ln.operation = 'LENGTH'; nt.links.new(cx.outputs[0], ln.inputs[0])
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'
+    mr.inputs['From Min'].default_value = 1.6; mr.inputs['From Max'].default_value = 0.3
+    mr.inputs['To Min'].default_value = 0.0; mr.inputs['To Max'].default_value = 0.035
+    nt.links.new(ln.outputs['Value'], mr.inputs['Value']); nt.links.new(mr.outputs['Result'], vol.inputs['Density'])
     # sounds
     camx = 0.0
     for f, kd, p in cr.steps(s_of, 1, N):
