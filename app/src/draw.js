@@ -11,7 +11,7 @@ import { READY } from './props3d.js';
 import { drawRig } from './drawrig.js';
 import { drawRooms } from './drawrooms.js';
 import { Life } from './life.js';
-import { drawPlaces, drawKnots } from './drawkindle.js';
+import { drawPlaces } from './drawkindle.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -87,7 +87,6 @@ export class Drawer {
     this.drawMemories(ctx, ectx);
     drawDeep(this, ctx, ectx);
     this.drawDrips(ctx);
-    drawKnots(this, ctx, ectx);
     this.drawFx(ctx, ectx, dt, false);
     for (const m of w.moths) if (this.vis(m.x, m.y)) this.drawMoth(ctx, ectx, m);
     this.drawDoll(ctx, ectx, dt);

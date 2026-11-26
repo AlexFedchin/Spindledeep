@@ -1,5 +1,5 @@
 // The two quiet places (the Orchard, the Long Room): in off the way down, to the far end, back out and on to the next pole, with
-// the real thread and no skeins but what lies there. Also: knots of light, dimming and sitting do what they say.
+// the real thread and no skeins but what lies there. Also: dimming and sitting do what they say.
 //   node --experimental-default-type=module scripts/checks/quiet.mjs
 const A = new URL('../../app/src/', import.meta.url).href;
 const { buildTerrain } = await import(A + 'terrain.js'); const { World } = await import(A + 'world.js'); const { mulberry } = await import(A + 'util.js');
@@ -30,7 +30,7 @@ for (const mode of ['', 'frayed']) {
   run('the Orchard, in and out', 3, [[34, (p) => p.x > 33], [40.6, (p) => p.y < -82.6], [(p) => (p.y < -83.4 ? 45 : 40.4), (p) => p.grounded && p.x > 43.5], [62, (p, W) => W.checkpoint.i === 49 || p.x > 61.8], [91, (p) => p.x > 90.6], [62, (p) => p.x < 63], [43.2, (p) => p.x < 43.4], [39, (p) => p.y < -92], [27, (p) => p.y < -115], [19.5, (p, W) => W.checkpoint.i === 4]], mode);
   run('the Long Room, in and out', 18, [[27.4, (p) => p.x < 27.6], [(p) => (p.y < -327.5 ? 34 : 26), (p) => p.grounded && p.x > 29 && p.y < -337], [57, (p, W) => W.checkpoint.i === 50], [97, (p) => p.x > 96.6], [57, (p) => p.x < 57.6], [27, (p) => p.x < 27.4], [22, (p) => p.y < -348], [19.6, (p) => p.y < -364], [18, (p, W) => W.checkpoint.i === 19]], mode);
 }
-// the light: a knot holds yarn until she comes back past it; sitting; dimming runs out
+// the light: sitting; dimming runs out
 {
   const W = new World(T), p = W.player, th = W.thread, I = (o) => ({ axisX: 0, axisY: 0, held: {}, pressed: {}, ...o }), say = (ok, s) => { if (!ok) bad++; console.log((ok ? 'OK   ' : 'FAIL ') + s); };
   const go = (o, s) => { for (let i = 0; i < s * 120; i++) W.update(DT, I(o), true); W.events.length = 0; };
@@ -38,10 +38,7 @@ for (const mode of ['', 'frayed']) {
   const pg = W.pegs[49]; th.reset(pg.x, pg.y + 0.35); th.tie(pg.x, pg.y + 0.35); W.checkpoint = pg; p.reset(pg.x + 0.5, pg.y + 0.6);
   go({ axisX: 1 }, 1.4);
   const b0 = W.budgetLeft(); W.update(DT, I({ pressed: { act: true } }), true);
-  say(W.kindle.knots.length === 1 && b0 - W.budgetLeft() > 4.5, `a knot is tied and holds yarn (${(b0 - W.budgetLeft()).toFixed(1)} m)`);
-  go({ axisX: 1 }, 1.2); say(W.kindle.knots.length === 1, 'it stays when she goes on');
-  go({ held: { grip: true } }, 0.5); go({}, 0.3); say(W.kindle.knots.length === 1, 'and when she has gripped the thread and let go');
-  go({ axisX: -1 }, 2.9); say(W.kindle.knots.length === 0, 'back past it she takes it up again');
+  say(Math.abs(b0 - W.budgetLeft()) < 0.5, `E away from a seat or peg costs no yarn (${(b0 - W.budgetLeft()).toFixed(2)} m)`);
   go({ held: { dim: true } }, 1); say(W.dim > 0.95, 'held, the light goes down'); go({ held: { dim: true } }, 5); say(W.dim < 0.05 && W.kindle.spent, 'and not for ever');
   const s = W.kindle.seats[2]; p.reset(s.x, s.y + 0.4); go({}, 0.5); W.update(DT, I({ pressed: { act: true } }), true); go({}, 1.5); say(W.rest.at === s && W.rest.k > 0.5, 'she sits'); go({ axisX: 1 }, 0.3); say(!W.rest.at, 'and gets up');
 }

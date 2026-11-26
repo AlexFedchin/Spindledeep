@@ -17,6 +17,8 @@ export const HAND = { stir: 0.5, stirLow: 0.8, gap: 0.9, lunge: 15, steer: 2.6, 
   // every pluck down here rouses the earth (it forgets slowly): roused, it is quicker, reaches further, comes three at a time, and one that missed moves along the rock after her
   rouse: 0.26, calm: 0.055, quick: 0.3, far: 0.16, hunt: 3.4 };
 const REST = 0.42, SHAKE = 0.64, SLAM = 0.69, HOLD = 0.8;
+// how far along its arm a hand is clear of the rock it comes out of; the arm's half-thickness
+const ARM0 = 0.25, ARM_R = 0.06;
 
 export class Deep {
   constructor(W) {
@@ -84,7 +86,7 @@ export class Deep {
   }
 
   onRespawn() {
-    for (const h of this.hands) { h.ext = 0; h.grab = false; h.st = 'wait'; h.cool = 1; h.lure = null; if (h.ox !== undefined) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } }
+    for (const h of this.hands) { h.ext = 0; h.grab = false; h.st = 'wait'; h.cool = 1; if (h.ox !== undefined) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } }
     this.roused = 0;
     const r = this.rise;
     this.crawler.on = false;
@@ -111,23 +113,16 @@ export class Deep {
     for (const h of this.hands) {
       if (h.ox === undefined) { h.ox = h.ax; h.oy = h.ay; h.onx = h.nx; h.ony = h.ny; h.moved = 0; }
       const dx = p.x - h.ax, dy = p.y + 0.1 - h.ay, d = Math.hypot(dx, dy);
-      if (d > 26) { h.st = 'wait'; h.ext = 0; h.grab = false; h.lure = null; if (h.moved) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } continue; }
+      if (d > 26) { h.st = 'wait'; h.ext = 0; h.grab = false; if (h.moved) { h.ax = h.ox; h.ay = h.oy; h.nx = h.onx; h.ny = h.ony; h.moved = 0; } continue; }
       h.t += dt; h.cool = Math.max(0, h.cool - dt);
       const nearBell = lit.some((b) => Math.hypot(b.x - h.ax, b.y + 1 - h.ay) < 6 || Math.hypot(b.x - p.x, b.y + 1 - p.y) < 4.5);
       if ((nearBell || !free) && h.st !== 'wait' && !(h.grab && p.dead)) { h.st = 'back'; h.grab = false; }
       const go = (st) => { h.st = st; h.t = 0; };
       if (h.st === 'wait') {
         const reach = h.reach * (1 + HAND.far * ro) * (1 - 0.45 * dim) + 0.8, gap = HAND.gap * (1 - 0.4 * ro) * (1 + 0.8 * dim);
-        // a knot of light in reach is as good as she is
-        const kn = free && !nearBell && h.cool <= 0 && d < 18 ? W.kindle.nearest(h.ax, h.ay, h.reach + 0.6) : null;
-        if (kn && (kn.x - h.ax) * h.nx + (kn.y - h.ay) * h.ny > -0.2 && out < HAND.most + 1 && W.time > (this.lastLure || 0) + 1.2 && d > 1.4 && W.T.ray(h.ax + h.nx * 0.3, h.ay + h.ny * 0.3, kn.x, kn.y + 0.1, -0.1) < 0) { h.lure = kn; go('stir'); out++; this.lastLure = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
-        else if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + gap && out < HAND.most + (ro > 0.55 ? 1 : 0) && d < reach && dx * h.nx + dy * h.ny > 0) { go('stir'); h.lure = null; out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
+        if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + gap && out < HAND.most + (ro > 0.55 ? 1 : 0) && d < reach && dx * h.nx + dy * h.ny > 0 && this._sees(h, p.x, p.y + 0.45)) { go('stir'); out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
       } else if (h.st === 'stir') {
-        if (h.lure && h.t > 0.7) {
-          const kx = h.lure.x - h.ax, ky = h.lure.y + 0.1 - h.ay, l = Math.hypot(kx, ky) || 1;
-          h.dx = kx / l; h.dy = ky / l; h.ext = 0.1; h.aimD = l; h.deaf = false;
-          go('lure'); W.emit('reach', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny });
-        } else if (!h.lure && h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir) * (1 - HAND.quick * ro)) {
+        if (h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir) * (1 - HAND.quick * ro)) {
           // aim where she will be when it gets there
           let ax = p.x, ay = p.y + 0.1;
           for (let k = 0; k < 3; k++) { const tt = Math.hypot(ax - h.ax, ay - h.ay) / HAND.lunge; ax = p.x + p.vx * tt; ay = p.y + 0.1 + (p.grounded ? 0 : clamp(p.vy * tt, -2, 2)); }
@@ -143,9 +138,6 @@ export class Deep {
           go('lunge');
           W.emit('reach', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny });
         }
-      } else if (h.st === 'lure') {
-        h.ext = Math.min(h.aimD, h.ext + dt * HAND.lunge * 0.8);
-        if (h.ext >= h.aimD) { if (W.kindle.knots.includes(h.lure)) W.kindle.out(h.lure, 'knotTaken'); h.lure = null; h.st = 'back'; h.t = 0; h.cool = 5; }
       } else if (h.st === 'lunge' || h.st === 'grope') {
         const lunge = h.st === 'lunge';
         if (h.deaf && this.quiet <= 0) h.deaf = false;
@@ -167,9 +159,14 @@ export class Deep {
         if (h.ext <= 0) { go('wait'); if (h.hunt) { h.hunt = false; this._shift(h); } }
       }
       const l = Math.hypot(h.dx, h.dy) || 1;
+      // never through rock: the arm stops at the first rock it meets
+      if (h.ext > ARM0) {
+        const want = h.ext; h.ext = this._free(h, h.dx / l, h.dy / l, want);
+        if (h.st === 'lunge' && h.ext < want - 0.02) go('grope');          // it struck rock: it gropes there a moment, then gives up
+      }
       h.tx = h.ax + h.dx / l * h.ext; h.ty = h.ay + h.dy / l * h.ext;
       if (h.st === 'hold' && free) { p.x += (h.tx - p.x) * Math.min(1, dt * 14); p.y += (h.ty - p.y) * Math.min(1, dt * 14); p.vx = p.vy = 0; p.climb = null; p._collide(W.gates); }
-      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : h.blind ? 0.34 : HAND.grab)) {
+      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : h.blind ? 0.34 : HAND.grab) && this._sees(h, p.x, p.y + 0.45)) {
         h.grab = true; h.grip = ro > 0.55 ? 2 : 1; go('hold');
         W.emit('seize', { x: p.x, y: p.y });
       }
@@ -230,6 +227,16 @@ export class Deep {
       if (!p.dead && r.level > r.y0 + 0.4 && p.y < r.level - 0.25 && p.x > r.x0 && p.x < r.x1) W._die('dark');
       this._crawl(dt);
     } else if (r.done) r.level = Math.max(r.y0, r.level - dt * 3);
+  }
+
+  // a hand feels her only through open air: rock between its root and her hides her
+  _sees(h, x, y) { return this.W.T.ray(h.ax + h.nx * 0.3, h.ay + h.ny * 0.3, x, y, 0) < 0; }
+  // how far the arm can go along (ux, uy), up to ext, before it meets rock
+  _free(h, ux, uy, ext) {
+    const T = this.W.T, sx = h.ax + ux * ARM0, sy = h.ay + uy * ARM0;
+    if (T.d(sx, sy) < ARM_R) return ARM0;
+    const f = T.ray(sx, sy, h.ax + ux * ext, h.ay + uy * ext, ARM_R);
+    return f < 0 ? ext : ARM0 + f * (ext - ARM0);
   }
 
   // under the rock, along its face, to come out nearer to her

@@ -410,7 +410,7 @@ function updateUI(dt) {
   const playing = state === 'play' && !paused && !SHOW;
   const h = playing && W.hint && subTimer <= 0 ? W.hint : null;
   const hs = h ? keysHTML(h.keys) + ' <span>' + h.text + '</span>' : '';
-  if (hs !== lastHint) { lastHint = hs; if (hs) setText($('hint'), hs, true); show($('hint'), !!hs); }
+  if (hs !== lastHint) { lastHint = hs; const el = $('hint'); if (hs) { setText(el, hs, true); el.classList.remove('new'); void el.offsetWidth; el.classList.add('new'); } show(el, !!hs); }
   const p = playing && W.prompt ? W.prompt : null;
   const p2 = playing && p && W.prompt2 ? W.prompt2 : null;
   const ps = (p ? keysHTML([p.a]) + ' <span>' + p.t + '</span>' : '') + (p2 ? ' &nbsp;&nbsp;·&nbsp;&nbsp; ' + keysHTML([p2.a]) + ' <span>' + p2.t + '</span>' : '');
@@ -419,10 +419,10 @@ function updateUI(dt) {
 
 // ── what each stretch between two poles was like (session log; scripts/checks/logs.py adds them up) ──
 let SEC = newSection(0);
-function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, knots: 0, dims: 0, low: 999, rest: 0 }; }
+function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, dims: 0, low: 999, rest: 0 }; }
 function sectionDone(to) {
   const s = SEC;
-  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · lowest yarn ${s.low.toFixed(0)} of ${W.maxYarn.toFixed(0)} · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · knots ${s.knots} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
+  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · lowest yarn ${s.low.toFixed(0)} of ${W.maxYarn.toFixed(0)} · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
   SEC = newSection(to);
 }
 function sectionTick(dt) {
@@ -457,10 +457,6 @@ function handleEvents() {
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
       // the thread's light (kindle.js)
-      case 'knot': SEC.knots++; A.play('tie', { vol: 0.4, rate: 1.5, x: e.x, y: e.y }); A.play('chime', { vol: 0.16, rate: 1.1, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.1, 10, { speed: 1.2, life: 0.8 }); break;
-      case 'knotBack': A.play('release', { vol: 0.25, rate: 1.3, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.1, 6, { speed: 1, life: 0.5 }); break;
-      case 'knotOut': case 'knotTaken': A.play('cut', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); if (e.k === 'knotTaken') A.any('dirt', { vol: 0.5, x: e.x, y: e.y }); D.spawn('fiber', e.x, e.y, 6, { speed: 1.4, life: 0.9 }); break;
-      case 'knotNo': A.play('release', { vol: 0.12, rate: 0.8, x: e.x, y: e.y }); break;
       case 'dim': SEC.dims++; A.any('st_soft', { vol: 0.3, rate: 0.8, x: e.x, y: e.y }); break;
       case 'dimSpent': A.any('st_soft', { vol: 0.35, rate: 1.1, x: e.x, y: e.y }); break;
       case 'sit': log(`sits at ${e.x.toFixed(0)},${e.y.toFixed(0)}`); A.any('st_soft', { vol: 0.3, rate: 0.7, x: e.x, y: e.y }); A.play('bowl', { vol: 0.2, rate: 0.5, verb: 1.4, bus: 'ui' }); break;

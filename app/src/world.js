@@ -90,7 +90,7 @@ export class World {
   get maxYarn() { const y = BASE_YARN + this.skeinCount * SKEIN_YARN; return this.mode === 'frayed' ? Math.max(BASE_YARN - 1, y * FRAYED) : y; }     // (the fall into the Loom needs nearly all of a bare ball)
   // all eight keepsakes in this run: she has sewn on the second eye, and sees further
   get whole() { return this.secrets.every((s) => s.taken); }
-  budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt - (this.kindle ? this.kindle.cost : 0); }
+  budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt; }
   yarnFrac() { return clamp(this.budgetLeft() / this.maxYarn, 0, 1); }
 
   area() {
@@ -253,10 +253,7 @@ export class World {
         }
       }
       // pick a target: the warm thread or the doll, if near and not guarded by a bell
-      // a knot of light is warmer than either: they go round it and leave the rest alone
-      const kn = m.flee <= 0 && m.st !== 'flee' ? this.kindle.nearest(m.x, m.y, 9) : null;
-      if (kn) { m.st = 'seek'; m.near = 0; tx = kn.x + Math.cos(m.t * 3.1 + m.seed) * 0.8; ty = kn.y + 0.5 + Math.sin(m.t * 4.3 + m.seed) * 0.45; }
-      else if (m.flee <= 0 && m.st !== 'flee' && this.dim > 0.6) m.st = 'wander';
+      if (m.flee <= 0 && m.st !== 'flee' && this.dim > 0.6) m.st = 'wander';
       else if (m.flee <= 0 && m.st !== 'flee') {
         let best = -1, bd = 9;
         const step = 3;
@@ -454,7 +451,6 @@ export class World {
     for (const s of this.secrets) if (!s.taken && s.open && vis(s.x, s.y) && !this.hiddenAt(s.x, s.y + 0.2)) out.push({ x: s.x, y: s.y + 0.35, r: 2.2, i: 0.42 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));
     for (const q of this.glows) if (vis(q.x, q.y) && out.length < 150 && !this.hiddenAt(q.x, q.y)) out.push({ x: q.x + q.nx * 0.3, y: q.y + q.ny * 0.3, r: q.r * (0.8 + 0.2 * Math.min(2, q.b)), i: q.i * Math.min(2.6, q.b) * (1 - (this.snuff || 0)), c: q.c, soft: 8 });
-    out.push(...this.kindle.lights(vis, t));
     if (this.extraLights) out.push(...this.extraLights);
     // a found item held up in the showcase: a warm light on it (and on her face below it)
     if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.3 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
@@ -546,8 +542,7 @@ function makeHints() {
     { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it pass · it will foul on your thread', until: (w) => w.player.x < 62 },
     { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck, but not too often', until: (w) => w.player.x > 62 },
     { x0: 55, x1: 98, y0: -92, y1: -76, keys: ['dim'], text: 'hold to dim the thread · your eyes get used to the dark', until: (w) => w.dim > 0.9 },
-    { x0: 14, x1: 34, y0: -62, y1: -50, keys: ['act'], text: 'knot a light into the thread and leave it burning · walk back past it to take it up', until: (w) => w.kindle.knots.length > 0 || w.player.y < -63 },
-    { x0: 66, x1: 98, y0: -327, y1: -314, keys: ['dim', 'act'], text: 'in the dark they feel less of you · a knotted light draws them off', until: (w) => w.player.x < 66 },
+    { x0: 66, x1: 98, y0: -327, y1: -314, keys: ['dim'], text: 'hold to dim · in the dark they feel less of you', until: (w) => w.player.x < 66 },
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
     { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },

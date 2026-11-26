@@ -53,6 +53,9 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
   hidden menu button once restarted the game whenever Enter/Space was pressed in play).
 - When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
   stashing `electron/main.js` brings back a visible window.
+- **On Linux (Wayland GNOME)** the transparent smoke window is not guaranteed to stay hidden: add `--ozone-platform=headless` to every electron run
+  (`node_modules/electron/dist/electron . --ozone-platform=headless --smoke=… --shots=…`); WebGPU renders and nothing reaches the desktop. Node 24 has no
+  `--experimental-default-type`: run the checks as plain `node scripts/checks/x.mjs`. Page screenshots: `google-chrome --headless=new --mute-audio`.
 - Page screenshots: headless Edge only (`--headless=new`). Never open pages, images, videos or audio in a viewer/player
   to check them; read images with the Read tool and probe media with ffprobe/ffmpeg to files.
 - Blender, ffmpeg, Python, TTS: background/CLI only (`blender -b`), no previews, no playback, no `start`/`explorer`.
@@ -125,7 +128,7 @@ Builds: `build.cmd` bumps the patch version. Trailer: `scripts/trailer/capture.p
 from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (fouls on the thread). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
 H1 → Slabs → Pin Walk → rope → H2; well ledge → bobbin's lane → lower room → the Loom's well. `LEVEL` planes their floors. Gate 0 and 1 must stay g2 and east.
 Check: `scripts/checks/rooms.mjs [frayed]` (`ONLY=name`, `TRACE=1`, `HANDS=1`). Beds of pins at floor level need the ring ~3.6 m up.
-Hands: `deaf` ones strike where she was heading (she stopped). Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
+Hands: `deaf` ones strike where she was heading (she stopped). They need open air to her to stir or seize, and the arm stops at rock (`_sees`, `_free`); scratchpad-style check: count arm frames inside rock. Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
 Options in `options.js` (kept in settings.json with `found`, `ended`, `best`); key bindings in input.js. Saves are v3; older ones in the deep get their thread re-laid.
 `--size=WxH` with `--smoke` tests another window shape.
 
@@ -248,7 +251,7 @@ in `_fix`). The grey thread is hugged in `buildGrey`. Check: `fuzz.mjs` (31.4 % 
 LEVEL planes, `wear` (rounds corners; more passes cost landing lips: re-run gal/lip/play), `redistance`. The GPU texture is rg16float: distance and
 `grain` (smoothed with depth: the engraved lines and the light in rock follow it, so no seams). `shaders.js`: `fieldAt` (cubic), `kindAt/chip/body`
 = the nine kinds of rock, `roughOf` how rough their lines are (the user finds smooth parallel lines too clean; twice the present strength hides the cracks); keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js.
-`life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: knots of light, dimming (`dim`, Q/LB), seats
+`life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: dimming (`dim`, Q/LB; knots of light were removed 2026-11-26 at the user's request), seats
 (`RESTS`), `PLACES`; drawing in `drawkindle.js`. `HAND.rouse`: plucking in the Hush rouses the earth. `Drawer.doll()` = her pose, `sift`/`shake` = grit.
 Two quiet places off the way: the Orchard (pole 49), the Long Room (pole 50). Skeins and poles go at the end of their lists (saves index them).
 Art and props are packed small: paintings/sprites lossless `.webp`, `scripts/props3d/slim.py` after `pack.py`. The films can't be re-encoded smaller.

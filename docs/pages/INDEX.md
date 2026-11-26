@@ -147,3 +147,4 @@ only the flicker metric showed it (contact sheets every N frames missed it).
 
 | 35. Rock in the Dark: the film after the bitten ending's titles darker, broken rock walls, a soft light from the well (`cavewall/`) | https://claude.ai/artifact/Eehd7dvGNyVFejMfSPhHng |
 | 36. No Two Stones: uneven rock, the cave's own sound, the doll's head grey again (`cavesound/`) | https://claude.ai/artifact/MnAcegRTMK4XrUeUSGuVW9 |
+| 37. Solid Walls: hands in the Hush need open air to stir, reach and seize; knots of light removed; larger, brighter tips (`tips/`) | https://claude.ai/artifact/Tf58WPzhxyP3PeN33PAtZH |

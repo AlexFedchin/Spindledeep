@@ -1,4 +1,4 @@
-// Drawing for kindle.js: the knots of light in the thread, the seats, and what stands in the two quiet places (the Orchard's
+// Drawing for kindle.js: the seats, and what stands in the two quiet places (the Orchard's
 // trees, which hang from the roof by their roots' other ends; the Long Room's lines of cloth, which turn as she goes by).
 import * as L from './level.js';
 import { clamp, mulberry, TAU } from './util.js';
@@ -82,23 +82,5 @@ export function drawPlaces(D, ctx, ectx) {
     ctx.fillStyle = g(0.36); ctx.beginPath(); ctx.moveTo(x - 0.5 * k, y + 0.06 * k); ctx.lineTo(x - 0.44 * k, y - 0.13 * k); ctx.quadraticCurveTo(x, y - 0.19 * k, x + 0.46 * k, y - 0.12 * k); ctx.lineTo(x + 0.5 * k, y + 0.06 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = g(0.62); ctx.beginPath(); ctx.moveTo(x - 0.27 * k, y - 0.16 * k); ctx.quadraticCurveTo(x, y - 0.25 * k, x + 0.27 * k, y - 0.16 * k); ctx.lineTo(x + 0.3 * k, y - 0.1 * k); ctx.quadraticCurveTo(x, y - 0.17 * k, x - 0.3 * k, y - 0.1 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = g(0.25); ctx.lineWidth = Math.max(0.6, 0.01 * k); for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 0.1 * k, y - 0.2 * k); ctx.lineTo(x + i * 0.11 * k, y - 0.13 * k); ctx.stroke(); }
-  }
-}
-
-export function drawKnots(D, ctx, ectx) {
-  const k = D.k, t = D.time;
-  for (const q of D.w.kindle.knots) {
-    if (!D.vis(q.x, q.y, 2)) continue;
-    const x = D.sx(q.x), y = D.sy(q.y + 0.02), b = q.b, pop = 1 + 0.5 * (1 - b);
-    // a bow of red yarn, and the light caught in it
-    const red = (a) => `rgba(255,${(70 + 40 * Math.sin(t * 3 + q.seed * 9)) | 0},50,${a})`;
-    ectx.strokeStyle = red(0.75 * b); ectx.lineWidth = Math.max(1.2, 0.035 * k);
-    for (const s of [-1, 1]) {
-      ectx.beginPath(); ectx.moveTo(x, y); ectx.bezierCurveTo(x + s * 0.1 * k, y - 0.2 * k * pop, x + s * 0.28 * k * pop, y - 0.12 * k, x, y); ectx.stroke();
-      ectx.beginPath(); ectx.moveTo(x, y); ectx.quadraticCurveTo(x + s * 0.07 * k, y + 0.03 * k, x + s * 0.13 * k, y + (0.08 + 0.01 * Math.sin(t * 2 + s)) * k); ectx.stroke();
-    }
-    const R = (0.6 + 0.04 * Math.sin(t * 5 + q.seed * 7)) * k * pop, gr = ectx.createRadialGradient(x, y - 0.04 * k, 0, x, y - 0.04 * k, R);
-    gr.addColorStop(0, `rgba(255,170,110,${0.5 * b})`); gr.addColorStop(0.2, `rgba(255,70,45,${0.2 * b})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    ectx.fillStyle = gr; ectx.fillRect(x - R, y - R, 2 * R, 2 * R);
   }
 }

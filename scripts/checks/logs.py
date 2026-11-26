@@ -13,7 +13,7 @@ opt = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '
 folder = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(os.environ.get('APPDATA', ''), 'Spindledeep', 'logs'))
 S = collections.defaultdict(lambda: dict(n=0, t=[], tries=[], deaths=collections.Counter(), low=[], still=0.0, plucks=0, knots=0, dims=0, rest=0.0))
 order, runs, found, files = [], [], collections.Counter(), 0
-SEC = re.compile(r'section (\S+)>(\S+) · ([\d.]+) s · tries (\d+) · deaths (\d+)(?: \(([^)]*)\))? · lowest yarn (-?\d+) of (\d+) · standing ([\d.]+) s · sitting (\d+) s · plucks (\d+) · knots (\d+) · dims (\d+)')
+SEC = re.compile(r'section (\S+)>(\S+) · ([\d.]+) s · tries (\d+) · deaths (\d+)(?: \(([^)]*)\))? · lowest yarn (-?\d+) of (\d+) · standing ([\d.]+) s · sitting (\d+) s · plucks (\d+)(?: · knots (\d+))? · dims (\d+)')
 for f in sorted(glob.glob(os.path.join(folder, 'session-*.log'))):
     if opt.get('since', '') > os.path.basename(f)[8:]:
         continue
@@ -29,7 +29,7 @@ for f in sorted(glob.glob(os.path.join(folder, 'session-*.log'))):
             k = (m[1], m[2])
             if k not in order: order.append(k)
             s = S[k]; s['n'] += 1; s['t'].append(float(m[3])); s['tries'].append(int(m[4])); s['low'].append(int(m[7]))
-            s['deaths'].update([d for d in (m[6] or '').split(',') if d]); s['still'] += float(m[9]); s['rest'] += float(m[10]); s['plucks'] += int(m[11]); s['knots'] += int(m[12]); s['dims'] += int(m[13])
+            s['deaths'].update([d for d in (m[6] or '').split(',') if d]); s['still'] += float(m[9]); s['rest'] += float(m[10]); s['plucks'] += int(m[11]); s['knots'] += int(m[12] or 0); s['dims'] += int(m[13])
         r = re.search(r'run over · (\S+)', x)
         if r: runs.append(r[1])
         r = re.search(r'\] (?:found (.+)|hidden room opens · (.+))', x)

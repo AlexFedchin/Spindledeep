@@ -16,7 +16,7 @@ const LINES = [
   ['subs', 'Words on screen', STEP([0.85, 1, 1.25, 1.5]), (v) => ({ 0.85: 'small', 1: 'as printed', 1.25: 'large', 1.5: 'very large' }[v] || pct(v))],
   ['timer', 'Clock', STEP([false, true]), (v) => (v ? 'shown' : 'hidden')],
 ];
-export const ACTIONS = [['left', 'Left'], ['right', 'Right'], ['up', 'Up, reel in'], ['down', 'Down, let out'], ['jump', 'Jump'], ['grip', 'Hold the thread'], ['pluck', 'Pluck'], ['dim', 'Dim the light'], ['act', 'Tie, mend, knot a light'], ['pause', 'Pause']];
+export const ACTIONS = [['left', 'Left'], ['right', 'Right'], ['up', 'Up, reel in'], ['down', 'Down, let out'], ['jump', 'Jump'], ['grip', 'Hold the thread'], ['pluck', 'Pluck'], ['dim', 'Dim the light'], ['act', 'Tie, mend, sit'], ['pause', 'Pause']];
 
 // ctx: { settings, set(key, value), menu(nav, items), fullscreen(), I, back() }
 export function optionsMenu(nav, ctx, sel = 0) {

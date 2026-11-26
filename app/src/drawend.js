@@ -74,9 +74,13 @@ export function drawHands(D, ctx, ectx) {
     const len = h.ext;
     if (len < 0.12) continue;
     const ux = (h.tx - h.ax) / len, uy = (h.ty - h.ay) / len, nx = -uy, ny = ux, pts = [];
-    const side = h.i % 2 ? 1 : -1;
+    // it bows toward the open side, and never further than the air round its middle (an arm is never drawn into rock)
+    const T = D.w.T, mx = h.ax + ux * len / 2, my = h.ay + uy * len / 2, room = (sd) => T.d(mx + nx * sd * 0.5, my + ny * sd * 0.5);
+    if (h.side === undefined) h.side = h.i % 2 ? 1 : -1;
+    if (room(h.side) < 0.25 && room(-h.side) > room(h.side)) h.side = -h.side;
+    const side = h.side, amp = Math.max(0, Math.min(0.7, len * 0.07, T.d(mx, my) - 0.12));
     for (let i = 0; i <= 12; i++) {
-      const s = i / 12, bow = Math.sin(s * Math.PI) * Math.min(0.7, len * 0.07) * side + Math.sin(t * 5 + s * 5 + h.i) * 0.04 * (h.grab ? 2 : 1) * s;
+      const s = i / 12, bow = Math.sin(s * Math.PI) * amp * side + Math.sin(t * 5 + s * 5 + h.i) * 0.04 * (h.grab ? 2 : 1) * s;
       pts.push([h.ax + ux * len * s + nx * bow, h.ay + uy * len * s + ny * bow]);
     }
     // the hole it came out of

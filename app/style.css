@@ -48,7 +48,17 @@ nav.long { gap: 2px; } nav.long button { font-size: clamp(17px, 1.45vw, 23px); }
 
 #hint, #prompt, #toast { position: fixed; left: 50%; transform: translateX(-50%); font-size: calc(clamp(15px, 1.15vw, 19px) * var(--subs, 1)); color: var(--paper-dim); text-shadow: 0 1px 8px #000, 0 0 2px #000;
   transition: opacity 0.8s; pointer-events: none; white-space: nowrap; display: flex; align-items: center; gap: 10px; z-index: 6; font-style: italic; }
-#hint { bottom: 3.2vh; }
+/* the tips at the bottom: large, full paper colour on a soft dark band, keys as big caps, and a red thread drawn across over each new one */
+#hint { bottom: 4.5vh; font-size: calc(clamp(21px, 1.7vw, 32px) * var(--subs, 1)); color: var(--paper); font-style: normal; letter-spacing: 0.02em; gap: 14px;
+  padding: 0.55em 1.6em 0.6em; white-space: normal; text-align: center; justify-content: center; flex-wrap: nowrap; max-width: 92vw; width: max-content;
+  background: radial-gradient(ellipse closest-side, rgba(8,7,12,0.86) 55%, rgba(8,7,12,0.55) 80%, rgba(8,7,12,0) 100%);
+  text-shadow: 0 0 3px #000, 0 2px 12px #000, 0 0 24px #000; }
+#hint::before { content: ''; position: absolute; left: 50%; top: -0.15em; width: 60%; height: 2px; transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--red) 18%, var(--red) 82%, transparent); box-shadow: 0 0 10px rgba(216,38,44,0.8); }
+#hint.new::before { animation: hintThread 0.9s ease-out; }
+@keyframes hintThread { from { width: 0; opacity: 0.2; } to { width: 60%; opacity: 1; } }
+#hint span { max-width: 27em; text-align: left; line-height: 1.3; }
+#hint kbd { flex: none; font-size: 0.8em; padding: 1px 10px 2px; border-color: rgba(232,220,196,0.8); background: rgba(11,10,16,0.85); }
 #prompt { bottom: 17vh; color: var(--paper); }
 #toast { top: 7vh; font-family: 'FellSC'; font-style: normal; letter-spacing: 0.12em; }
 kbd { font-family: 'FellSC'; font-style: normal; font-size: 0.85em; color: var(--paper); border: 1px solid rgba(232,220,196,0.5); border-radius: 2px; padding: 0 7px 1px; letter-spacing: 0.05em;
