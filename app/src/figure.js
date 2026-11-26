@@ -108,7 +108,11 @@ export class Figure {
     const N = this.m.neck, b = this.p('neck'), k0 = this.K[this.i.sp3], R = turn([0, 0, 1], [0, 1, 0], face, up);
     this.lock.head = { p: at, R, k: k0 * size };
     const out = mul(this.Q[this.i.sp3], [0, 1, 0]), Lg = len(sub(at, b));
-    const c1 = bend ? bend[0] : add(b, out, Lg * 0.4), c2 = bend ? bend[1] : add(at, mul(R, [0, -1, 0]), Lg * 0.4);
+    // the neck comes into the head along the head's own axis: when the head turns, the whole neck bends round to it (a neck
+    // arriving from the side met the head at a slant and the seam opened dark). A given bend keeps its reach and its pull on
+    // the middle of the neck, but its last handle is swung round behind the head
+    const down = mul(R, [0, -1, 0]), c1 = bend ? bend[0] : add(b, out, Lg * 0.4);
+    const c2 = bend ? mix3(bend[1], add(at, down, Math.min(len(sub(bend[1], at)), Lg * 0.28)), 0.6) : add(at, down, Lg * 0.4);
     const pts = [];
     for (let q = 0; q < N; q++) {
       const t = q / (N - 1), s = 1 - t;
@@ -119,10 +123,7 @@ export class Figure {
     for (let q = 0; q < N; q++) {
       const i0 = Math.max(0, q - 1), i1 = Math.min(N - 1, q + 1), d = sub(pts[i1], pts[i0]), t = q / (N - 1);
       // carried along the curve (no twisting), and eased round to the head's own front
-      const f = norm(mix3(prev, f1, t * 0.25 + 0.02));
-      // the last of the neck turns to meet the head square: a ring tilted against the head's own (a neck coming in from the
-      // side) left a dark gap open on one side of the seam
-      const w = smooth(0.55, 1, t), Rn = turn([0, 1, 0], [0, 0, 1], norm(mix3(norm(d), mul(R, [0, 1, 0]), w)), norm(mix3(f, f1, w)));
+      const f = norm(mix3(prev, f1, t * 0.25 + 0.02)), Rn = turn([0, 1, 0], [0, 0, 1], d, f);
       prev = Rn[2];
       const th = lerp(1, size, smooth(0.15, 1, t)) * lerp(1, thick, Math.sin(Math.PI * t));
       this.lock['n' + q] = { p: pts[q], R: Rn, S: stretched(Rn, [0, 1, 0], len(d) / (seg * (i1 - i0) * k0 * th)), k: k0 * th };
