@@ -38,11 +38,11 @@ for (const [rn, peg, goal] of RUNS) for (const [bn, mk] of Object.entries(BOTS))
       if (W.seized) { if (seizeT < 0) { seizeT = t; seized++; } if (b.tear && t - seizeT > b.tear) pl(); } else seizeT = -1;
       if (b.dodge && active.some((h) => h.st === 'lunge' || (h.st === 'stir' && h.t > 0.4)) && Math.hypot(P.vx) > 1) inp.axisX = -dir;
       if (b.stop && W.deep.hands.some((h) => (h.reach > 3 || Math.abs(h.ax - P.x) > 0.9) && ((h.st === 'stir' && h.t > b.stop) || h.st === 'lunge' || (h.st === 'grope')))) { inp.axisX = 0; inp.pressed.jump = inp.held.jump = false; }
-      W.update(DT, inp, true); W.events.length = 0; mb = Math.min(mb, W.budgetLeft());
+      W.update(DT, inp, true); W.events.length = 0; mb = Math.min(mb, W.wholeLeft());
       if (P.dead) { dead = true; if (process.env.DBG && b.stop && k < 4) console.log('  died', P.x.toFixed(1), P.y.toFixed(1), JSON.stringify(W.deep.hands.filter((h) => h.grab).map((h) => [h.i, h.reach, h.ax.toFixed(1), h.ay.toFixed(1), h.deaf]))); break; }
       if (Math.abs(P.x - goal) < 1) { ok++; time += t; break; }
     }
     if (dead) deaths++;
   }
-  console.log(rn.padEnd(8), bn.padEnd(42), `through ${ok}/${N}  deaths ${deaths}  seized/run ${(seized / N).toFixed(1)}  lowest yarn ${mb.toFixed(0)} time ${(time / Math.max(1, ok)).toFixed(1)}`);
+  console.log(rn.padEnd(8), bn.padEnd(42), `through ${ok}/${N}  deaths ${deaths}  seized/run ${(seized / N).toFixed(1)}  least whole ${mb.toFixed(0)} time ${(time / Math.max(1, ok)).toFixed(1)}`);
 }

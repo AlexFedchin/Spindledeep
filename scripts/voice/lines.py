@@ -6,7 +6,7 @@ PERSONA = ("Female, about eighty, a frail old grandmother who knits: a soft, sli
            "gentle tremor of age, low and quiet, speaking slowly as if remembering, intimate and close; "
            "clear, unhurried English diction.")
 
-WRONG = {'m6': 0.55, 'm13': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'cut1': 0.45, 'cut2': 0.6, 'cut3': 0.7, 'cut4': 0.5, 'names': 0.6, 'call': 0.7, 'home': 0.45}
+WRONG = {'m6': 0.55, 'm13': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'scream': 0.7, 'cut3': 0.7, 'cut4': 0.5, 'names': 0.6, 'call': 0.7, 'home': 0.45}
 # the deep (rewritten 2026-11-24): m9 and fin_mama are the first child who fell down the well (her own persona, design takes
 # only); fin_b is the chorus, everyone it has taken at once (pick.py layers the take into several pitched voices)
 CHILD_VOICE = ("Female child, about six years old: a small, high, clear, breathy little girl's voice, frightened and trying to be brave, "
@@ -15,6 +15,8 @@ OTHER = {'m9': CHILD_VOICE, 'fin_mama': CHILD_VOICE}
 # not the old woman: no ageing. m9 gets a second, lower voice half a second behind that says everything the child says
 PLAIN = {'m9', 'fin_mama'}
 ECHO = {'m9': 0.5}
+# screamed (2026-11-27, the bitten ending): scored for loudness and brightness instead of the slow pace, never slowed down
+SCREAM = {'scream'}
 CHORUS = {'fin_b': 6}
 
 # Re-recording (2026-11-22) for a voice that sounds old: candidate voice descriptions for casting (cast.py tries each
@@ -69,10 +71,8 @@ LINES = {
            'Completely flat, patient, mechanical; the same two words with the same spacing, no emotion.'),
     'fin_mama': ('Mama?',
            'One word, very small and lost, in the dark.'),
-    'cut1': ('What have you done?',
-           'Very quiet, gentle, almost kind; a pause before the last word; no emotion.'),
-    'cut2': ("You let go. You were never to let go.",
-           'Low and slow, the kindness gone out of it; the first three words flat, then the second sentence leaning close, each word separate, cold.'),
+    'scream': ('What have you done?',
+           'A sudden scream of pure panic, as loud as she can, shrill and cracking, the words tumbling out fast and terrified, the last word breaking into a shriek.'),
     'cut4': ('Hold on to me!',
            'Suddenly loud and desperate, falling away, the voice cracking and breaking up on the last word.'),
     'cut3': ("Little one? Little one? That isn't a name. What is your name?",

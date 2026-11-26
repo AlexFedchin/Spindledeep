@@ -1,7 +1,8 @@
 // The light of the thread, as something she can use. Rules only (world.js calls it; drawkindle.js draws it):
 //  · dimming: held, the thread's light and hers go down to almost nothing for a few breaths. Moths lose her, the hands feel her from
 //    less far, what follows the thread is slower, and eyes get used to the dark: everything that has its own light shows brighter
-//  · resting: at a few seats she can sit down, and the place comes out
+//  · resting: at a few seats she can sit down, and the place comes out; sitting mends her fraying (world.js), the moths leave her be,
+//    and the first time at each seat, after a few breaths, she notices something there (L.REST_SAYS)
 import * as L from './level.js';
 import { clamp } from './util.js';
 
@@ -12,7 +13,7 @@ export class Kindle {
     this.W = W;
     this.breath = DIM.max; this.spent = false;
     W.dim = 0; W.rest = { k: 0, at: null };
-    this.seats = L.RESTS.map(([x, y, flip]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; return { x, y: (W.T.ground(x, y0, 6) ?? y) - 0.02, flip: flip || 1, used: false }; });
+    this.seats = L.RESTS.map(([x, y, flip]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; return { x, y: (W.T.ground(x, y0, 6) ?? y) - 0.02, flip: flip || 1, used: false, said: false }; });
     this.places = L.PLACES.map((q) => ({ ...q, seen: false }));
   }
 
@@ -43,16 +44,21 @@ export class Kindle {
     const r = W.rest;
     if (r.at) {
       if (p.dead || (!live && !r.at.held) || Math.abs(p.x - r.at.x) > 1.2 || inp.axisX || inp.pressed.jump || inp.held.grip) this.stand();      // (held: sat down by the ending, not by the player)
-      else { p.x += (r.at.x - p.x) * Math.min(1, dt * 5); p.vx = 0; p.facing = r.at.flip; r.t = (r.t || 0) + dt; }
+      else {
+        p.x += (r.at.x - p.x) * Math.min(1, dt * 5); p.vx = 0; p.facing = r.at.flip; r.t = (r.t || 0) + dt;
+        const i = this.seats.indexOf(r.at);
+        if (i >= 0 && !r.at.said && r.t > 3.2 && L.REST_SAYS[i]) { r.at.said = true; W.emit('restSay', { i, text: L.REST_SAYS[i], x: p.x, y: p.y }); }
+      }
     } else r.t = 0;
     r.k = clamp(r.k + (r.at ? 0.5 : -1.1) * dt, 0, 1);
     // ── places with a name ──
     for (const q of this.places) if (!q.seen && ((p.x - q.x) / q.rx) ** 2 + ((p.y - q.y) / q.ry) ** 2 < 1) { q.seen = true; W.emit('place', { name: q.name, x: p.x, y: p.y }); }
   }
 
-  save() { return { places: this.places.map((q) => q.seen) }; }
+  save() { return { places: this.places.map((q) => q.seen), said: this.seats.map((s) => s.said) }; }
   load(s) {
     if (!s) return;
     (s.places || []).forEach((v, i) => { if (this.places[i]) this.places[i].seen = v; });
+    (s.said || []).forEach((v, i) => { if (this.seats[i]) this.seats[i].said = v; });
   }
 }

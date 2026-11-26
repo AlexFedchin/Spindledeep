@@ -23,7 +23,7 @@ import torch
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
-from lines import LINES, WRONG, OTHER, CHORUS, PLAIN, ECHO  # noqa: E402
+from lines import LINES, WRONG, OTHER, CHORUS, PLAIN, ECHO, SCREAM  # noqa: E402
 from age import measures, age_score  # noqa: E402
 
 RAW = os.path.join(HERE, '.cache', 'raw')
@@ -109,6 +109,15 @@ def main():
                 ag = 0
             words_term = 4.0 if acc >= 0.97 else (4.0 * acc - 2.0)    # any misread word costs more than age can win back
             score = words_term + 1.5 * sim + 0.9 * ag + 1.5 * pace      # pace stands in for the slow, acted delivery
+            if lid in SCREAM:
+                # a scream: loud for its length (the loudest tenth of it against the take's own peak) and bright (energy above 2 kHz)
+                x = np.asarray(a if np.ndim(a) == 1 else a.mean(1), np.float64)
+                fr = np.sqrt(np.convolve(x * x, np.ones(1024) / 1024, 'same'))[::512]
+                loud = float(np.mean(np.sort(fr)[-max(1, len(fr) // 10):]) / (np.max(np.abs(x)) + 1e-9))
+                S = np.abs(np.fft.rfft(x)) ** 2; fq = np.fft.rfftfreq(len(x), 1 / sr)
+                bright = float(S[fq > 2000].sum() / (S.sum() + 1e-12))
+                m['loud'], m['bright'] = round(loud, 3), round(bright, 3)
+                score = words_term + 1.0 * sim + 6.0 * loud + 8.0 * bright
             r = {'take': f, 'acc': round(acc, 3), 'sim': round(sim, 3), 'age': round(ag, 2), **m, 'wps': round(wps, 2), 'score': round(score, 3)}
             report.setdefault(lid, []).append(r)
         ranked = sorted(report.get(lid, []), key=lambda r: -r['score'])
@@ -118,7 +127,7 @@ def main():
         need = 0.6 if lid in ECHO or lid in ('names', 'call', 'fin_tieit', 'fin_mama') else 0.95 if lid in WRONG else 0.85 if lid in CHORUS else 0.99         # the lines with a second voice under hers may blur a word
         for r in ranked[:6]:
             # a hurried take is eased back toward ~2.4 words/s (at most 15 % slower): she is old and in no rush
-            slow = max(0.85, min(1.0, 2.4 / r['wps']))
+            slow = 1.0 if lid in SCREAM else max(0.85, min(1.0, 2.4 / r['wps']))
             fx = 'anull' if lid in PLAIN else AGE_FX + (f',atempo={slow:.3f}' if slow < 0.999 else '')
             r['slowed'] = round(slow, 3)
             src = os.path.join(HERE, '.cache', f'_trem_{lid}.wav')

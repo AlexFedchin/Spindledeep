@@ -39,9 +39,11 @@ does, and what became of the knitter and the doll are all said in plain words, i
   camera that doesn't move, as it comes, still in her shape, hand over hand up the thread and everything goes out behind it; the last is the
   lip of the pit (since 2026-11-26), black, and the film takes it up there: hands (`shots_end.py` O2, O1, O3-O7; in O1 it walks home along the thread). Cards: it was never her; it needed one thread; by morning no one was left in the valley to call;
   the doll sits in her window, still holding the thread.
-- **Bite** (remade 2026-11-25: the user found "What have you done?" and then black disappointing). The red goes out of the thread. "What
-  have you done?", twice, the second time not in her voice. The red dies up the whole thread (Hall, Gallery, Throat, her door); the wind
-  drops. It comes up the well on what is left of the thread; the thread parts; it hangs, looks, falls. The doll walks back to the candle
+- **Bite** (remade 2026-11-25, and again 2026-11-27 to the user's brief: it screams in panic and runs at once). The red goes out of
+  the thread from the bitten end. It screams "WHAT HAVE YOU DONE??" (`scream`, her voice with the lower one under it) and bolts on all
+  fours along the floor behind the doll, past the candle (it gutters), and over the edge of the beam into the Loom. The red dies up the
+  thread in two places (the Hall of Chairs, her door); the wind drops. It comes up the well on what is left of the thread; the thread
+  parts; it hangs, looks, falls. The doll walks back to the candle
   and what is left of the knitter. The face comes, asks ("That isn't a name. What is your name?"), goes over her head, asks again, blows the
   candle out. Film (`shots_end.py` C1-C5, cut.mp4): the Brink thaws, her empty window with the sweet peas, the dead thread into the pit, down the
   well, and what sits in her chair with the doll in its lap, whispering names, until it looks up. Cards: it can never climb out, no one will
@@ -54,6 +56,15 @@ does, and what became of the knitter and the doll are all said in plain words, i
 - **The Hall of Chairs.** Forty-one rocking chairs with shawls; her candle by an empty one. m7.
 - **The Hush.** Arms that break out of the earth after anything that passes. m8 is the thing: it tells you not to pluck.
 - **The Treadles.** m9, the child, on a faded red thread.
+
+## Her letters and the seats (2026-11-27)
+- **Letters** (`SKEINS[].letter` in level.js; nine of the ten skeins became letters when the thread stopped running out): one dropped down the
+  well each winter to her husband, "My dear", signed only "me" (she never writes a name). By depth: the kettle on for him; the dolls knit
+  small, sorry about the mouths; the bells counted; the ringer's wife; he said her name and something said it back (Ink Mere, with m5);
+  the room of chairs, don't tell it anything else (Hall, with m7); his voice at her door, which doesn't know who takes sugar (Hush); the
+  garden moving under the snow (Hush); the night it called her, going down with the last doll (Treadles). Kept on her shelf.
+- **Seats** (`REST_SAYS`, written, not spoken): a tally that stops; a knitted cushion; the barren orchard; a scratched line above the ink,
+  rising; eleven pins, one per doll that got this far; a seat still warm; DO NOT SLEEP HERE, in three hands, the last hers.
 
 ## Escalation map (deeper = darker)
 | Area | Knot | What it adds | Remains |

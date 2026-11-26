@@ -10,14 +10,16 @@ import { hug } from './route.js';
 import { Kindle } from './kindle.js';
 import { growGlows } from './life.js';
 
-const BASE_YARN = 92, SKEIN_YARN = 14, FRAYED = 0.8;
+// The thread never runs out (the user, 2026-11-27). What hurts her (moths, hands, what climbs the thread) frays the doll instead:
+// she grows smaller as she frays, mends slowly on her own, quickly sitting down, at once at a pole; frayed through, she comes apart.
+const WHOLE = 30, WHOLE_FRAYED = 20, MEND = 0.25, MEND_SIT = 6;
 export const SHELF = { x: 15.4, y: 0.55 };      // by her door: what has been brought home
 const RED = [1.0, 0.16, 0.12];
 
 export class World {
   constructor(T, mode = '') {
     this.T = T;
-    this.mode = mode;                 // '' or 'frayed' (after an ending: less yarn, rings that never hang still)
+    this.mode = mode;                 // '' or 'frayed' (after an ending: she frays sooner, rings that never hang still)
     this.thread = new Thread(T);
     this.player = new Player(T);
     const snap = (e, up = 2.2) => {
@@ -33,7 +35,7 @@ export class World {
     this.gates = L.GATES.map((g) => ({ open: 0, ...g }));
     // frayed: the rings of the Gallery and the Mere never hang still either (but one: the gap after it is too wide for that)
     if (mode === 'frayed') this.hooks.forEach((h, i) => { if (i < 12 && i !== 3) { const len = 4; Object.assign(h, { sway: [len, 0.085, 3.1 + (i % 4) * 0.25, i * 1.9], ax: h.x, ay: h.y + len, rx: h.x, ry: h.y }); } });
-    this.skeins = L.SKEINS.map((s) => ({ ...snap(s, 1.5), taken: false, bob: rand(0, 6) }));
+    this.skeins = L.SKEINS.map((s, i) => ({ ...snap(s, 1.5), i, kind: s.letter ? 'letter' : 'skein', taken: false, bob: rand(0, 6) }));
     // hidden rooms and their keepsakes
     // `open`: the rock over it has begun to crumble (she is at the mouth of its crack); `seen`: she is inside it
     this.secrets = L.SECRETS.map((s, i) => ({ ...snap(s, 1.2), i, open: false, seen: false, taken: false, bob: rand(0, 6), zone: mouthZone(T, s) }));
@@ -87,11 +89,12 @@ export class World {
     this.player.reset(L.START.x, L.START.y);
   }
 
-  get maxYarn() { const y = BASE_YARN + this.skeinCount * SKEIN_YARN; return this.mode === 'frayed' ? Math.max(BASE_YARN - 1, y * FRAYED) : y; }     // (the fall into the Loom needs nearly all of a bare ball)
+  get wholeMax() { return this.mode === 'frayed' ? WHOLE_FRAYED : WHOLE; }
   // all eight keepsakes in this run: she has sewn on the second eye, and sees further
   get whole() { return this.secrets.every((s) => s.taken); }
-  budgetLeft() { return this.maxYarn - this.thread.used(this.player.bx, this.player.by) - this.hurt; }
-  yarnFrac() { return clamp(this.budgetLeft() / this.maxYarn, 0, 1); }
+  // how much fraying she can still take (m of yarn worn off her)
+  wholeLeft() { return this.wholeMax - this.hurt; }
+  wholeFrac() { return clamp(this.wholeLeft() / this.wholeMax, 0, 1); }
 
   area() {
     const p = this.player;
@@ -106,13 +109,13 @@ export class World {
     this.time += dt;
     if (this.ending) this.ending.t += dt;
     const p = this.player, th = this.thread;
-    const ctx = { slow: this.slow ?? 1, budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
+    const ctx = { slow: this.slow ?? 1, gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt); this.rig.pre();
     // (in the ending she is walked by ending.js: `ending.walk` is the stick it holds)
     p.update(dt, this.ending ? (this.ending.walk || blank) : controls && !p.dead && !(this.rest.at && !inp.axisX && !inp.pressed.jump && !inp.held.grip) ? inp : blank, th, ctx);
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
-    th.update(dt, p.bx, p.by, this.budgetLeft(), false);
+    th.update(dt, p.bx, p.by, Infinity, false);
     th.buildPoly(p.bx, p.by);
 
     if (!p.dead && !this.ending && controls) this._interact(inp, dt);
@@ -127,10 +130,13 @@ export class World {
     this._pickups();
     this._memories();
     this._hintsUpdate();
-    if (this.hurt > 0) this.hurt = Math.max(0, this.hurt - dt * 1.2);
+    const h0 = this.hurt;
+    if (this.hurt > 0) this.hurt = Math.max(0, this.hurt - dt * (this.rest.at ? MEND_SIT : MEND));
+    if (h0 > 0 && this.hurt === 0 && this.rest.at && this._frayed) this.emit('whole', { x: p.x, y: p.y });
+    if (this.hurt > 6) { if (!this._frayed) this.emit('frayed', { x: p.x, y: p.y }); this._frayed = true; } else if (this.hurt === 0) this._frayed = false;
     for (const h of this.hooks) h.ring = Math.max(0, h.ring - dt * 1.5);
     for (const pg of this.pegs) pg.glow = lerp(pg.glow, pg === this.checkpoint ? 1 : pg.tied ? 0.35 : 0, 1 - Math.exp(-3 * dt));
-    p.scale = 0.6 + 0.4 * this.yarnFrac();
+    p.scale = 0.6 + 0.4 * this.wholeFrac();
     // area cards
     const a = this.area();
     if (a.id !== this.areaId) { this.areaId = a.id; if (!this.areaSeen.has(a.id)) { this.areaSeen.add(a.id); this.emit('area', { name: a.name, id: a.id }); } else this.emit('areaQuiet', { id: a.id }); }
@@ -142,7 +148,7 @@ export class World {
   _interact(inp, dt) {
     const p = this.player, th = this.thread;
     this.prompt = null;
-    const peg = this.pegs.find((g) => g !== this.checkpoint && Math.hypot(g.x - p.x, g.y + 0.3 - p.y) < 1.5);
+    const peg = this.pegs.find((g) => g.off === undefined && g !== this.checkpoint && Math.hypot(g.x - p.x, g.y + 0.3 - p.y) < 1.5);
     const mi = th.anchored ? -1 : th.mendIndex();
     const nearMend = mi >= 0 && Math.hypot(th.x[mi] - p.bx, th.y[mi] - p.by) < 1.4;
     const nearFinale = Math.hypot(this.finale.x - p.x, this.finale.y - p.y) < 2.6;
@@ -245,11 +251,11 @@ export class World {
         }
       }
       if (m.st === 'doll') {
-        if (m.flee > 0 || p.dead || (this.dim > 0.6 && Math.random() < dt * 1.5)) m.st = 'wander';
+        if (m.flee > 0 || p.dead || this.rest.at || (this.dim > 0.6 && Math.random() < dt * 1.5)) m.st = 'wander';      // (sitting down, she is left be)
         else {
           m.x = p.x + Math.cos(m.seed) * 0.25; m.y = p.y + 0.15 + Math.sin(m.seed) * 0.2;
           this.hurt += dt * 0.9;
-          if (this.budgetLeft() < -1.5 && !p.dead) this._die('moths');
+          if (this.wholeLeft() < -1.5 && !p.dead) this._die('moths');
           continue;
         }
       }
@@ -361,7 +367,9 @@ export class World {
   _pickups() {
     const p = this.player;
     for (const s of this.skeins) if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.25 - p.y) < 0.95) {
-      s.taken = true; this.skeinCount++; this.emit('skein', { x: s.x, y: s.y, n: this.skeinCount });
+      s.taken = true;
+      if (s.kind === 'letter') { const all = this.skeins.filter((q) => q.kind === 'letter'); this.emit('letter', { x: s.x, y: s.y, i: s.i, text: s.letter, n: all.filter((q) => q.taken).length, of: all.length }); }
+      else { this.skeinCount++; this.emit('skein', { x: s.x, y: s.y, n: this.skeinCount }); }
     }
     for (const s of this.secrets) {
       const [cx, cy, rx, ry] = s.r;
@@ -448,7 +456,7 @@ export class World {
     for (const b of this.rig.bobbins) if (vis(b.x, b.y)) out.push({ x: b.x, y: b.y + 0.4, r: 4.2, i: 0.34, c: [0.8, 0.72, 0.62], soft: 8 });
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
-    for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
+    for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push(s.kind === 'letter' ? { x: s.x, y: s.y + 0.4, r: 2.0, i: 0.32, c: [1, 0.86, 0.66], soft: 10 } : { x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
     for (const s of this.secrets) if (!s.taken && s.open && vis(s.x, s.y) && !this.hiddenAt(s.x, s.y + 0.2)) out.push({ x: s.x, y: s.y + 0.35, r: 2.2, i: 0.42 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));

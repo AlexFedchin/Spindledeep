@@ -1,4 +1,4 @@
-// The things she picks up (shapes from scripts/props3d, drawn flat and inked like everything else: the user wants 2-2.5D, not models): the keepsakes of the hidden rooms and the balls of red yarn. Drawn by
+// The things she picks up (shapes from scripts/props3d, drawn flat and inked like everything else: the user wants 2-2.5D, not models): the keepsakes of the hidden rooms, her letters and the ball of red yarn. Drawn by
 // the renderer's prop pass where they lie, and held up close, turning, when one is found (main.js startShow). Each model is
 // fetched when she comes near the first one of its kind; until it is there the old flat drawing stands in.
 import { clamp, lerp } from './util.js';
@@ -15,10 +15,11 @@ const HOLD = {
   thimble: { tip: 0.24, z: 0.84, sway: 0.24, nod: 0.06, blur: 0.8 }, eye: { tip: 0.08, sway: 0.24, nod: 0.08, blur: 2.2 }, mitten: { tip: 0.06, sway: 0.2, nod: 0.05, blur: 1.5 },
   weight: { tip: 0.3, z: 0.86, sway: 0.24, nod: 0.06, blur: 0.8 }, tag: { tip: 0.03, z: 1.02, sway: 0.2, nod: 0.05, blur: 0, flat: 0.7 }, scissors: { tip: 0.02, z: 1.04, sway: 0.2, nod: 0.05, blur: 1 },
   pattern: { tip: 0.02, z: 1.12, sway: 0.16, nod: 0.04, blur: 0, flat: 0.7 }, shoe: { tip: 0.34, z: 1.14, yaw: 0.1, sway: 0.2, nod: 0.05, blur: 1.8 }, skein: { tip: 0.2, z: 0.92, sway: 0.22, nod: 0.06, blur: 2 },
+  letter: { tip: 0.03, z: 1.06, sway: 0.18, nod: 0.04, blur: 0, flat: 0.7 },
 };
 const KINDS = Object.keys(HOLD);
 const SHELVED = KINDS.filter((k) => k !== 'skein');
-// where each keepsake stands on her shelf by the door
+// where each keepsake stands on her shelf by the door (the letters lie together in the last place)
 export function shelfSpot(kind) { const i = SHELVED.indexOf(kind); return [14.76 + (i % 6) * 0.258, 1.84 + (i < 6 ? 0.42 : 0) + 0.11]; }
 
 async function mips(src) {
@@ -82,7 +83,7 @@ export class Items {
       P.R = euler(H.tip * 0.6, (H.yaw || 0) + Math.sin(i * 2.1) * 0.2 + Math.sin(t * 1.6) * 0.18 * u, 0);
       out.push(P);
     });
-    W.skeins.forEach((s, i) => { if (!s.taken) lying('s' + i, 'skein', s.x, s.y, s.bob); });
+    W.skeins.forEach((s, i) => { if (!s.taken) lying('s' + i, s.kind, s.x, s.y, s.bob); });
     W.secrets.forEach((s, i) => {
       if (s.taken || !s.open || W.hiddenAt(s.x, s.y + 0.2)) { if (!s.taken && Math.hypot(s.x - p.x, s.y - p.y) < 45) this.need(s.kind); return; }
       lying('k' + i, s.kind, s.x, s.y, s.bob, s.fade ?? 1);

@@ -1,6 +1,6 @@
 // The options: what can be set, how each line of the menu reads and changes, and the controls screen. main.js applies them
 // (`apply`) and keeps them in settings.json through the host.
-export const DEFAULTS = { volume: 1, voice: 1, music: 1, effects: 1, brightness: 1, shake: 1, subs: 1, detail: 'auto', timer: false, fullscreen: true, keys: {}, ended: {}, found: [], best: {} };
+export const DEFAULTS = { volume: 1, voice: 1, music: 1, effects: 1, brightness: 1, shake: 1, subs: 1, detail: 'auto', timer: false, fullscreen: true, keys: {}, ended: {}, found: [], letters: [], best: {} };
 
 const STEP = (list) => (v, dir) => { let i = list.findIndex((q) => q === v); if (i < 0) i = list.reduce((b, q, k) => (Math.abs(q - v) < Math.abs(list[b] - v) ? k : b), 0); return list[(i + dir + list.length) % list.length]; };
 const PCT = [0, 0.2, 0.4, 0.6, 0.8, 1];

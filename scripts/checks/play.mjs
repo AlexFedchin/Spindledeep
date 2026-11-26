@@ -20,7 +20,7 @@ function step(inp) {
     if (e.k === 'death') { died = true; const k = `${e.cause} @${e.x.toFixed(0)},${e.y.toFixed(0)}`; deaths[k] = (deaths[k] || 0) + 1; if (V) console.log('   died', k, legNow); }
     if (e.k === 'rise' && !tRise) tRise = t;
   }
-  W.events.length = 0; low = Math.min(low, W.budgetLeft());
+  W.events.length = 0; low = Math.min(low, W.wholeLeft());
 }
 const settle = (s = 0.4) => { for (let i = 0; i < s * 120; i++) step(inp0()); };
 const hooked = () => { const q = th.pivots[th.pivots.length - 1]; return th.locked && q && q.hook ? q.hook : null; };
@@ -206,7 +206,7 @@ const M = {
 // ── the way down, pole to pole: [goal pole, moves(k)], k = which try this is ──
 const rel = (k) => [1.0, 1.6, 2.4, 0.6, 3.2, 2.0, 4.0, 0.3, 2.8, 1.3, 3.6, 4.4, 0.8, 1.8, 5.0, 2.2][k % 16] + (k >> 4) * 0.07;
 const ring = (k, d, edge, land) => M.ring(d, edge, rel(k), land);
-const LEGS = [
+let LEGS = [
   [11, () => M.walk(38.6)],
   [12, () => (p.y < -6 || M.drop(45, -7)) && M.leap(1, 52.4, 59.5, -15) && M.leap(-1, 57.6, 52.5, -24) && M.walk(51.5)],
   [1, () => M.walk(54.7, 9, { drop: 1, air: 1, slow: 1 }) && M.drop(51, -38) && M.walk(50.6)],
@@ -255,6 +255,8 @@ const LEGS = [
   [27, (k) => ring(k, -1, 55, 49.3) && M.walk(37)],
   [28, () => M.rope(42.4, -443.7, -1, [-459.6]) && M.walk(32)],
 ];
+// poles taken out of the game (level.js `off`): their leg runs on into the next one
+for (let i = LEGS.length - 2; i >= 0; i--) if (L.PEGS[LEGS[i][0]].off !== undefined) { const [, f1] = LEGS[i], [g2, f2] = LEGS[i + 1]; LEGS.splice(i, 2, [g2, (k) => f1(k) && f2(k)]); }
 // ── run ──
 let i0 = 0;
 if (process.env.FROM) {
@@ -280,7 +282,7 @@ for (const [goal, f] of LEGS.slice(i0)) {
     // stuck somewhere she cannot come back from: what a person does is let herself be taken back to the last pole
     if (!ok && k % 3 === 2 && !p.dead) { p.dead = true; p.deadT = 0; for (let i = 0; i < 3 * 120; i++) step(inp0()); died = false; settle(0.3); }
   }
-  const tag = `${legNow.padEnd(4)} ${(t - t0).toFixed(0).padStart(4)} s  tries ${k}  lowest yarn ${low.toFixed(0)}`;
+  const tag = `${legNow.padEnd(4)} ${(t - t0).toFixed(0).padStart(4)} s  tries ${k}  least whole ${low.toFixed(0)}`;
   if (V || k > 8) console.log(tag);
   slow.push([t - t0, goal, k]);
   if (!ok) { bad = `${tag} · stands at ${p.x.toFixed(1)},${p.y.toFixed(1)}, pole ${W.checkpoint.i}`; break; }

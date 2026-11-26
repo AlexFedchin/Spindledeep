@@ -1,5 +1,5 @@
 """Everything drawn, printed, scratched or stamped on the keepsakes, as flat maps for build.py.
-    <art venv>/python scripts/props3d/maps.py      -> scripts/props3d/.cache/*.png
+    <art venv>/python scripts/props3d/maps.py [names]      -> scripts/props3d/.cache/*.png
 Heights: grey 0.5 is the surface, lighter stands out, darker is cut in."""
 import math
 import os
@@ -463,6 +463,56 @@ def tag():
     save(paper(W, H, 64, base=196), 'tag_back.png')
 
 
-for fn in (spool, button, thimble, seeds, pattern, weight, tag):
+# ── a letter: "My dear," and then written over twice, across and down (crossed, to save paper), signed only "me" ──
+def letter():
+    W, H = 1500, 1960
+    a = paper(W, H, 123, base=208)
+    ink = Image.new('L', (W, H), 255)
+    d = ImageDraw.Draw(ink)
+    r = random.Random(33)
+    hand(ink, (140, 120), 'My dear,', 96, ink=28, seed=11, slope=-0.006)
+    words = ('the snow came again in the night and I put the kettle on the way you liked it and sat up by the well '
+             'the dolls are coming on their feet are better now I count the bells I always count them the cold keeps '
+             'everything down there I suppose I keep the fire in in case the latch sticks still you never mended it ').split()
+    def lines(img, x0, y0, x1, n, size, ink_, seed, gap):
+        k = seed
+        for j in range(n):
+            x, t = x0 + r.uniform(0, 30), []
+            while True:
+                w = words[k % len(words)]
+                k += 1
+                t.append(w)
+                if font(HAND, size).getlength(' '.join(t)) > x1 - x0 - 40:
+                    break
+            hand(img, (x, y0 + j * gap), ' '.join(t), size, ink=ink_ + r.randint(-8, 8), seed=seed + j, slope=r.uniform(-0.01, 0.004))
+    lines(ink, 140, 290, W - 120, 17, 50, 52, 3, 86)
+    # crossed: the same hand turned a quarter round, paler, over the first
+    cross = Image.new('L', (H, W), 255)
+    lines(cross, 160, 150, H - 160, 15, 46, 120, 70, 88)
+    cross = cross.rotate(90, expand=True)
+    ink = ImageChops.darker(ink, cross)
+    d = ImageDraw.Draw(ink)
+    hand(ink, (W - 360, H - 230), '— me', 86, ink=24, seed=99)
+    for _ in range(10):                                            # blots
+        x, yy_, q = r.uniform(100, W - 100), r.uniform(100, H - 100), r.uniform(2, 8)
+        d.ellipse([x - q, yy_ - q, x + q, yy_ + q * 0.9], fill=50)
+    ink = ink.filter(ImageFilter.GaussianBlur(0.9))
+    I = np.asarray(ink, np.float32) / 255
+    I = 1 - (1 - I) * (0.8 + 0.2 * np.clip(noise(W, H, 40, 16) * 2 - 0.4, 0, 1))
+    for args in ((0, 653, W, 660, 44, 3), (0, 1306, W, 1300, 44, 4), (750, 0, 742, H, 30, 5)):
+        a = fold(a, *args)
+    save(a * (0.12 + 0.88 * I), 'letter_front.png')
+    b = paper(W, H, 124, base=194)
+    for args in ((0, 653, W, 660, 40, 3), (0, 1306, W, 1300, 40, 4), (750, 0, 742, H, 26, 5)):
+        b = fold(b, *args)
+    ghost = np.asarray(ImageChops.invert(ink).transpose(Image.FLIP_LEFT_RIGHT).filter(ImageFilter.GaussianBlur(3)), np.float32)
+    save(b - ghost * 0.09, 'letter_back.png')
+
+
+import sys as _sys
+_only = [a for a in _sys.argv[1:] if not a.startswith('-')]
+for fn in (spool, button, thimble, seeds, pattern, weight, tag, letter):
+    if _only and fn.__name__ not in _only:
+        continue
     fn()
     print(fn.__name__)

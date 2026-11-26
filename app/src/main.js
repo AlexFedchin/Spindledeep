@@ -221,7 +221,7 @@ function enterTitle() {
     const best = (m) => (settings.best[m || 'plain'] ? ` · ${clock(settings.best[m || 'plain'])}` : '');
     menu($('menu'), [
       { label: 'As she made you' + best(''), fn: () => begin('') },
-      { label: 'Frayed · less yarn, and nothing hangs still' + best('frayed'), fn: () => begin('frayed') },
+      { label: 'Frayed · she frays sooner, and nothing hangs still' + best('frayed'), fn: () => begin('frayed') },
       { label: 'Back', fn: titleMenu },
     ], 0, titleMenu);
   } });
@@ -419,15 +419,15 @@ function updateUI(dt) {
 
 // ── what each stretch between two poles was like (session log; scripts/checks/logs.py adds them up) ──
 let SEC = newSection(0);
-function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, dims: 0, low: 999, rest: 0 }; }
+function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, dims: 0, low: 1, rest: 0 }; }
 function sectionDone(to) {
   const s = SEC;
-  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · lowest yarn ${s.low.toFixed(0)} of ${W.maxYarn.toFixed(0)} · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
+  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · most frayed ${(100 * (1 - s.low)).toFixed(0)}% · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
   SEC = newSection(to);
 }
 function sectionTick(dt) {
   const s = SEC, p = W.player;
-  s.t += dt; s.low = Math.min(s.low, W.budgetLeft());
+  s.t += dt; s.low = Math.min(s.low, W.wholeFrac());
   if (Math.hypot(p.vx, p.vy) < 0.3) s.still += dt;
   if (W.rest.at) s.rest += dt;
 }
@@ -442,7 +442,6 @@ function handleEvents() {
       case 'land': SC.land(W, e.v); D.life.loud = Math.max(D.life.loud || 0, 0.4); D.spawn('puff', p.x, p.y - 0.28, 7, { speed: 1.4, vy: 0.4, life: 0.55, r: W.area().id === 'brink' ? 1.3 : 0.9 }); break;
       case 'grip': A.play('grip', { vol: 0.35, vary: 0.1, x: p.x, y: p.y }); break;
       case 'release': case 'letgo': A.play('release', { vol: 0.3, vary: 0.1, x: p.x, y: p.y }); break;
-      case 'taut': if (time - (W._tautT ?? -99) > 8) { W._tautT = time; A.play('tie', { vol: 0.2, rate: 0.8, x: p.x, y: p.y }); } if (!W._tautSeen) { W._tautSeen = true; toast('the yarn runs short · walk back, or tie it at a peg', 3.5); } break;
       case 'snag': A.play('snag', { vol: 0.5, vary: 0.12, x: p.x, y: p.y + 2 }); SC.snag(W); D.spawn('spark', p.x, p.y + 2, 6, { speed: 2, life: 0.6 }); break;
       case 'tie':
         log(`tied to pole ${W.checkpoint.i} at ${e.x.toFixed(1)},${e.y.toFixed(1)}`); sectionDone(W.checkpoint.i);
@@ -460,6 +459,9 @@ function handleEvents() {
       case 'dim': SEC.dims++; A.any('st_soft', { vol: 0.3, rate: 0.8, x: e.x, y: e.y }); break;
       case 'dimSpent': A.any('st_soft', { vol: 0.35, rate: 1.1, x: e.x, y: e.y }); break;
       case 'sit': log(`sits at ${e.x.toFixed(0)},${e.y.toFixed(0)}`); A.any('st_soft', { vol: 0.3, rate: 0.7, x: e.x, y: e.y }); A.play('bowl', { vol: 0.2, rate: 0.5, verb: 1.4, bus: 'ui' }); break;
+      case 'frayed': if (!W._frayedSeen) { W._frayedSeen = true; toast('she is fraying · sit a while, or reach a pole, to mend', 4); } break;
+      case 'whole': A.play('mend', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1, life: 0.8 }); break;
+      case 'restSay': log(`at the seat · ${e.i}`); subtitle(e.text, 8); A.play('bowl', { vol: 0.15, rate: 0.6, verb: 1.4, bus: 'ui' }); save(); break;
       case 'place': log(`found ${e.name}`); card(e.name); A.play('chime', { vol: 0.2, rate: 0.7, x: e.x, y: e.y }); save(); break;
       case 'stalk': A.any('crumbs', { vol: 0.22 + 0.2 * e.k, rate: 0.75, vary: 0.2, x: e.x, y: e.y, verb: 0.4 }); D.spawn('grit', e.x, e.y + 0.05, 4, { speed: 0.8, vy: 0.9, life: 1.2, r: 0.8 }); break;
       case 'bell': A.bellNote(e.i, e.x, e.y); SC.bell(W, e); D.spawn('pale', e.x + 0.3, e.y + 1.1, 1, { speed: 0, life: 1.6 }); save(); break;
@@ -484,8 +486,17 @@ function handleEvents() {
       case 'respawn': snapOpen(); camSnap = true; respawnT = time; log(`respawn at pole ${W.checkpoint.i}`); A.play('mend', { vol: 0.4, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 12, { speed: 1.5, life: 1 }); break;
       case 'skein':
         A.play('skein', { vol: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 20, { speed: 2, life: 1.2 });
-        startShow({ kind: 'skein', x: e.x, y: e.y + 0.22, name: 'A skein of her red yarn', desc: 'Wound tight, the colour of the thread. It will reach further now.',
-          count: e.n >= W.skeins.length ? `the last skein · all ${W.skeins.length} found` : `skein ${e.n} of ${W.skeins.length}` });
+        startShow({ kind: 'skein', x: e.x, y: e.y + 0.22, name: 'A skein of her red yarn', desc: 'Wound tight, the colour of the thread. The only one she put by.', count: 'the only skein' });
+        break;
+      case 'letter':
+        A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.45, rate: 1.7, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 1.2, x: e.x, y: e.y });
+        D.spawn('spark', e.x, e.y + 0.2, 8, { speed: 1.0, life: 0.9 });
+        startShow({ kind: 'letter', x: e.x, y: e.y + 0.22, name: 'A letter in her hand', desc: e.text, count: e.n >= e.of ? `letter ${e.n} of ${e.of} · the last of them` : `letter ${e.n} of ${e.of}` });
+        if (!settings.letters) settings.letters = [];
+        if (!settings.letters.includes(e.i)) settings.letters.push(e.i);
+        if (!settings.found.includes('letter')) settings.found.push('letter');
+        window.host?.setSettings?.(settings);
+        save();
         break;
       case 'shelf': if (!SHOW && state === 'play') openShelf('door'); break;
       case 'allfound': toast('all of them · she sews on the second eye', 5); A.play('bowl', { vol: 0.3, rate: 0.75, verb: 1.4, bus: 'ui' }); break;
@@ -816,7 +827,10 @@ function startShow(o) {
 // to be turned and read. Put it back and the shelf is there again.
 const BOARD = { x: 15.4, y: 2.07, vh: 1.5 };
 function openShelf(from) {
-  const list = L.SECRETS.filter((s) => settings.found.includes(s.kind)).sort((a, b) => shelfSpot(a.kind)[0] - shelfSpot(b.kind)[0] + (shelfSpot(b.kind)[1] - shelfSpot(a.kind)[1]) * 10);
+  // the keepsakes where each stands, then her letters (all in the last place), from the shallowest down
+  const letters = L.SKEINS.map((s, i) => ({ ...s, i })).filter((s) => s.letter && (settings.letters || []).includes(s.i)).sort((a, b) => b.y - a.y)
+    .map((s) => ({ kind: 'letter', what: 'a letter in her hand', text: s.letter }));
+  const list = L.SECRETS.filter((s) => settings.found.includes(s.kind)).sort((a, b) => shelfSpot(a.kind)[0] - shelfSpot(b.kind)[0] + (shelfSpot(b.kind)[1] - shelfSpot(a.kind)[1]) * 10).concat(letters);
   if (!list.length) return;
   list.forEach((s) => ITEMS.need(s.kind));
   if (from === 'title') { state = 'shelf'; show($('title'), false); W.hideDoll = true; cam.x = BOARD.x; cam.y = BOARD.y; cam.viewH = BOARD.vh; }
@@ -832,7 +846,8 @@ function shelfBoard() {
   const S = SHOW, el = $('shelfui');
   const s = S.hover >= 0 ? S.shelf[S.hover] : null;
   setText(el.querySelector('.bname'), s ? s.what.charAt(0).toUpperCase() + s.what.slice(1) : '');
-  el.querySelector('.bcount').textContent = `${S.shelf.length} of ${L.SECRETS.length}` + (S.shelf.length < L.SECRETS.length ? ` · ${L.SECRETS.length - S.shelf.length} still down there` : ' · all of them');
+  const keeps = S.shelf.filter((q) => q.kind !== 'letter').length, lets = S.shelf.length - keeps, LN = L.SKEINS.filter((q) => q.letter).length;
+  el.querySelector('.bcount').textContent = `${keeps} of ${L.SECRETS.length} keepsakes · ${lets} of ${LN} letters` + (keeps + lets < L.SECRETS.length + LN ? ` · ${L.SECRETS.length + LN - keeps - lets} still down there` : ' · all of them');
   el.querySelector('.bhint').textContent = (I.usingPad ? `${I.label('left')} ${I.label('right')} · choose · ${I.label('act')} · take it down` : 'click one to take it down') + ` · ${I.label('pause')} · leave`;
   show(el, true);
 }

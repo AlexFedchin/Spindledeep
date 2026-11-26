@@ -1,0 +1,235 @@
+<title>Spindledeep · Unbound</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    details.seal { margin: 18px 0; border: 1px solid var(--rule); padding: 14px 18px; }
+    details.seal summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); }
+    details.seal summary:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    figure.still { margin: 26px 0; } figure.still img { width: 100%; display: block; border: 1px solid var(--rule); }
+    figure.still figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); margin-top: 8px; }
+</style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; 2026-11-27</div>
+    <h1>Unbound</h1>
+    <p class="tag">The thread never runs out<span></span>and the thing runs</p>
+  </header>
+
+  <div class="col summary">
+    <p>Four changes. The red thread is no longer a budget: it pays out as far as she goes, and what used to eat yarn now frays the doll. Ten poles from the Ink Mere down are gone, so the deep has longer stretches between safe points. Nine of the ten skeins are now letters in the knitter's hand. Seats mend her and keep the moths off, and the first time she sits at each one she notices something there. In the bitten ending, the thing screams and runs at once, two screens show the thread going grey, and then it tries the well and falls.</p>
+    <p>All route checks pass. The whole-game bot reaches the choice in both modes (plain: 7.7 and 8.0 min on two seeds; frayed: 7.7 min; 4 deaths each run).</p>
+  </div>
+
+  <h2>No End to the Thread</h2>
+  <p class="ask">let's just remove the mechanics of thread being finite</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>The thread pays out for as long as she walks.</b> There is no limit, no &ldquo;the yarn runs short&rdquo; catch, and no shrinking because the thread is long. Reeling out while she hangs is never refused either.</li>
+      <li><b>What used to cost yarn now frays her.</b> Moths, a hand that gets hold of her and the thing on the thread used to eat into the yarn budget. They now wear down the doll herself, out of 30 (20 in Frayed mode). She shrinks as she frays and mends slowly on her own, quickly sitting down, and fully at a pole. Moths still kill her if she frays right through. The first bad fraying shows a hint: <i>she is fraying &middot; sit a while, or reach a pole, to mend</i>.</li>
+      <li><b>Frayed mode</b> is now &ldquo;she frays sooner, and nothing hangs still&rdquo;. It used to mean less yarn.</li>
+      <li>The session log's &ldquo;lowest yarn&rdquo; is now &ldquo;most frayed&rdquo;, and the checks report &ldquo;least whole&rdquo;. The thread can now hold twice as much (12,000 points), so wandering can't fill it up.</li>
+    </ul>
+  </div>
+
+  <h2>Fewer Poles in the Deep</h2>
+  <p class="ask">Do numbers 2, 3, 5</p>
+  <div class="col">
+    <p>Ten poles are taken out of the game. They are not drawn and can't be tied to, but their numbers are kept, because saves and code refer to them. A save already sitting at one of them carries on from it. The climb in the Loom is untouched: the chase there is tuned per pole. The times below are from your last full run, added together for each new stretch.</p>
+    <div class="tablebox"><table class="windows">
+      <tr><th>Pole removed</th><th>Where</th><th>Now one stretch</th><th>Your time</th></tr>
+      <tr><td class="n">10</td><td>Hall of Chairs, west</td><td class="n">9 &rarr; 13</td><td class="n">8.7 s</td></tr>
+      <tr><td class="n">31</td><td>the Weighing Room</td><td class="n">13 &rarr; 32</td><td class="n">14.4 s</td></tr>
+      <tr><td class="n">33</td><td>the Pews</td><td class="n">32 &rarr; 34</td><td class="n">13.7 s</td></tr>
+      <tr><td class="n">14</td><td>H1</td><td class="n">34 &rarr; 35</td><td class="n">10.4 s</td></tr>
+      <tr><td class="n">36</td><td>past the Slabs' door</td><td class="n">35 &rarr; 37</td><td class="n">15.0 s</td></tr>
+      <tr><td class="n">16</td><td>the Hush, H3 east</td><td class="n">15 &rarr; 17</td><td class="n">11.8 s</td></tr>
+      <tr><td class="n">21</td><td>start of the heddle corridor</td><td class="n">20 &rarr; 22</td><td class="n">12.4 s</td></tr>
+      <tr><td class="n">29, 39</td><td>the well ledge, before the bobbin's lane</td><td class="n">22 &rarr; 40</td><td class="n">24.2 s</td></tr>
+      <tr><td class="n">43</td><td>before the last ring</td><td class="n">42 &rarr; 23</td><td class="n">15.6 s</td></tr>
+    </table></div>
+    <p style="margin-top:14px">A full run now ties the thread about 34 times instead of 44. The thorny Pin Walk (pole 37) and the Hush's west end, where you died before, keep their poles. The bot treats a leg that ended at a removed pole as part of the next leg, and all the checks pass.</p>
+  </div>
+
+  <h2>Her Letters</h2>
+  <p class="ask">Leave just one yarn for collectible and replace the other ones with something else</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/lying_before.jpg" alt="Before: a ball of red yarn lying at the far end of the Orchard">
+      <img class="after" src="img/lying_after.jpg" alt="After: a folded letter lying in the same place">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lying" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>One skein stays</b>: the Root Gardens alcove, the one the upper shelves lead to. It is now &ldquo;the only skein&rdquo;.</li>
+      <li><b>The other nine are her letters</b>, one dropped down the well each winter. They are a new keepsake model, a sheet folded in three and written over twice, across and then down, the way letters were when paper was short. It is held up and read like the other keepsakes, under a warm light rather than the red. You hear paper rather than yarn when you pick one up. They follow the depth rule: none says more than what lies below it.</li>
+      <li><b>On her shelf</b>, the letters lie together in the twelfth place, the one that was empty. Taking them down steps through each letter you have found, shallowest first. The shelf's count now reads <i>n of 11 keepsakes &middot; n of 9 letters</i>.</li>
+    </ul>
+    <details class="seal"><summary>Open: a letter held up (its words)</summary>
+    <div class="reveal">
+      <img src="img/held_before.jpg" alt="Before: the skein held up">
+      <img class="after" src="img/held_after.jpg" alt="After: a letter held up, its text below it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-held" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    </details>
+  </div>
+
+  <h2>A Reason to Sit</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>Sitting mends her.</b> She mends 24 times faster sitting than on her own, so a hand's grab is mended in a breath. There's a soft sound when she is whole again.</li>
+      <li><b>The moths leave her be</b> while she sits.</li>
+      <li><b>The first time at each seat</b>, after a few breaths, a line appears about what she notices there. There are seven seats and seven lines, written only, with nothing spoken. They darken with depth and are saved with the run. The camera already pulled back to show the place while she sits; that stays.</li>
+    </ul>
+    <details class="seal"><summary>Open: the Orchard seat's line</summary>
+      <figure class="still"><img src="img/seat_after.jpg" alt="The doll sitting in the Orchard, a line of text below"><figcaption>The Orchard, sitting</figcaption></figure>
+    </details>
+  </div>
+
+  <h2>What Have You Done</h2>
+  <p class="ask">when I bite the thread make the monster scream in panic "WHAT HAVE YOU DONE??" And then immediately run away. Then show one-two screens with thread becoming grey and then how the monster climbs it and falls.</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/end1_before.jpg" alt="Before: the thing kneeling, quietly asking what have you done">
+      <img class="after" src="img/end1_after.jpg" alt="After: the thing kneeling, screaming, the camera closer">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-end1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <div class="reveal">
+      <img src="img/end2_before.jpg" alt="Before: still kneeling, saying you let go">
+      <img class="after" src="img/end2_after.jpg" alt="After: the thing gone on all fours past the candle toward the edge">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-end2" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>The scream.</b> About a second after the bite, the thing starts back and screams <i>WHAT HAVE YOU DONE??</i>. The camera closes on the two of them. It's a new recording (<code>scream</code>): her voice with the lower one under it. Of eight takes, the pick was scored for loudness and brightness instead of the slow pace her other lines are scored for, and it is not slowed down. The two old lines (&ldquo;What have you done?&rdquo; and &ldquo;You let go&hellip;&rdquo;) are gone.</li>
+      <li><b>It runs, at once.</b> It drops onto all fours and bolts along the floor behind the doll, faster and faster. The candle gutters as it passes. It goes over the edge of the beam into the Loom. It is lit from behind as it was kneeling and stays the same size. Its hands slap the stone in step.</li>
+      <li><b>Two screens of the thread going grey</b> (it was four): the Hall of Chairs, then her door, where the wind drops. Then the well: it climbs the dead thread, the thread parts, it falls. What follows (the doll walking back to the candle, the asking, the film) is unchanged.</li>
+    </ul>
+    <figure class="still"><img src="img/grey_hall.jpg" alt="The Hall of Chairs, the red going out of the thread"><figcaption>The Hall of Chairs</figcaption></figure>
+    <figure class="still"><img src="img/grey_door.jpg" alt="Her door, the last of the red going out"><figcaption>Her door: the wind drops</figcaption></figure>
+    <figure class="still"><img src="img/well.jpg" alt="The thing climbing the thread in the well"><figcaption>The well: it climbs, the thread parts, it falls</figcaption></figure>
+  </div>
+
+  <div class="col">
+    <div class="files">
+      <div><b>app/src/world.js, player.js, thread.js</b><span>no yarn budget; fraying (<code>WHOLE</code>, mending, sitting); removed poles never tie; letters picked up</span></div>
+      <div><b>app/src/level.js</b><span><code>off</code> on ten <code>PEGS</code>; nine <code>SKEINS</code> as letters; <code>REST_SAYS</code>; <code>FINALE.scream</code></span></div>
+      <div><b>app/src/ending.js, audio.js</b><span>the scream, the run on all fours, two grey screens; voice volume</span></div>
+      <div><b>app/src/main.js, kindle.js, props3d.js, props.js, draw.js, options.js</b><span>letter showcase and shelf, seat lines, fraying hint, stand-in drawings, <code>settings.letters</code></span></div>
+      <div><b>scripts/props3d (maps.py, build.py)</b><span>the letter: its writing and its folded model; <code>app/assets/props/letter.*</code></span></div>
+      <div><b>scripts/voice (lines.py, pick.py)</b><span><code>scream</code>, scored by <code>SCREAM</code>; <code>app/assets/voice/scream.ogg</code></span></div>
+      <div><b>scripts/checks</b><span>play.mjs merges legs at removed poles; checks report how whole she is</span></div>
+    </div>
+  </div>
+
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/6EzdGQteQf5cDNQcud4jVe">the whole neck</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

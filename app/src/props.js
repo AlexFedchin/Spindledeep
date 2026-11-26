@@ -245,6 +245,13 @@ const KEEP = {
     for (let y = 0.11; y < 0.27; y += 0.04) P.line([[-0.1, y], [0.1, y]], 0.42, 0.006);
     P.beam(-0.2, 0.3, 0.18, 0.4, 0.016, 0.8); P.beam(-0.16, 0.38, 0.22, 0.28, 0.016, 0.8);
   },
+  // one of her letters: a sheet folded in three and opened, lines of her hand, written across again
+  letter(P) {
+    P.poly([[-0.15, 0.0], [0.14, -0.006], [0.15, 0.36], [-0.14, 0.366]], 0.84, INK, 0.012);
+    P.line([[-0.15, 0.12], [0.145, 0.118]], 0.66, 0.006); P.line([[-0.145, 0.244], [0.15, 0.24]], 0.66, 0.006);
+    for (let i = 0; i < 9; i++) P.line([[-0.12, 0.33 - i * 0.034], [0.11 - (i % 3) * 0.03, 0.331 - i * 0.034]], 0.4, 0.005);
+    for (let i = 0; i < 7; i++) P.line([[-0.1 + i * 0.035, 0.03], [-0.1 + i * 0.035, 0.32]], 0.62, 0.003);
+  },
   // a knitting pattern: a creased sheet, a doll drawn beside a grid, rows of notes, the last line underlined twice
   pattern(P) {
     P.poly([[-0.17, 0.0], [0.085, -0.008], [0.155, 0.07], [0.18, 0.33], [0.04, 0.336], [0.034, 0.329], [0.026, 0.337], [-0.14, 0.35], [-0.148, 0.27], [-0.143, 0.262], [-0.15, 0.255]], 0.84, INK, 0.012);

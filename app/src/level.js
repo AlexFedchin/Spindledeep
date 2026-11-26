@@ -290,7 +290,8 @@ export const BACKDROPS = [
 
 export const START = { x: 20.5, y: 1.2 };
 
-// The knitter's pegs. Tie the thread to one to make it your new anchor, refill, and respawn here.
+// The knitter's pegs. Tie the thread to one to make it your new anchor and respawn here. `off: n` (the user, 2026-11-27: fewer poles
+// from the Ink Mere down) takes one out of the game but keeps its index (saves and code use them): a save there continues from pole n.
 export const PEGS = [
   { x: 19.2, y: 0.4, home: true },
   { x: 50.6, y: -39.6 },
@@ -302,19 +303,19 @@ export const PEGS = [
   { x: 104, y: -194.2 },
   { x: 63.5, y: -190.4 },
   { x: 15.6, y: -194.2 },  // west shore, beside the way down
-  { x: 18, y: -244 },
+  { x: 18, y: -244, off: 9 },
   { x: 38.6, y: 0.5 },      // the lip of the pit
   { x: 51.5, y: -25.6 },    // L3, under her memory
   // the deep
   { x: 41.6, y: -246.5 },   // 13: the lip of the hole in the Hall
-  { x: 40, y: -282.5 },     // 14: H1
+  { x: 40, y: -282.5, off: 34 },     // 14: H1
   { x: 96, y: -285.5 },     // 15: H2
-  { x: 94, y: -326 },       // 16: H3 east
+  { x: 94, y: -326, off: 15 },       // 16: H3 east
   { x: 64, y: -326 },       // 17: H3 middle
   { x: 34, y: -326 },       // 18: H3 west
   { x: 18, y: -366 },       // 19: the Treadles' west ledge
   { x: 61, y: -366 },       // 20: the east ledge, under the rope
-  { x: 74, y: -358.2 },     // 21: the start of the heddle corridor
+  { x: 74, y: -358.2, off: 20 },     // 21: the start of the heddle corridor
   { x: 106, y: -358.2 },    // 22: the end of it
   { x: 104, y: -462 },      // 23: where you come into the Loom
   { x: 72, y: -540 },       // 24: on the cloth (the Weaver wakes when you leave it)
@@ -322,21 +323,21 @@ export const PEGS = [
   { x: 34, y: -503.2 },     // 26: past the swinging ring
   { x: 37, y: -470 },       // 27
   { x: 32, y: -444 },       // 28: the breast beam (the cloth stops)
-  { x: 108.5, y: -404.6 },  // 29: the ledge halfway down the well
+  { x: 108.5, y: -404.6, off: 22 },  // 29: the ledge halfway down the well
   { x: 53.2, y: -245.6 },   // 30: the Hall, east of the hole, outside the Last Basket
-  { x: 39, y: -259 },       // 31: the Weighing Room
+  { x: 39, y: -259, off: 13 },       // 31: the Weighing Room
   { x: 11.8, y: -259 },     // 32: past its door
-  { x: 6.6, y: -281 },      // 33: the Pews
+  { x: 6.6, y: -281, off: 32 },      // 33: the Pews
   { x: 28, y: -281 },       // 34: over the bridge
   { x: 64, y: -303 },       // 35: the Slabs
-  { x: 26.9, y: -303 },     // 36: past their door
+  { x: 26.9, y: -303, off: 35 },     // 36: past their door
   { x: 47, y: -312.2 },     // 37: the Pin Walk, between the beds
   { x: 79, y: -312.2 },     // 38: under the rope
-  { x: 98, y: -405 },       // 39: before the bobbin's lane
+  { x: 98, y: -405, off: 22 },       // 39: before the bobbin's lane
   { x: 60, y: -405 },       // 40: past it
   { x: 39.5, y: -421 },     // 41: the lower room
   { x: 66, y: -421 },       // 42: past the pulled door
-  { x: 83, y: -421 },       // 43: before the last ring
+  { x: 83, y: -421, off: 42 },       // 43: before the last ring
   { x: 38.2, y: -488 },     // 44: N1
   { x: 52, y: -487 },       // 45: N2
   { x: 82.6, y: -484 },     // 46: N4
@@ -371,6 +372,16 @@ export const HOOKS = [
 
 // Seats, where she can sit a while [x, y, which way she faces], and the quiet places' names [ellipse].
 export const RESTS = [[69.6, -33.2, -1], [28.5, -60.6, -1], [78, -87.8, 1], [107, -194, -1], [15.0, -194, 1], [80, -341, -1], [49.0, -420.8, 1]];
+// What she notices the first time she sits at each seat (in RESTS order; written, not spoken). Escalation map in docs/STORY.md.
+export const REST_SAYS = [
+  'Someone rested here often, on the way down. By the seat, scratched small, a tally: one mark a winter. Then the marks stop.',
+  'A cushion, knitted, gone hard with the damp. She made the seat soft for whoever came after her.',
+  'From here you can see the whole orchard. Nothing on it has ever fruited. She sat here anyway, as if it might.',
+  'A line scratched on the stone above the ink, and another higher, and another higher still. It is rising.',
+  'Pins stuck in the seat in a row, the way she kept them on her sleeve. Eleven. One for each doll that got this far.',
+  'The seat is warm. Nothing down here is warm. Something was sitting here, and got up when it heard you coming.',
+  'Beside the seat, scratched deep: DO NOT SLEEP HERE. Under it, in another hand, the same. Under that, the same, in yours.',
+];
 export const PLACES = [{ name: 'The Orchard', x: 76, y: -84, rx: 18, ry: 6 }, { name: 'The Long Room', x: 76, y: -338.4, rx: 25, ry: 4.4 }];
 
 // Bell flowers: a pluck travelling past rings them; rung bells light the dark and keep moths off.
@@ -431,10 +442,20 @@ export const SECRETS = [
     text: 'One point snapped off. She meant to cut her own thread on the way down, and sat here a long time with them open. It asked her, in her mother\'s voice, to wait.' },
 ];
 
+// What lies about off the way. The first is a skein of her red yarn; the rest are her letters, each dropped down the well one
+// winter (the user, 2026-11-27: the thread no longer runs out, so skeins no longer let it reach further). Saves index this list.
+// Letters follow the escalation map in docs/STORY.md: nothing at a shallower depth knows more than what lies below it.
 export const SKEINS = [
-  { x: 9.2, y: -50.2 }, { x: 47, y: -50.8 }, { x: 83, y: -122.8 }, { x: 100.6, y: -121.4 }, { x: 26, y: -193.4 },
-  { x: 18.6, y: -259 }, { x: 31, y: -303 }, { x: 44, y: -405 },       // in the rooms the thread opens
-  { x: 91, y: -87.8 }, { x: 97, y: -341 },                             // at the far ends of the quiet places
+  { x: 9.2, y: -50.2 },
+  { x: 47, y: -50.8, letter: "My dear, I drop one of these down the well every winter, the night the first snow comes. I don't know how far paper falls. I keep the kettle on. — me" },
+  { x: 83, y: -122.8, letter: "My dear, the bells under the gallery rang again last night. I counted. I always count. It was nobody we knew, this time. — me" },
+  { x: 100.6, y: -121.4, letter: "My dear, the ringer's wife came up the hill to ask what the bells meant. I told her they meant nothing. She stopped asking. Then the bells rang for him. — me" },
+  { x: 26, y: -193.4, letter: "My dear, I have stopped saying it, even to myself. You said mine that last night, down at the well, and something said it back. I keep it in my mouth like a stone. — me" },
+  { x: 18.6, y: -259, letter: "My dear, I dreamt of a room full of chairs, and you in one, rocking, telling someone who you missed. You always were too honest. Don't tell it anything else. — me" },
+  { x: 31, y: -303, letter: "My dear, your voice has been at the door three nights running. It knows what you called me. It doesn't know which of us takes sugar. I don't open it. — me" },
+  { x: 44, y: -405, letter: "My dear, it called me tonight. It's very good at you now. I'm going down with the last doll and the long red ball, and I won't answer it, whatever it says. If this reaches you first, don't come up to meet me. — me" },
+  { x: 91, y: -87.8, letter: "My dear, I knit them small, so they'll fit where you went. This one has your patience and none of my temper. I'm sorry about the mouths. It's safer. — me" },
+  { x: 97, y: -341, letter: "My dear, the garden moved tonight, under the snow, like something turning over in its sleep. I think it heard me humming. I don't hum now. — me" },
 ];
 
 export const NESTS = [
@@ -518,8 +539,7 @@ export const FINALE = {
   mama: 'Mama?',
   tieit: 'Tie it. Tie it. Tie it. Tie it. Tie it.',
   after: 'Thank you, little one. Now we can all come up.',
-  cut: 'What have you done?',
-  cut2: 'You let go. You were never to let go.',
+  scream: 'WHAT HAVE YOU DONE??',
   cut4: 'Hold on to me!',
   cut3: "Little one? Little one? That isn't a name. What is your name?",
   names: ['Ada?', 'Agnes?', 'Alice?', 'Anna?', 'Beatrice?', 'Bertha?', 'Catherine?', 'Clara?', 'Dora?', 'Edith?', 'Eleanor?', 'Ellen?', 'Emma?'],

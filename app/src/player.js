@@ -68,7 +68,6 @@ export class Player {
     if (this.climb) { this._climb(dt, inp, ctx); return; }
 
     // grip / release
-    const budgetLeft = ctx.budgetLeft();
     // holding grip in the air while flying toward a ring: wait until the ring is in reach instead of
     // catching on the ledge behind (so an early press is forgiving, but rings are only grabbed up close)
     let waitRing = false;
@@ -85,9 +84,6 @@ export class Player {
       if (th.grip(this.bx, this.by, false, this.grounded ? 0 : 1.2)) this.events.push('grip');
     }
     if (!inp.held.grip && th.locked && !th.forced) { th.release(this.bx, this.by); this.events.push('release'); }
-    if (!th.locked && th.anchored && budgetLeft <= 0.02 && this._wantsAway(th, ax)) {
-      if (th.grip(this.bx, this.by, true)) this.events.push('taut');
-    }
     if (th.locked && th.forced) {
       const P = th.pivots[th.pivots.length - 1];
       if (Math.hypot(this.bx - P.x, this.by - P.y) < th.Lfree - 0.6 || inp.held.grip) { th.forced = false; if (!inp.held.grip) th.release(this.bx, this.by); }
@@ -127,7 +123,7 @@ export class Player {
       // reel
       if (th.locked) {
         if (ay > 0) th.Lfree = Math.max(0.55, th.Lfree - 3.6 * h * ay);
-        if (ay < 0 && !th.forced && ctx.budgetLeft() > 0) th.Lfree += 4.4 * h * -ay;
+        if (ay < 0 && !th.forced) th.Lfree += 4.4 * h * -ay;
       }
       // gravity
       const swinging = th.locked && !g;
@@ -155,7 +151,7 @@ export class Player {
         if (y0 - this.y <= STICK && T.d(this.x, this.y) < R + 0.05 && gy > 0.55) { this.grounded = true; this.nx = gx; this.ny = gy; this.vy = Math.min(this.vy, 0); } else this.y = y0;
       }
       // the thread
-      if (th.locked && !th.forced && ctx.budgetLeft() > 0) {
+      if (th.locked && !th.forced) {
         // on the ground a held thread still pays out as you walk; it only catches once you fall.
         // Rolling over a lip with the thread still flat behind her counts as walking too, or she'd
         // sit balanced on the corner instead of dropping into a hang under it.
@@ -245,9 +241,4 @@ export class Player {
     this.squash = damp(this.squash, 0, 10, dt); this.tieT = Math.max(0, this.tieT - dt); this.swingT += dt;
   }
 
-  _wantsAway(th, ax) {
-    const l = th.n - 1;
-    const dx = this.bx - th.x[l], dy = this.by - th.y[l];
-    return Math.hypot(dx, dy) > 0.2 && (dx * ax > 0 || dy < -0.05 || !this.grounded);
-  }
 }

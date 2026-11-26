@@ -639,7 +639,8 @@ export class Drawer {
   drawPegs(ctx, ectx) {
     const k = this.k;
     for (const pg of this.w.pegs) {
-      if (pg.home || !this.vis(pg.x, pg.y)) continue;
+      // (a pole taken out of the game is not there, unless an old save stands at it)
+      if (pg.home || (pg.off !== undefined && pg !== this.w.checkpoint) || !this.vis(pg.x, pg.y)) continue;
       const X = this.sx(pg.x), Y = this.sy(pg.y);
       // a hammered iron stake with a little bobbin on it
       ctx.fillStyle = g(0.3); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.025);
@@ -806,7 +807,15 @@ export class Drawer {
     for (const s of this.w.skeins) {
       if (s.taken || !this.vis(s.x, s.y)) continue;
       const X = this.sx(s.x), Y = this.sy(s.y + 0.22 + Math.sin(this.time * 1.4 + s.bob) * 0.03), r = 0.2 * k;
-      if (READY.has('skein')) continue;      // (props3d.js)
+      if (READY.has(s.kind)) continue;      // (props3d.js)
+      if (s.kind === 'letter') {
+        // a folded sheet in her hand (stand-in until the model is loaded)
+        ctx.fillStyle = g(0.78); ctx.strokeStyle = g(0.05); ctx.lineWidth = Math.max(1, 0.015 * k);
+        ctx.beginPath(); ctx.moveTo(X - 0.14 * k, Y + 0.17 * k); ctx.lineTo(X + 0.13 * k, Y + 0.16 * k); ctx.lineTo(X + 0.14 * k, Y - 0.17 * k); ctx.lineTo(X - 0.12 * k, Y - 0.18 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = g(0.35);
+        for (let i = 0; i < 6; i++) { const y = Y - 0.12 * k + i * 0.05 * k; ctx.beginPath(); ctx.moveTo(X - 0.1 * k, y); ctx.lineTo(X + 0.1 * k - (i % 3) * 0.03 * k, y + 0.004 * k); ctx.stroke(); }
+        continue;
+      }
       ctx.fillStyle = g(0.55); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, 0.02 * k);
       ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = g(0.2);

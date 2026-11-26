@@ -16,7 +16,7 @@ function run(W, f, secs = 40) {
   for (let i = 0; i < secs * 120; i++) {
     t += DT; const inp = { axisX: 0, axisY: 0, held: {}, pressed: {} }, p = W.player;
     const r = f(W, p, t, inp); if (r) return { r, t, low };
-    W.update(DT, inp, true); W.events.length = 0; low = Math.min(low, W.budgetLeft());
+    W.update(DT, inp, true); W.events.length = 0; low = Math.min(low, W.wholeLeft());
     if (process.env.TRACE && i % 30 === 0) console.log(t.toFixed(2), p.x.toFixed(2), p.y.toFixed(2), p.grounded ? 'g' : '-', W.thread.locked ? 'L' : '', W.rig.bobbins.map((b) => b.st + b.x.toFixed(1)).join());
     if (p.dead) return { r: 'dead at ' + p.x.toFixed(1) + ',' + p.y.toFixed(1), t, low };
   }
@@ -37,7 +37,7 @@ function sweep(name, peg, mk, lo, hi, step, secs) {
   if (ONLY && !name.includes(ONLY)) return;
   const res = {}; let ok = 0, n = 0, low = 99, tt = 0;
   for (let rel = lo; rel < hi; rel += step) { const W = make(peg, 1 + n), q = run(W, mk(rel, W), secs); n++; if (q.r === 'ok') { ok++; low = Math.min(low, q.low); tt += q.t; } else res[q.r] = (res[q.r] || 0) + 1; }
-  console.log(name.padEnd(44), `${ok}/${n}`.padEnd(7), 'lowest yarn', low.toFixed(0), 'time', (tt / Math.max(1, ok)).toFixed(1), JSON.stringify(res).slice(0, 190));
+  console.log(name.padEnd(44), `${ok}/${n}`.padEnd(7), 'least whole', low.toFixed(0), 'time', (tt / Math.max(1, ok)).toFixed(1), JSON.stringify(res).slice(0, 190));
 }
 const handle = (i, at, dir, goal) => { let ph = 0, tj = 0; return (W, p, t, inp) => {
   const h = W.rig.pulls[i];

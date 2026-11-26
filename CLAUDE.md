@@ -129,8 +129,18 @@ Builds: `build.cmd` bumps the patch version. Trailer: `scripts/trailer/capture.p
 from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (roll over the thread and everything else; the user asked 2026-11-26 that they never stop over her: lie in a gutter and let one pass). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
 H1 → Slabs → Pin Walk → rope → H2; well ledge → bobbin's lane → lower room → the Loom's well. `LEVEL` planes their floors. Gate 0 and 1 must stay g2 and east.
 Check: `scripts/checks/rooms.mjs [frayed]` (`ONLY=name`, `TRACE=1`, `HANDS=1`). Beds of pins at floor level need the ring ~3.6 m up.
-Her shelf (main.js `openShelf`): the boards close (`BOARD`), point and take one down (`shelfSpot` in props3d.js); the bitten thread lets go of the doll (`thread.letGo`), she is walked by `W.ending.walk` and sits by `rest.at.held`. The end cards and credits skip by holding (`holdToSkip`). The thread pass fades with `u.fade`. Smoke `keys` use Electron names (`Right`, not `ArrowRight`). `post.py --soft` (per shot `# soft=` next to `auto=`). Hands: `deaf` ones strike where she was heading (she stopped). They need open air to her to stir or seize, and the arm stops at rock (`_sees`, `_free`); scratchpad-style check: count arm frames inside rock. Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).
-Options in `options.js` (kept in settings.json with `found`, `ended`, `best`); key bindings in input.js. Saves are v3; older ones in the deep get their thread re-laid.
+Her shelf (main.js `openShelf`): the boards close (`BOARD`), point and take one down (`shelfSpot` in props3d.js); the bitten thread lets go of the doll (`thread.letGo`), she is walked by `W.ending.walk` and sits by `rest.at.held`. The end cards and credits skip by holding (`holdToSkip`). The thread pass fades with `u.fade`. Smoke `keys` use Electron names (`Right`, not `ArrowRight`). `post.py --soft` (per shot `# soft=` next to `auto=`). Hands: `deaf` ones strike where she was heading (she stopped). They need open air to her to stir or seize, and the arm stops at rock (`_sees`, `_free`); scratchpad-style check: count arm frames inside rock. Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): she frays sooner (`WHOLE_FRAYED`), rings never hang still.
+
+## No yarn limit, fewer poles, letters, seats (2026-11-27)
+
+The thread never runs out (the user removed the mechanic). What hurt her through the yarn budget (moths, hands, the crawler: `W.hurt`) now
+frays the doll: `WHOLE` in world.js, `wholeLeft()/wholeFrac()` (she shrinks), mends slowly, fast sitting (`MEND_SIT`), at once at a pole; moths
+kill below zero. Thread `CAP` is 12000 particles. Poles with `off: n` in `PEGS` are out of the game (not drawn, never tied; an old save at one
+keeps it); the bot (`play.mjs`) merges a leg ending at one into the next. `SKEINS`: one skein, nine `letter`s (3D `letter` prop, `HOLD.letter`,
+`KEEP.letter`, shelf slot 12, `settings.letters`). Seats: `REST_SAYS` the first time she sits a while; moths leave her while she sits.
+The bitten ending opens with `scream` (scripts/voice `SCREAM`: scored for loudness, never slowed) and the thing running off on all fours
+(`w.climber` on a floor path in `cut_bite`), then two red-goes-out places, then the well.
+Options in `options.js` (kept in settings.json with `found`, `letters`, `ended`, `best`); key bindings in input.js. Saves are v3; older ones in the deep get their thread re-laid.
 `--size=WxH` with `--smoke` tests another window shape.
 
 ## Sound (app/src/sound.js)

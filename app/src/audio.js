@@ -333,11 +333,11 @@ export class Audio {
   }
   stopVoices() { for (const v of this.voices || []) { try { v.gn.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08); v.src.stop(this.ctx.currentTime + 0.5); } catch { /* already over */ } } }
   // voice lines play through their own element-free buffer path
-  voice(id, onEnd, rate = 1) {
+  voice(id, onEnd, rate = 1, vol = 1) {
     const url = 'assets/' + VOICE_SET + '/' + id + '.ogg';
     const go = (b) => {
       const c = this.ctx, src = c.createBufferSource(); src.buffer = b; src.playbackRate.value = rate;
-      const gn = c.createGain(); gn.gain.value = 1.0;
+      const gn = c.createGain(); gn.gain.value = vol;
       src.connect(gn).connect(this.bus.voice);
       const s = c.createGain(); s.gain.value = 0.18; gn.connect(s).connect(this.verbIn);
       const v = { src, gn };

@@ -11,7 +11,7 @@ import { clamp } from './util.js';
 import { depthAlong, clearLine, route, hug } from './route.js';
 
 export const SP = 0.25;            // rest spacing (m)
-const CAP = 6000;
+const CAP = 12000;            // (the thread never runs out now: a whole run is ~1 km of it, and she can wander)
 const GRAV = -16;
 const RAD = 0.075;                 // the engraved rock face is broken by a few centimetres either side of the collision field
 const FACE = 0.065;                // a drawn thread lies at least this far out of the rock

@@ -812,6 +812,29 @@ def item_pattern():
     return [o, b], Yarn()
 
 
+def item_letter():
+    # one of her letters: folded in three and opened again, a little curled, one corner soft from being held
+    W, H = 0.72, 0.94
+
+    def f(x, z):
+        y = 0.0
+        for zf, sg in ((H / 6, 1), (-H / 6, -1)):                   # the two folds, one each way
+            d = z - zf
+            y += sg * 0.06 * (math.sqrt(d * d + 0.0005) - abs(zf))
+        y -= 0.07 * math.sqrt(x * x + 0.0004) * 0.6
+        y += 0.012 * math.sin(x * 7 + z * 4) + 0.006 * math.sin(z * 15 + x * 5)
+        y += 0.005 * (vnoise3(np.array([[x * 10, z * 10, 3]]), 1.0, 4, 3)[0] - 0.5) * 4
+        c = max(0.0, (0.5 - x / W) + (0.5 - z / H) - 1.84)           # the corner it was held by
+        return (x + c * 0.3, y - c * 0.45, z + c * 0.3)
+    n = 110 if DRAFT else 160
+    o = sheet('sheet', W, H, n, int(n * 1.3), f, jag=0.012, seed=13)
+    give(o, paper('let', 'letter_front.png', (0.93, 0.84, 0.66)))
+    b = sheet('sheetb', W, H, 100, 130, lambda x, z: tuple(np.array(f(x, z)) + [0, 0.004, 0]), jag=0.012, seed=13)
+    b.data.flip_normals()
+    give(b, paper('letb', 'letter_back.png', (0.86, 0.76, 0.58)))
+    return [o, b], Yarn()
+
+
 def item_skein():
     rng = np.random.default_rng(3)
     Y = Yarn()

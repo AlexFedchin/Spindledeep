@@ -256,7 +256,7 @@ export class Sound {
   }
   step(W) {
     const A = this.A, p = W.player, G = GROUND[this.ground(W, p.x, p.y)], k = 0.55 + 0.45 * Math.min(1, Math.abs(p.vx) / 5);
-    // she wears thinner as her yarn runs out: lighter, higher steps
+    // she wears thinner as she frays: lighter, higher steps
     const o = { vol: G[1] * k * (0.65 + 0.35 * p.scale), rate: 1 + (1 - p.scale) * 0.35, x: p.x, y: p.y, verb: 0.5 };
     A.any(G[0], o);
     if (G[2]) A.any(G[2], { ...o, vol: G[3] * k });
