@@ -12,6 +12,7 @@ import numpy as np
 from mathutils import Euler, Matrix, Vector as V
 from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
+from mathutils import noise as mnoise
 
 import act
 import lib
@@ -1842,7 +1843,7 @@ def N1(out, preview):
     cam, tgt = camera(26, (CA, (0.02, 0, 0.42)), (CB, (0.0, 0, 2.38)), N)
     # the cave: a dome over a floor, long toward us, the well in its roof
     H = 5.3
-    vs, fs, drs = [], [], []; seg = 420
+    vs, fs, drs, dbs = [], [], [], []; seg = 420
     zs = list(np.linspace(-0.5, H, 190)) + list(np.linspace(H + 0.15, 12.0, 60))
     for z in zs:
         for k in range(seg):
@@ -1851,16 +1852,19 @@ def N1(out, preview):
             r0 = 3.5 + 5.8 * max(0.0, -math.sin(a)) ** 1.4 + wob
             nk = 0.92 + 0.10 * math.sin(a * 4 + z) + 0.05 * math.sin(a * 9 - z * 2)
             r = nk if z >= H else nk + (r0 - nk) * math.sqrt(max(0.0, 1 - max(0.0, z / H) ** 2.6))
-            # beds of rock: each sticks out a little over the one below and breaks off at its lip; they tilt and pinch out
-            bed = z * 1.7 + 0.55 * math.sin(a * 2 + 0.7) + 0.3 * math.sin(a * 7 - 1.1) + 0.15 * math.sin(a * 17)
-            fb = bed - math.floor(bed)
-            ok = 0.5 + 0.5 * math.sin(a * 3.3 + math.floor(bed) * 1.9)
-            dr = -(0.05 + 0.20 * ok) * (fb ** 3) * min(1.0, r / 2.0)
-            # upright joints: the beds are split into blocks
-            jt = a * 26 + 0.8 * math.sin(math.floor(bed) * 2.3) + 0.2 * math.sin(z * 3)
-            fj = abs(jt - math.floor(jt) - 0.5) * 2
-            dr += 0.10 * max(0.0, fj - 0.75) * 4 * ok * min(1.0, r / 2.0)
-            vs.append((math.cos(a) * r, math.sin(a) * r, z)); drs.append(dr)
+            q = min(1.0, r / 2.0)
+            p = V((math.cos(a) * r, math.sin(a) * r, z))
+            db = 0.55 * mnoise.fractal(p * 0.32, 0.6, 2.0, 3) * q          # outcrops and hollows, no two alike
+            # beds of rock that wander, thicken, thin and give out; each lip breaks off over the one below
+            bw = z * 1.5 + 1.1 * mnoise.noise(p * 0.25 + V((3, 1, 7))) + 0.4 * mnoise.noise(p * 0.9)
+            fb = bw - math.floor(bw); idx = math.floor(bw)
+            ok = max(0.0, min(1.0, 0.5 + 0.9 * mnoise.noise(V((idx * 1.7, a * 1.3, 0.5)))))
+            dr = -(0.04 + 0.28 * ok) * fb ** 2.5 * q
+            # the beds split into blocks of every size: cracks between them, each block standing out its own way
+            dd, pp = mnoise.voronoi(p * 1.1 + V((0, 0, idx * 0.37)), distance_metric='DISTANCE', exponent=2.5)
+            dr += -0.14 * max(0.0, 1 - (dd[1] - dd[0]) / 0.12) * q
+            dr += 0.13 * mnoise.noise(pp[0] * 3.1) * q
+            vs.append((math.cos(a) * r, math.sin(a) * r, z)); drs.append(dr); dbs.append(db)
     for j in range(len(zs) - 1):
         for k in range(seg):
             a, b = j * seg + k, j * seg + (k + 1) % seg
@@ -1869,7 +1873,9 @@ def N1(out, preview):
     [n for n in deep.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0].inputs['Base Color'].default_value = (0.035, 0.033, 0.036, 1)
     w = lib.mesh_obj('cavewall', vs, fs, deep, smooth=True)
     lib.displace(w, 0.34, 0.9)
-    fl = prim('plane', 'cavefloor', loc=(0, -2, 0), scale=(8, 9, 1), material=mats['rock'])
+    pale = mats['rock'].copy(); pale.name = 'rockfloor'          # grit and dust: lighter than the walls, so the little light shows on it
+    [n for n in pale.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0].inputs['Base Color'].default_value = (0.09, 0.085, 0.09, 1)
+    fl = prim('plane', 'cavefloor', loc=(0, -2, 0), scale=(8, 9, 1), material=pale)
     lib.displace(fl, 0.10, 0.8, subdiv=7, axis='Z'); fl.location.z = -0.06
     bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
@@ -1891,8 +1897,9 @@ def N1(out, preview):
     for k, v in enumerate(w.data.vertices):
         dist = kd.find(v.co)[2]
         wt = 0.5 + 0.5 * ss(dist, 0.3, 1.0)
+        dm = drs[k] * wt + dbs[k] * (0.15 + 0.85 * ss(dist, 0.4, 1.6))
         x, y = v.co.x, v.co.y; rr = math.hypot(x, y) or 1.0
-        v.co.x += x / rr * drs[k] * wt; v.co.y += y / rr * drs[k] * wt
+        v.co.x += x / rr * dm; v.co.y += y / rr * dm
         vg.add([k], wt, 'REPLACE')
     vo = lib.displace(w, 0.30, 0.55, tex='VORONOI')             # broken faces: blocks with cracks between them
     vo.texture.weight_1, vo.texture.weight_2 = -1.0, 1.0; vo.texture.noise_intensity = 1.6; vo.vertex_group = 'rough'
@@ -1912,7 +1919,7 @@ def N1(out, preview):
     glow = light('POINT', 'shaft', (0.0, -0.1, 7.6), 110, color=(0.80, 0.86, 1.0), size=0.4)
     key = light('SPOT', 'well', (0.0, 0.05, 11.0), 3600, color=(0.80, 0.86, 1.0), size=1.6, spot=math.radians(22)); aim(key, (0, 0, 0))
     key.data.spot_blend = 1.0; key.data.volume_factor = 2.6
-    bounce = light('AREA', 'bounce', (0, 0.25, 0.10), 26, color=(0.66, 0.74, 1.0), size=1.5); bounce.rotation_euler = (math.pi, 0, 0)
+    bounce = light('AREA', 'bounce', (0, 0.25, 0.10), 10, color=(0.66, 0.74, 1.0), size=1.5); bounce.rotation_euler = (math.pi, 0, 0)
     GRAZE = [((0.0, 1.5, 4.2), (0.0, 4.6, 1.8), 260), ((1.5, 0.6, 4.2), (4.0, 1.6, 1.6), 270), ((-1.5, 0.6, 4.2), (-4.0, 1.6, 2.0), 250), ((1.5, -0.8, 4.2), (3.6, -0.9, 1.6), 150), ((-1.5, -0.8, 4.2), (-3.6, -0.9, 1.6), 150)]
     graze = [light('SPOT', f'graze{k}', at, e, color=(0.62, 0.7, 1.0), size=0.8, spot=math.radians(85)) for k, (at, to, e) in enumerate(GRAZE)]
     for o, (at, to, e) in zip(graze, GRAZE):
@@ -1920,9 +1927,20 @@ def N1(out, preview):
     side = [light('AREA', f'side{k}', at, e, color=(0.62, 0.7, 1.0), size=0.9) for k, (at, to, e) in enumerate(WASH)]
     for o, (at, to, e) in zip(side, WASH):
         aim(o, to); o.data.volume_factor = 0.0
-    front = light('SPOT', 'front', (0.75, -1.5, 0.42), 20.0, color=(0.72, 0.8, 1.0), size=0.6, spot=math.radians(45)); aim(front, (0, 0, 0.15)); front.data.volume_factor = 0.0; front.data.spot_blend = 1.0; bounce.data.volume_factor = 0.0
+    front = light('SPOT', 'front', (0.75, -1.5, 0.42), 7.0, color=(0.72, 0.8, 1.0), size=0.6, spot=math.radians(45)); aim(front, (0, 0, 0.15)); front.data.volume_factor = 0.0; front.data.spot_blend = 1.0; bounce.data.volume_factor = 0.0
     # the doll, sitting, its head down, the bitten end of the thread before it
     d, dp = lib.doll('doll', (0, 0, 0), 1.0, mats)
+    dim = mats['wool_grey'].copy(); dim.name = 'wool_dim'          # grey wool, damp and dusty down here: under light from straight above it went to paper
+    bs = [n for n in dim.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'][0]
+    bs.inputs['Base Color'].default_value = (0.15, 0.145, 0.14, 1)
+    for nm in ('Sheen Weight', 'Sheen'):
+        if nm in bs.inputs:
+            bs.inputs[nm].default_value = 0.25
+    for o in bpy.data.objects:
+        if o.name.startswith('doll') and o.type == 'MESH':
+            for i, m_ in enumerate(o.data.materials):
+                if m_ is not None and m_.name.startswith('wool_grey'):
+                    o.data.materials[i] = dim
     z0 = gz(0, 0)
     d.location = (0, 0, z0 - 0.026); d.rotation_euler = (0, 0, 0.16)
     for s in (-1, 1):
@@ -2018,12 +2036,12 @@ def N1(out, preview):
     lib.FRAME_FNS.append(upd)
     light_keys(key, [(1, 0.0), (26, 3600), (T_OVER, 3600), (T_OVER + 34, 1050), (N - 60, 900), (N - 22, 0)])
     light_keys(glow, [(1, 0.0), (26, 110), (N - 60, 110), (N - 22, 0)])
-    light_keys(bounce, [(1, 0.0), (40, 26), (T_OVER, 26), (T_OVER + 34, 2.2), (N - 60, 2.2), (N - 22, 0)])
+    light_keys(bounce, [(1, 0.0), (40, 10), (T_OVER, 10), (T_OVER + 34, 2.2), (N - 60, 2.2), (N - 22, 0)])
     for o, (at, to, e) in zip(graze, GRAZE):
         light_keys(o, [(1, 0.0), (60, e), (T_OVER, e), (T_OVER + 34, e * 0.5), (N - 60, e * 0.45), (N - 22, 0)])
     for o, (at, to, e) in zip(side, WASH):
         light_keys(o, [(1, 0.0), (60, e), (T_OVER, e), (T_OVER + 34, e * 0.55), (N - 60, e * 0.5), (N - 22, 0)])
-    light_keys(front, [(1, 0.0), (30, 20.0), (T_OVER, 20.0), (T_OVER + 34, 3.0), (N - 60, 3.0), (N - 22, 0)])
+    light_keys(front, [(1, 0.0), (30, 7.0), (T_OVER, 7.0), (T_OVER + 34, 3.0), (N - 60, 3.0), (N - 22, 0)])
     fb = lib.fog_box(0.035, color=(0.8, 0.86, 1.0), aniso=0.3, bounds=((-2.0, -2.0, -0.1), (2.0, 2.0, 11)))
     nt = fb.data.materials[0].node_tree                          # thickest down the middle of the shaft, nothing at the box's sides
     vol = [n for n in nt.nodes if n.type == 'PRINCIPLED_VOLUME'][0]

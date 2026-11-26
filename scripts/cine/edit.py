@@ -342,6 +342,22 @@ def names_sound(M, cuts, at, T):
     M.bed(decode('amb_pit', af='lowpass=f=400'), 0, T - 1.2, 0.30, fi=2.5, fo=1.6)
     M.bed(decode('amb_drips', af='lowpass=f=1400,aecho=0.8:0.7:400|900:0.5|0.3'), 0.4, T - 1.2, 0.22, fi=2, fo=1.2)
     M.bed(decode('amb_breath', af='lowpass=f=900'), 2.0, T - 1.0, 0.20, fi=4, fo=0.4)
+    # the cave itself: its air, the far end of it, water somewhere, things that fall in the dark
+    CAVE = 'aecho=0.8:0.75:180|470|1150:0.45|0.32|0.2'
+    M.bed(decode('amb_cave', af='lowpass=f=2400,' + CAVE), 0, T - 1.0, 0.62, fi=2.0, fo=1.4)
+    M.bed(decode('amb_deep', af='lowpass=f=520'), 0, T - 1.0, 0.42, fi=3.0, fo=1.4)
+    rg = np.random.default_rng(7)
+    t = 1.2
+    while t < T - 3:                                            # drips, near and far, never in step
+        far = rg.random()
+        nm = ['drip', 'plop1', 'plop2'][int(rg.integers(3))]
+        M.add(decode(nm, af=f'lowpass=f={int(5200 - 4200 * far)},' + CAVE, rate=float(rg.uniform(0.85, 1.15))), t, 0.50 - 0.32 * far, pan=float(rg.uniform(-0.8, 0.8)))
+        t += float(rg.uniform(1.1, 2.9))
+    for at, nm, v, p in ((3.6, 'trickle1', 0.26, 0.6), (5.5, 'trickle2', 0.24, 0.6), (7.4, 'trickle3', 0.22, 0.6), (15.0, 'trickle1', 0.2, -0.5), (16.9, 'trickle3', 0.2, -0.5)):
+        M.add(decode(nm, af='lowpass=f=1800,' + CAVE), at, v, fade_in=0.3, fade_out=0.4, pan=p)
+    for at, nm, v, p in ((6.3, 'dirt2', 0.32, -0.6), (11.8, 'stones2', 0.27, 0.7), (19.6, 'dirt1', 0.24, 0.3), (23.0, 'stones4', 0.21, -0.4)):
+        M.add(decode(nm, af='lowpass=f=1500,' + CAVE), at, v, pan=p)             # grit and pebbles let go somewhere up the walls
+    M.add(decode('rumble2', af='lowpass=f=220'), 9.0, 0.34, fade_in=2.5, fade_out=3.5)     # the rock settles, far off
     M.add(decode('mus_title', rate=0.5, af='lowpass=f=700,aecho=0.8:0.8:600|1100:0.4|0.3'), 1.0, 0.20, fade_in=5, fade_out=4, dur=T - 5.0)
     place_events(M, E, {'N1': dict(lo=None, hi=None, g=1.0, room=0.35)}, 'names'); voices(M, E)
 

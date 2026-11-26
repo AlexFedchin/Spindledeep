@@ -1,0 +1,179 @@
+<title>No Two Stones: after the titles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    .screen { max-width: 1040px; margin: 34px auto 18px; }
+    .screen video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000; border: 1px solid var(--rule); }
+    video:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    .reveal-cap { margin-top: 10px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; after the titles</div>
+    <h1>No Two Stones</h1>
+    <p class="tag">the rock breaks unevenly<span></span>and the cave is heard</p>
+  </header>
+
+  <div class="col summary">
+    <p>Three changes to the film after the bitten ending&rsquo;s titles. The rock no longer repeats: it bulges and hollows, its layers wander and give out, and it breaks into blocks of every size. The cave has its own sound under the names now. And the doll&rsquo;s head is grey wool again instead of a white blot.</p>
+  </div>
+
+  <h2>What changed</h2>
+  <p class="ask">Add more cave ambience and make the rocks even more uneven, it looks too artificial now. Also why is the doll&rsquo;s head white?</p>
+  <div class="screen"><video controls playsinline preload="metadata" poster="img/a300.jpg"><source src="vid/names_720.mp4" type="video/mp4"></video>
+    <p class="reveal-cap">The whole film, 26.5 seconds, with sound</p></div>
+
+  <h2>Uneven rock</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/b300.jpg" alt="Before: even bands of ledges across the wall">
+      <img class="after" src="img/a300.jpg" alt="After: outcrops, hollows and broken blocks">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-r300" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">Halfway through. Before: the last version, with evenly spaced ledges</p>
+    <ul class="what">
+      <li><b>Why it looked artificial.</b> The ledges were spaced evenly up the wall and the cracks evenly round it, so the rock repeated like a pattern.</li>
+      <li><b>Outcrops and hollows.</b> Big, random swellings and dents half a metre deep, different everywhere.</li>
+      <li><b>Layers that wander.</b> The layers of rock bend up and down, thicken and thin, and some of them simply stop; how far each one juts out is random.</li>
+      <li><b>Blocks of every size.</b> The rock is cracked into irregular cells, and each block stands out from the wall by its own amount, so faces step against each other.</li>
+      <li><b>The crawl still holds.</b> Along its route the big swellings are damped (its hands have worn a way). Hands and feet don&rsquo;t slide or fall short, and the closest any part of it comes to the rock is 14 mm.</li>
+    </ul>
+  </div>
+
+  <h2>The doll&rsquo;s head</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/b60.jpg" alt="Before: the head blown out to white">
+      <img class="after" src="img/a60.jpg" alt="After: grey wool with its lines">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-r60" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">Near the start, when the camera is closest</p>
+    <p>The head is grey wool, but in this film it was about ten times brighter than the floor around it. The wool is much lighter than the rock, its sheen catches the light, and the light from the well falls straight onto its top. In the engraving, anything that bright becomes bare paper, so the head had no lines left and read as white. Dimming the light didn&rsquo;t help: the floor went with it. So in this film only, the wool is darker and has less sheen (damp and dusty at the bottom of the well). The head comes out grey with its knit lines, still the lightest thing in the cave.</p>
+  </div>
+
+  <h2>The cave&rsquo;s sound</h2>
+  <div class="col">
+    <p>Under the names, the crawling and the far-off tune there was only a low bed, a few drips and a breath. Now the cave has layers of its own. Everything in it carries the same three-part echo off the walls.</p>
+    <div class="tablebox"><table class="windows"><tr><th>Layer</th><th>What you hear</th></tr>
+      <tr><td>Cave air</td><td>The cave&rsquo;s own tone, all the way through</td></tr>
+      <tr><td>Far end</td><td>Deep air from further in, very low</td></tr>
+      <tr><td>Drips</td><td>A drop every 1 to 3 seconds, near or far, left or right</td></tr>
+      <tr><td>Water</td><td>A trickle off to the right early on, another to the left later</td></tr>
+      <tr><td>Falling grit</td><td>Four times, dirt or pebbles let go somewhere up the walls</td></tr>
+      <tr><td>The rock settling</td><td>Once, a long low rumble far away</td></tr>
+    </table></div>
+    <p class="reveal-cap">Nothing drones and nothing plays as music; the sound is still exactly on the movement (0.0 ms)</p>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The film</b><span><code>app/assets/cine/names.mp4</code></span></div>
+    <div><b>Rock, doll, light</b><span><code>scripts/cine/shots_end.py</code> (<code>N1</code>)</span></div>
+    <div><b>The sound</b><span><code>scripts/cine/edit.py</code> (<code>names_sound</code>)</span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/RJNXr6n4aYbLTjUQ2XYdte">every name</a> &middot; <a href="https://claude.ai/artifact/Eehd7dvGNyVFejMfSPhHng">rock in the dark</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>
