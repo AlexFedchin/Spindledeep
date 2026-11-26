@@ -5,11 +5,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), [out = path.join(here, '.cache', 'checks'), ...only] = process.argv.slice(2);
+// Node 23+ treats app/src's .js as modules by itself and has no --experimental-default-type
+const OLDNODE = +process.versions.node.split('.')[0] < 23 ? ['--experimental-default-type=module'] : [];
 const LIST = { lip: [], gal: [], reach: [], shelfrun: [], fuzz: [], hands: [], rooms: [], play1: ['plain', '1'], play2: ['plain', '2'], frayed1: ['frayed', '1'] };
 mkdirSync(out, { recursive: true });
 await Promise.all(Object.entries(LIST).filter(([n]) => !only.length || only.includes(n)).map(([n, a]) => new Promise((done) => {
   const file = path.join(here, (n.startsWith('play') || n.startsWith('frayed') ? 'play' : n) + '.mjs'), t = Date.now();
-  const p = spawn(process.execPath, ['--no-warnings', '--experimental-default-type=module', file, ...a], { windowsHide: true });
+  const p = spawn(process.execPath, ['--no-warnings', ...OLDNODE, file, ...a], { windowsHide: true });
   let s = '';
   p.stdout.on('data', (d) => (s += d)); p.stderr.on('data', (d) => (s += d));
   p.on('close', (c) => {

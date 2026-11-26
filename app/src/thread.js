@@ -15,6 +15,7 @@ const CAP = 6000;
 const GRAV = -16;
 const RAD = 0.075;                 // the engraved rock face is broken by a few centimetres either side of the collision field
 const FACE = 0.065;                // a drawn thread lies at least this far out of the rock
+const VMAX = 0.3;                  // fastest a particle moves in one step (m): 36 m/s, above her fastest fall
 
 export class Thread {
   constructor(T) {
@@ -268,7 +269,9 @@ export class Thread {
       const g = GRAV * dt * dt;
       for (let i = s0; i < n; i++) {
         this.lx[i] = this.x[i]; this.ly[i] = this.y[i];
-        const vx = (this.x[i] - this.ox[i]) * 0.985, vy = (this.y[i] - this.oy[i]) * 0.985;
+        let vx = (this.x[i] - this.ox[i]) * 0.985, vy = (this.y[i] - this.oy[i]) * 0.985;
+        // no faster than she can fall: a stretched chain let go could otherwise whip a metre in a frame
+        const v = Math.hypot(vx, vy); if (v > VMAX) { vx *= VMAX / v; vy *= VMAX / v; }
         this.ox[i] = this.x[i]; this.oy[i] = this.y[i];
         this.x[i] += vx; this.y[i] += vy + g;
         this.contact[i] = 0;
@@ -296,14 +299,16 @@ export class Thread {
           else if (fixedI) { this.x[j] += dx * diff; this.y[j] += dy * diff; }
           else { this.x[i] -= dx * diff * 0.5; this.y[i] -= dy * diff * 0.5; this.x[j] += dx * diff * 0.5; this.y[j] += dy * diff * 0.5; }
         }
-        if (it % 3 === 2 || it === 11) {
+        {          // every pass: a thread pulled over a corner stays on it (every third pass let it lift off and land back, frame to frame)
           for (let i = s0; i < n; i++) {
             const d = T.d(this.x[i], this.y[i]);
-            if (d < RAD) {
-              const [gx, gy] = T.grad(this.x[i], this.y[i]);
-              this.x[i] += gx * (RAD - d); this.y[i] += gy * (RAD - d);
-              this.contact[i] = 1;
-            }
+            if (d >= RAD) continue;
+            // one that got right into the rock goes back out the side it came in by (in a thin slab the nearest face can be
+            // the far one, and the thread jumped through)
+            if (d < 0 && this._back(i)) continue;
+            const [gx, gy] = T.grad(this.x[i], this.y[i]);
+            this.x[i] += gx * (RAD - d); this.y[i] += gy * (RAD - d);
+            this.contact[i] = 1;
           }
           // the spans between them too: a lip of rock can stand between two particles that are both clear
           for (let i = Math.max(s0, 1); i < n; i++) {
@@ -311,9 +316,19 @@ export class Thread {
             if (j < s0 && !this.anchored) continue;
             const mx = (this.x[i] + this.x[j]) / 2, my = (this.y[i] + this.y[j]) / 2, d = T.d(mx, my);
             if (d >= RAD * 0.8) continue;
-            const [gx, gy] = T.grad(mx, my), k = Math.min(RAD * 0.8 - d, 0.2);
-            this.x[i] += gx * k; this.y[i] += gy * k;
-            if (j >= s0) { this.x[j] += gx * k; this.y[j] += gy * k; }
+            let px, py;
+            const qx = (this.lx[i] + this.lx[j]) / 2, qy = (this.ly[i] + this.ly[j]) / 2;
+            if (d < 0 && T.d(qx, qy) > 0) {
+              // a span cut into the rock: back out to the side it was on at the start of the frame
+              const f = Math.max(0, T.ray(qx, qy, mx, my, 0)), hx = qx + (mx - qx) * f, hy = qy + (my - qy) * f, [nx, ny] = T.grad(hx, hy);
+              px = hx - mx + nx * RAD * 0.8; py = hy - my + ny * RAD * 0.8;
+              const L = Math.hypot(px, py); if (L > 0.5) { px *= 0.5 / L; py *= 0.5 / L; }
+            } else {
+              const [gx, gy] = T.grad(mx, my), k = Math.min(RAD * 0.8 - d, 0.2);
+              px = gx * k; py = gy * k;
+            }
+            this.x[i] += px; this.y[i] += py;
+            if (j >= s0) { this.x[j] += px; this.y[j] += py; }
             this.contact[i] = 1;
           }
         }
@@ -338,6 +353,18 @@ export class Thread {
     this.waves = this.waves.filter((w) => w.life > 0 && w.s < this.totalArc + 2);
   }
 
+  // particle i is inside rock: put it where its way from the start of the frame (clear) first met the rock, just outside
+  _back(i) {
+    const T = this.T, ax = this.lx[i], ay = this.ly[i];
+    if (T.d(ax, ay) <= 0) return false;
+    const f = T.ray(ax, ay, this.x[i], this.y[i], 0);
+    if (f < 0) return false;
+    const hx = ax + (this.x[i] - ax) * f, hy = ay + (this.y[i] - ay) * f, [nx, ny] = T.grad(hx, hy), dh = T.d(hx, hy);
+    this.x[i] = hx + nx * (RAD - dh); this.y[i] = hy + ny * (RAD - dh);
+    this.contact[i] = 1;
+    return true;
+  }
+
   pluck(strength = 1) { this.waves.push({ s: 0, speed: 38, life: 7, amp: 0.22 * strength }); }
 
   // Build the full polyline doll → home with arc lengths (used by drawing, lights, moths, waves).
@@ -351,8 +378,10 @@ export class Thread {
     };
     const T = this.T, cap = P.length - 10;
     // a point, with any rock between it and the last one gone round (the drawn line never cuts through it)
+    // (the moving thread is laid out as far as its particles stand, so a corner it slides over is drawn as the same curve
+    // whichever particles are on it; laid nearer, the corner popped between a chord and a curve from frame to frame)
     const to = (x, y, st, wr = 0) => {
-      if (st !== 4 && k > 0) hug(T, lx, ly, x, y, (hx, hy) => { if (k < cap) put(hx, hy, st, wr); }, FACE);
+      if (st !== 4 && k > 0) hug(T, lx, ly, x, y, (hx, hy) => { if (k < cap) put(hx, hy, st, wr); }, st === 0 ? FACE : RAD);
       if (k < cap) put(x, y, st, wr);
     };
     put(bx, by, 3);

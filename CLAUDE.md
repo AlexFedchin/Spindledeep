@@ -91,8 +91,8 @@ recording is kept in `app/assets/voice_young/` (+ `.cache/raw_young`); switch wi
 main-cave air or the real cave gets painted over. Narrow cracks need a `QUIET` rect or erosion can seal them. Rooms must be
 walkable both ways (no side-view switchbacks: a hairpin always leaves a ledge taller than the 1.87 m jump).
 
-A room's rock crumbles at the mouth of its crack (`open`, `mouthZone` in world.js, `at` per room), before the doll can be inside
-it; keep zones off poles and the main way. Every `SECRETS.kind` needs a `KEEP` drawing in props.js.
+A room opens only when her body pushes into its drawn rock (`faceD` in world.js, the same box and grain as terrain.js `_drawn`; the user asked
+that it never open sooner), and only from air reachable from the room (`mouthZone`, `at` per room); keep zones off poles and the main way. Every `SECRETS.kind` needs a `KEEP` drawing in props.js.
 
 `SHELVES` (level.js) are the upper ways to two places no jump reaches (Root Gardens alcove, the Last Basket): rises under 1.45 m, gaps under
 2.5; drawn by `drawshelf.js`; floor searches (chairs, lore) must not land on them. `LEVEL` planes ledges flat where a jump is made. New poles go
@@ -241,9 +241,12 @@ Still pictures left: the hands in the Hush, the called, the arms in the rising d
 ## The thread and rock
 
 `app/src/route.js`: `depthAlong`/`clearLine`, `route` (A* on the SDF + pull taut), `hug` (lay a drawn span along the rock face).
-thread.js keeps particles and spans out (spans that cross a lip go back to `lx/ly`), `grip` string-pulls the thread's own path into
+thread.js keeps particles and spans out on every solver pass (a particle inside rock goes back out the way it came in, `_back`; a span that cuts in goes back
+to its side of the frame before; speed capped at `VMAX`; snapping both ends back to `lx/ly` is the last resort and should not fire), `grip` string-pulls the thread's own path into
 pivots, `wrap`/`snag` bend round corners via `_corners`, `tie` lays the last bit, `buildPoly` hugs what is drawn (fixed part cached
-in `_fix`). The grey thread is hugged in `buildGrey`. Check: `fuzz.mjs` (31.4 % of frames had thread >6 cm inside rock, now 0.2 %).
+in `_fix`). The grey thread is hugged in `buildGrey`. The live/taut thread is hugged out to `RAD` (where its particles rest), the tied part to `FACE`: hugging the
+moving thread nearer than its particles made corners pop between chord and curve. Shake check (2026-11-26, scratchpad-style): random players, a drawn point
+that goes out >3 cm and comes back next frame; staged runs at pole 1's lip and up the Root Gardens slabs. Check: `fuzz.mjs` (31.4 % of frames had thread >6 cm inside rock, now 0.2 %).
 
 ## Rock, lines and the dark (2026-11-25)
 

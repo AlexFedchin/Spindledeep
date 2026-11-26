@@ -2,7 +2,7 @@
 import * as L from './level.js';
 import { Thread, SP } from './thread.js';
 import { Player } from './player.js';
-import { clamp, rand, mulberry, lerp } from './util.js';
+import { clamp, rand, mulberry, lerp, fbm } from './util.js';
 import { buildLore, loreLights } from './props.js';
 import { Deep } from './deep.js';
 import { Rig } from './rig.js';
@@ -364,8 +364,9 @@ export class World {
     }
     for (const s of this.secrets) {
       const [cx, cy, rx, ry] = s.r;
-      // the rock opens before she walks into it, so she is never drawn inside rock and nothing in the room shows early
-      if (!s.open && s.zone.has(p.x, p.y)) { s.open = true; this.emit('secretOpen', { i: s.i, hide: s.hide, x: p.x, y: p.y }); }
+      // the rock opens only when she walks into what is drawn as rock: her body has to reach its face (the zone only says
+      // she got there through the air, so standing on the far side of a wall from it does nothing)
+      if (!s.open && s.zone.has(p.x, p.y) && (faceD(s.hide, p.x, p.y) < MOUTH || faceD(s.hide, p.x, p.y + 0.4) < MOUTH - 0.1)) { s.open = true; this.emit('secretOpen', { i: s.i, hide: s.hide, x: p.x, y: p.y }); }
       if (!s.seen && ((p.x - cx) / rx) ** 2 + ((p.y - cy) / ry) ** 2 < 1.0) { s.seen = true; this.emit('secret', { name: s.name, i: s.i, x: p.x, y: p.y }); }
       if (!s.taken && Math.hypot(s.x - p.x, s.y + 0.2 - p.y) < 0.9 && !this.hiddenAt(s.x, s.y + 0.2)) {
         s.taken = true;
@@ -502,8 +503,12 @@ function nearestOn(g, px, py) {
   return { x: g.x[best], y: g.y[best], gi: best };
 }
 
-// Where standing opens a hidden room: its own air, and the crack outside it within `at` metres of walking (measured through
-// the air, so being on the far side of a wall from it does not count).
+// How far (x, y) is from the face of a hidden room's plug of rock, as it is drawn (terrain.js `_drawn`: the same box and grain).
+export function faceD(r, x, y) { return Math.max(r[0] - x, x - r[2], r[1] - y, y - r[3]) + (fbm(x * 1.1, y * 1.1, 3) - 0.5) * 0.3 + 0.06; }
+// her body (radius 0.3) a little into the drawn face
+const MOUTH = 0.24;
+// The air a hidden room can be opened from: its own, and the crack outside it within `at` metres of walking (measured through
+// the air, so being on the far side of a wall from it does not count). Opening also needs her to touch the drawn rock (faceD).
 function mouthZone(T, s) {
   const G = 0.25, at = s.at ?? 3.0, [hx0, hy0, hx1, hy1] = s.hide, x0 = hx0 - at - 1, y0 = hy0 - at - 1;
   const w = Math.ceil((hx1 - hx0 + 2 * at + 2) / G), h = Math.ceil((hy1 - hy0 + 2 * at + 2) / G);

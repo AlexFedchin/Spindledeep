@@ -1,0 +1,213 @@
+<title>Spindledeep Thread and Stone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; changes of 26 November, second batch</div>
+    <h1>Thread and Stone</h1>
+    <p class="tag">The thread keeps its shape on the rock<span></span>the rock opens only when you touch it</p>
+  </header>
+
+  <div class="col summary">
+    <p>The thread no longer shakes, whips or slips through thin rock at edges and corners. A hidden room now opens only once your body actually pushes into the part drawn as rock; before, it opened from up to 2.8 m away. The rolling barrels are unchanged; the last section explains the idea behind them.</p>
+  </div>
+
+  <h2>The Thread at Rock Edges</h2>
+  <p class="ask">the thread is acting a little unstable on the edges of rocks, especially corners, please fix it</p>
+  <div class="col">
+    <p>The thread is a chain of small weights 25 cm apart, pulled toward the doll and pushed out of the rock. I measured it with bots that move, grip, swing and fall all over the game, and with two staged runs: hanging from the first lip below pole 1, and climbing the thin slabs up to the Root Gardens alcove. Three faults showed up, all at edges.</p>
+    <ul class="what">
+      <li><b>It whipped on thin slabs.</b> When the chain crossed a slab only half a metre thick, the two ends of a link could be pushed out on opposite sides of it. The old fix put both ends back where they stood a frame earlier and stopped them dead. Their neighbours kept moving, the chain stretched, and when it let go it swept across the cave, up to a metre in one frame. It sometimes cut through a slab on the way.</li>
+      <li><b>It lifted off corners.</b> The chain was pushed out of rock on only 4 of its 12 passes per frame. A thread running fast over a corner was flung off it, and it landed back a frame later.</li>
+      <li><b>The drawn corner popped.</b> The weights rest 7.5 cm off the rock, but the line drawn between them was only pushed out where it came within about 5.5 cm. So the same corner was drawn either as a straight chord or as a curve, depending on where the weights happened to sit.</li>
+    </ul>
+    <p style="margin-top:14px">The fixes:</p>
+    <ul class="what">
+      <li>A weight that ends up inside rock goes back out the way it came in, to the point where its own path met the rock. Before, it went out the nearest face, which in a thin slab can be the far one.</li>
+      <li>A link that cuts into rock is moved back to the side it was on at the start of the frame.</li>
+      <li>The rock pushes on every pass. No part of the thread moves faster than 36 m/s, above the doll&#39;s fastest fall, so nothing can whip.</li>
+      <li>The moving thread is drawn as far out as its weights rest, so a corner is always drawn as the same curve.</li>
+    </ul>
+    <figure class="solo" style="max-width:100%">
+      <img src="img/slabs.jpg" alt="Six consecutive frames on the Root Gardens slabs. Before: the thread sweeps across open air and cuts through a slab. After: it stays draped over the slab.">
+      <figcaption>Climbing the slabs, six frames 17 ms apart. Before, the thread lets go and sweeps across the cave; after, it stays on the slab.</figcaption>
+    </figure>
+    <figure class="solo" style="max-width:100%">
+      <img src="img/corner.jpg" alt="Six consecutive frames at a rounded lip just after letting go of the thread. Before: the thread stands off the corner and changes shape each frame. After: it lies along the corner.">
+      <figcaption>The lip below pole 1, just after letting go, one frame apart. Before, the thread stands off the corner and changes shape every frame; after, it lies along it.</figcaption>
+    </figure>
+    <h3>Measured</h3>
+    <p>&ldquo;Random players&rdquo; is 102 runs of 20 s from every pole; a frame counts as shaking where part of the drawn thread jumps out by more than 3 cm and comes back the next frame. &ldquo;Lip&rdquo; and &ldquo;Slabs&rdquo; are the two staged runs.</p>
+    <div class="tablebox"><table class="windows">
+      <tr><th></th><th>Before</th><th>After</th></tr>
+      <tr><td>Random players: frames where it shakes</td><td class="n">0.57 %</td><td class="n">0.25 %</td></tr>
+      <tr><td>&hellip; shaking points next to rock</td><td class="n">1,879</td><td class="n">628</td></tr>
+      <tr><td>Lip: corner shakes over 1.5 cm</td><td class="n">34, worst 4.1 cm</td><td class="n">15, worst 2.6 cm</td></tr>
+      <tr><td>Slabs: jumps over 15 cm</td><td class="n">27, worst 97 cm</td><td class="n">0</td></tr>
+      <tr><td>Slabs: stuck across a slab</td><td class="n">150</td><td class="n">0</td></tr>
+      <tr><td>Frames with thread inside rock</td><td class="n">0</td><td class="n">0</td></tr>
+    </table></div>
+    <p style="margin-top:14px">All the route checks give the same results as before: ring gaps, lips, reach, rooms, hands, and the whole-game bot in both modes. One run changed. Over the slabs in the Hall of Chairs, the lowest yarn left went from 73 m to 64 m, because the thread now goes round the slabs where it used to slip through them. The extra work costs about a hundredth of a millisecond per frame.</p>
+  </div>
+
+  <h2>Hidden Rooms Open at the Rock</h2>
+  <p class="ask">The hidden rooms should open only when I actually cross the part that looks like rocks, not sooner</p>
+  <div class="col">
+    <p>A room used to open as soon as you came within a few metres of its crack, by walking distance (3 m for most rooms). That was meant to stop the doll ever being drawn inside rock, but it gave the room away from far off. Now the room opens only when your body pushes into the rock that hides it. It crumbles outward from the spot you touch, as before. Standing on the far side of a wall still does nothing.</p>
+    <div class="reveal">
+      <img src="img/b_cache.jpg" alt="Before: the doll stands on the ledge 2.7 m from the Diggers&#39; Cache and its crack is already open">
+      <img class="after" src="img/a_cache.jpg" alt="After: the doll stands at the same spot and the rock is still whole">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-cache" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">The Diggers&#39; Cache, the doll on the same spot in both: 2.7 m away it used to be open already</p>
+
+    <div class="reveal">
+      <img src="img/b_cell.jpg" alt="Before: the doll in the passage beside the Ringer&#39;s Cell, the crack at the left already open">
+      <img class="after" src="img/a_cell.jpg" alt="After: the same spot, the rock still closed">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-cell" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">The Ringer&#39;s Cell: same spot, the crack at the far left is now still closed</p>
+
+    <figure class="solo" style="max-width:100%">
+      <img src="img/walkin.jpg" alt="Six shots of the doll walking right up to the rock face over the Diggers&#39; Cache; it stays whole until she touches it, then crumbles open around her.">
+      <figcaption>Walking into it: whole until she touches it, then it opens around her.</figcaption>
+    </figure>
+    <div class="tablebox"><table class="windows">
+      <tr><th>Room</th><th>Opened, at the earliest</th><th>Opens now</th></tr>
+      <tr><td>The Cellar</td><td class="n">2.32 m before it</td><td class="n">13 cm into it</td></tr>
+      <tr><td>The Diggers&#39; Cache</td><td class="n">2.68 m before it</td><td class="n">7 cm into it</td></tr>
+      <tr><td>The Seed Hollow</td><td class="n">1.46 m before it</td><td class="n">13 cm into it</td></tr>
+      <tr><td>The Ringer&#39;s Cell</td><td class="n">2.62 m before it</td><td class="n">12 cm into it</td></tr>
+      <tr><td>The Sill</td><td class="n">1.66 m before it</td><td class="n">7 cm into it</td></tr>
+      <tr><td>The Last Basket</td><td class="n">2.72 m before it</td><td class="n">6 cm into it</td></tr>
+      <tr><td>The Tally</td><td class="n">2.78 m before it</td><td class="n">12 cm into it</td></tr>
+      <tr><td>The Held Breath</td><td class="n">2.59 m before it</td><td class="n">10 cm into it</td></tr>
+      <tr><td>The Quiet Room</td><td class="n">2.62 m before it</td><td class="n">6 cm into it</td></tr>
+      <tr><td>The Shoe</td><td class="n">2.67 m before it</td><td class="n">8 cm into it</td></tr>
+      <tr><td>One you haven&#39;t found yet</td><td class="n">2.75 m before it</td><td class="n">8 cm into it</td></tr>
+    </table></div>
+    <p style="margin-top:14px">Distances are from the doll&#39;s body to the face of the drawn rock, found by trying every spot of open air around each room. Every room can still be opened; the room checks and the shelf run collect their keepsakes as before.</p>
+  </div>
+
+  <h2>The Rolling Barrels</h2>
+  <p class="ask">why do those rolling barrels stall over me? I guess it is like that by design but what&#39;s the idea?</p>
+  <div class="col">
+    <p>Yes, it&#39;s on purpose. They are bobbins as big as carts, rolling up and down their lanes in the Treadles and below, and one that hits you crushes you. Your thread is the way past them:</p>
+    <ul class="what">
+      <li><b>Your thread jams them.</b> When a bobbin rolls onto thread lying across its lane, it fouls and stops for 4.2 s. It costs you 4 m of yarn, then it rolls free and ignores thread for 2.6 s.</li>
+      <li><b>That&#39;s why one stops over you.</b> You lay thread wherever you walk, so the lane behind you is full of it, but the side you haven&#39;t walked yet is bare. A bobbin coming from that side rolls over your gutter with nothing to catch on, then jams on the first thread behind you. The 1.1 m under your own feet doesn&#39;t count, so it stops just past you, almost on top of you.</li>
+      <li><b>The idea:</b> lie in a gutter, let it roll onto your thread and stop, then run while it&#39;s stuck. That&#39;s what the tip there says: &ldquo;lie low in the gutter and let it pass &middot; it will foul on your thread&rdquo;.</li>
+    </ul>
+    <p style="margin-top:14px">If you&#39;d rather it rolled on past you, or stopped for a shorter time, those are one-line changes.</p>
+  </div>
+
+  <div class="col">
+    <div class="files">
+      <div><b>app/src/thread.js</b><span>collisions on every pass; back out the way it came in; links put back on their side; speed limit; the moving thread drawn at its own distance from rock</span></div>
+      <div><b>app/src/world.js</b><span>a hidden room opens at its drawn rock face (<code>faceD</code>, the same shape terrain.js draws)</span></div>
+      <div><b>scripts/checks/all.mjs</b><span>runs on Node 23 and later</span></div>
+    </div>
+  </div>
+
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/Tf58WPzhxyP3PeN33PAtZH">solid walls</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>
