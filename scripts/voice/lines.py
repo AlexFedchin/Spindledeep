@@ -6,7 +6,7 @@ PERSONA = ("Female, about eighty, a frail old grandmother who knits: a soft, sli
            "gentle tremor of age, low and quiet, speaking slowly as if remembering, intimate and close; "
            "clear, unhurried English diction.")
 
-WRONG = {'m6': 0.55, 'm13': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'cut1': 0.45, 'cut3': 0.7, 'names': 0.6, 'call': 0.7, 'home': 0.45}
+WRONG = {'m6': 0.55, 'm13': 0.55, 'fin_a': 0.22, 'm8': 0.6, 'fin_love': 0.4, 'fin_tieit': 0.8, 'cut1': 0.45, 'cut2': 0.6, 'cut3': 0.7, 'cut4': 0.5, 'names': 0.6, 'call': 0.7, 'home': 0.45}
 # the deep (rewritten 2026-11-24): m9 and fin_mama are the first child who fell down the well (her own persona, design takes
 # only); fin_b is the chorus, everyone it has taken at once (pick.py layers the take into several pitched voices)
 CHILD_VOICE = ("Female child, about six years old: a small, high, clear, breathy little girl's voice, frightened and trying to be brave, "
@@ -71,6 +71,10 @@ LINES = {
            'One word, very small and lost, in the dark.'),
     'cut1': ('What have you done?',
            'Very quiet, gentle, almost kind; a pause before the last word; no emotion.'),
+    'cut2': ("You let go. You were never to let go.",
+           'Low and slow, the kindness gone out of it; the first three words flat, then the second sentence leaning close, each word separate, cold.'),
+    'cut4': ('Hold on to me!',
+           'Suddenly loud and desperate, falling away, the voice cracking and breaking up on the last word.'),
     'cut3': ("Little one? Little one? That isn't a name. What is your name?",
            'Calling softly into the dark, sweet, patient; then flat and cold on "That isn\'t a name"; the last question almost a whisper, very close.'),
     'names': ('Ada? Agnes? Alice? Anna? Beatrice? Bertha? Catherine? Clara? Dora? Edith? Eleanor? Ellen? Emma?',

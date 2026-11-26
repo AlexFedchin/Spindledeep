@@ -1,6 +1,6 @@
 // Spindledeep — boot, loop, camera, events → sound/fx/ui, menus, saves, the ending.
 import { Renderer } from './renderer.js';
-import { Items, WORLD_K, SHOW_K } from './props3d.js';
+import { Items, WORLD_K, SHOW_K, shelfSpot } from './props3d.js';
 import { DEFAULTS, optionsMenu, clock } from './options.js';
 import { Stage } from './stage.js';
 import { buildTerrain } from './terrain.js';
@@ -146,7 +146,7 @@ async function boot() {
   log(`ready · ${R.w}x${R.h}`);
   enterTitle();
   SD.ready = true;
-  Object.assign(SD, { W, R, A, SC, cam, SWING, drawer: () => D, begin: () => startGame(false), from: (n) => startFrom(n), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => E, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
+  Object.assign(SD, { W, R, A, SC, cam, SWING, drawer: () => D, begin: () => startGame(false), from: (n) => startFrom(n), walkOut: () => startGame(false, true), cont: () => startGame(true), I: () => I, end: () => E, shelf: () => SHOW && { mode: SHOW.mode, hover: SHOW.hover, si: SHOW.si, kind: SHOW.kind, t: SHOW.t, phase: SHOW.phase }, go: (x, y) => { W.player.dead = false; W.player.x = x; W.player.y = y; W.player.vx = W.player.vy = 0; cam.x = x; cam.y = y; snapOpen(); }, state: () => state, open: () => ({ open: Math.exp(camOpen), look: lookCam }) });
   requestAnimationFrame(tick);
 }
 
@@ -261,7 +261,7 @@ function toggleFullscreenNow() {
   window.host?.setSettings?.(settings);
 }
 function areaAt(x, y) { return L.AREAS.find((a) => y <= a.y1 && y > a.y0 && (a.x0 === undefined || x >= a.x0) && (a.x1 === undefined || x <= a.x1)) || L.AREAS.find((a) => y <= a.y1 && y > a.y0) || L.AREAS[0]; }
-function clearShow() { if (SHOW) { SHOW = null; show($('show'), false); } }
+function clearShow() { if (SHOW) { SHOW = null; show($('show'), false); show($('shelfui'), false); } }
 function startGame(cont, walkOut = false, mode = '') {
   clearShow();
   show($('title'), false);
@@ -576,19 +576,35 @@ function finishRun() {
   sectionDone('choice');
   log(`run over · ${clock(t)}${W.fair ? '' : ' (not from the start)'}${W.mode ? ' · ' + W.mode : ''}`);
 }
+// what became of everyone, a card at a time. Held like a film, it goes straight on to the credits
+let cards = null;
 function endCards(lines, done) {
-  const el = $('endcard');
+  const el = $('endcard'), me = (cards = { timers: [], done });
+  const later = (f, ms) => me.timers.push(setTimeout(() => { if (cards === me) f(); }, ms));
   let i = 0;
   const next = () => {
-    if (i >= lines.length) { show(el, false); setTimeout(done, 2200); return; }
+    if (i >= lines.length) { show(el, false); later(() => { cards = null; done(); }, 2200); return; }
     el.textContent = lines[i++]; show(el, true);
-    setTimeout(() => { show(el, false); setTimeout(next, 2400); }, 6200);
+    later(() => { show(el, false); later(next, 2400); }, 6200);
   };
+  me.skip = () => { me.timers.forEach(clearTimeout); cards = null; show(el, false); passage(() => { done(true); }, { out: 0.7, back: 0.01, sound: false }); };
   next();
+}
+// hold any action key to skip (films have their own, in cineUpdate): the end cards, the credits
+const skipH = { hold: 0, hint: 0 };
+function holdToSkip(dt, go) {
+  const held = I.held.act || I.held.jump || I.held.pause || I.held.grip;
+  if (Object.values(I.pressed).some(Boolean)) skipH.hint = 2.5;
+  skipH.hint = Math.max(0, skipH.hint - dt);
+  skipH.hold = held ? skipH.hold + dt : Math.max(0, skipH.hold - dt * 2);
+  show($('skip'), skipH.hint > 0 || skipH.hold > 0);
+  $('skip').querySelector('i').style.width = Math.min(100, skipH.hold / 0.9 * 100) + '%';
+  if (skipH.hold > 0.9) { skipH.hold = 0; skipH.hint = 0; show($('skip'), false); go(); }
 }
 
 function rollCredits(cut, instant) {
   log('credits');
+  skipH.hold = 0; skipH.hint = 0;
   A.setMusic(null, 1); A.beds({ amb_breath: 0.3 });      // no music over these: only the bottom of the world, breathing
   // after the epilogue film the credits must already be there as the film fades, or the game shows through
   if (instant) { const c = $('credits'); c.style.transition = 'none'; show(c, true); void c.offsetWidth; c.style.transition = ''; }
@@ -599,7 +615,17 @@ function rollCredits(cut, instant) {
   $('ctime').textContent = W.run > 30 ? clock(W.run) + (W.mode === 'frayed' ? ' · frayed' : '') + ` · ${W.lost || 0} dolls lost` : '';
   show($('credits'), true);
   setTimeout(() => $('credits').classList.add('rolling'), 2500);
-  setTimeout(() => { if (state !== 'credits') return; $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); }, 76000);
+  const run = (creditsRun = {});
+  setTimeout(() => { if (state !== 'credits' || creditsRun !== run) return; leaveCredits(); }, 76000);
+}
+let creditsRun = null;
+function leaveCredits(skipped) {
+  creditsRun = null;
+  log('credits ' + (skipped ? 'skipped' : 'over'));
+  const cut = $('credits').classList.contains('cut');
+  const go = () => { $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); };
+  // skipped: through black, like a film; at their end they fade by themselves
+  if (skipped && !cut) passage(() => { go(); }, { out: 0.8, back: 1.2 }); else go();
 }
 // after the credits of the second ending: the bottom of the well, and what is going through the names there (scripts/cine N1).
 // [frame the name is said on, which name]
@@ -627,6 +653,7 @@ function playCine(name, onEnd) {
   log(`film ${name} start`);
   cine = { onEnd, hold: 0, hint: 0, done: false, prev: state, name };
   state = 'cine';
+  subTimer = 0; show($('sub'), false);              // a line said before the film must not hang on through it and what follows
   show($('title'), false);
   A.master.gain.setTargetAtTime(0, A.ctx.currentTime, 0.3);
   v.src = 'assets/cine/' + name + '.mp4';
@@ -784,48 +811,110 @@ function startShow(o) {
   A.play('bowl', { vol: 0.35, rate: 0.5, verb: 1.4, bus: 'ui' });
   A.play('harp', { rate: 0.5, vol: 0.4, verb: 1.3, delay: 0.5, bus: 'ui' });
 }
-// her shelf: every keepsake ever found, one at a time. From the title (its own quiet screen) or from the shelf by her door.
+// her shelf: every keepsake ever found, where she put it. From the title (its own quiet screen) or from the shelf by her door.
+// First the shelf itself, close: point at a thing (or step along with left/right) and take it down; it comes up to you, large,
+// to be turned and read. Put it back and the shelf is there again.
+const BOARD = { x: 15.4, y: 2.07, vh: 1.5 };
 function openShelf(from) {
-  const list = L.SECRETS.filter((s) => settings.found.includes(s.kind));
+  const list = L.SECRETS.filter((s) => settings.found.includes(s.kind)).sort((a, b) => shelfSpot(a.kind)[0] - shelfSpot(b.kind)[0] + (shelfSpot(b.kind)[1] - shelfSpot(a.kind)[1]) * 10);
   if (!list.length) return;
   list.forEach((s) => ITEMS.need(s.kind));
-  if (from === 'title') { state = 'shelf'; show($('title'), false); W.hideDoll = true; cam.x = 15.4; cam.y = 3; cam.viewH = SHOWV; }
-  SHOW = { shelf: list, si: 0, from, phase: 'in', t: 0, o: 0, kind: list[0].kind, x: 15.4, y: 3.2, at: from === 'title' ? { x: 15.4, y: 3.4 } : { x: W.player.x, y: W.player.y + 1.35 }, item: null, click: false };
+  if (from === 'title') { state = 'shelf'; show($('title'), false); W.hideDoll = true; cam.x = BOARD.x; cam.y = BOARD.y; cam.viewH = BOARD.vh; }
+  SHOW = { shelf: list, si: 0, from, mode: 'board', hover: -1, phase: 'in', t: 0, o: 0, k: 0, kind: null, at: { x: BOARD.x, y: BOARD.y + 0.25 }, item: null, click: false, doll: W.hideDoll };
+  W.hideDoll = true;                // (she is standing just below the boards: her head came up under the words)
   W.showcase = SHOW;
   log('shelf');
-  shelfItem();
+  shelfBoard();
   A.play('bowl', { vol: 0.25, rate: 0.6, verb: 1.4, bus: 'ui' });
 }
+// the shelf, close: its caption
+function shelfBoard() {
+  const S = SHOW, el = $('shelfui');
+  const s = S.hover >= 0 ? S.shelf[S.hover] : null;
+  setText(el.querySelector('.bname'), s ? s.what.charAt(0).toUpperCase() + s.what.slice(1) : '');
+  el.querySelector('.bcount').textContent = `${S.shelf.length} of ${L.SECRETS.length}` + (S.shelf.length < L.SECRETS.length ? ` · ${L.SECRETS.length - S.shelf.length} still down there` : ' · all of them');
+  el.querySelector('.bhint').textContent = (I.usingPad ? `${I.label('left')} ${I.label('right')} · choose · ${I.label('act')} · take it down` : 'click one to take it down') + ` · ${I.label('pause')} · leave`;
+  show(el, true);
+}
+// one taken down: its words
 function shelfItem() {
   const S = SHOW, s = S.shelf[S.si], el = $('show');
-  S.kind = s.kind; S.t = 0; ITEMS.need(s.kind);
+  S.kind = s.kind; ITEMS.need(s.kind);
   ITEMS.turn.on = false;
   el.querySelector('.sname').textContent = s.what.charAt(0).toUpperCase() + s.what.slice(1);
   el.querySelector('.sdesc').textContent = s.text;
-  el.querySelector('.scount').textContent = `${S.si + 1} of ${S.shelf.length}` + (S.shelf.length < L.SECRETS.length ? ` · ${L.SECRETS.length - S.shelf.length} still down there` : '');
+  el.querySelector('.scount').textContent = `${S.si + 1} of ${S.shelf.length}`;
   el.querySelector('.sany').textContent = `${I.label('left')}  ${I.label('right')} · the next · ${I.label('pause')} · put it back` + (I.usingPad ? '' : ' · drag to turn it');
   el.classList.remove('sout'); el.classList.add('s1', 's2', 's3', 's4');
   show(el, true);
 }
+// the mouse, in the world
+let mouseAt = null;
+addEventListener('mousemove', (e) => { mouseAt = { x: e.clientX, y: e.clientY, t: time }; });
+function shelfHit() {
+  if (!mouseAt) return -1;
+  const vw = cam.viewH * innerWidth / innerHeight, wx = cam.x + (mouseAt.x / innerWidth - 0.5) * vw, wy = cam.y - (mouseAt.y / innerHeight - 0.5) * cam.viewH;
+  let best = -1, bd = 0.17;
+  SHOW.shelf.forEach((s, i) => { const [x, y] = shelfSpot(s.kind), d = Math.hypot(wx - x, (wy - y) * 0.8); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+const tap = (rate, vol) => A.pick(['st_wood1', 'st_wood2', 'st_wood3'], { vol, rate, vary: 0.1, verb: 0.3, bus: 'ui' });
 function shelfUpdate(dt) {
   const S = SHOW, el = $('show');
-  if (S.phase === 'in') {
-    S.t += dt;
-    const k = smooth(0, 0.7, S.t);
-    S.item = { kind: S.kind, x: S.at.x, y: S.at.y + Math.sin(time * 1.3) * 0.03, s: 2.4, k: SHOW_K * (0.75 + 0.25 * k), a: k };
-    const step = I.pressed.left ? -1 : I.pressed.right || S.click ? 1 : 0;
-    S.click = false;
-    if (step && S.t > 0.2 && S.shelf.length > 1) { S.si = (S.si + step + S.shelf.length) % S.shelf.length; shelfItem(); A.play('step2', { vol: 0.25, verb: 0.4, bus: 'ui' }); return; }
-    if (S.t > 0.2 && (I.pressed.pause || I.pressed.act || I.pressed.jump)) {
-      for (const k2 in I.pressed) I.pressed[k2] = false;
-      if (S.from === 'title') { passage(() => enterTitle(), { out: 0.7, back: 1.0 }); S.phase = 'wait'; return; }
-      S.phase = 'out'; el.classList.add('sout');
-    }
-  } else if (S.phase === 'out') {
+  S.t += dt;
+  if (S.phase === 'out') {
     S.o += dt;
     if (S.item) S.item.a = Math.max(0, 1 - S.o * 2);
-    if (S.o > 0.3 && !S.hid) { S.hid = true; show(el, false); }
-    if (S.o > 0.7) { SHOW = null; W.showcase = null; }
+    if (S.o > 0.3 && !S.hid) { S.hid = true; show(el, false); show($('shelfui'), false); }
+    if (S.o > 0.7) { SHOW = null; W.showcase = null; W.hideDoll = S.doll; }
+    return;
+  }
+  if (S.phase !== 'in') return;
+  const leave = () => {
+    for (const k2 in I.pressed) I.pressed[k2] = false;
+    show($('shelfui'), false);
+    if (S.from === 'title') { passage(() => enterTitle(), { out: 0.7, back: 1.0 }); S.phase = 'wait'; return; }
+    S.phase = 'out'; el.classList.add('sout');
+  };
+  if (S.mode === 'board') {
+    // which one is pointed at: the mouse when it moves, the keys when they are used
+    if (mouseAt && mouseAt.t > (S.keyT || -1) && !I.usingPad) { const h = shelfHit(); if (h !== S.hover) { S.hover = h; if (h >= 0) tap(1.9, 0.12); shelfBoard(); } }
+    const step = I.pressed.left ? -1 : I.pressed.right ? 1 : 0;
+    if (step) { S.keyT = time; S.hover = S.hover < 0 ? (step > 0 ? 0 : S.shelf.length - 1) : (S.hover + step + S.shelf.length) % S.shelf.length; tap(1.9, 0.12); shelfBoard(); }
+    const take = S.t > 0.3 && S.hover >= 0 && (S.click || I.pressed.act || I.pressed.jump);
+    S.click = false;
+    if (take) {
+      // taken down: it comes off the shelf and up to you
+      for (const k2 in I.pressed) I.pressed[k2] = false;
+      S.mode = 'item'; S.si = S.hover; S.k = 0; S.from0 = shelfSpot(S.shelf[S.si].kind);
+      show($('shelfui'), false); shelfItem();
+      tap(1.3, 0.35); A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.22, rate: 1.3, bus: 'ui' }); A.play('bowl', { vol: 0.16, rate: 0.75, verb: 1.2, delay: 0.15, bus: 'ui' });
+      log('shelf · ' + S.shelf[S.si].kind);
+      return;
+    }
+    if (S.t > 0.3 && I.pressed.pause) leave();
+    S.item = null;
+    return;
+  }
+  // held up close
+  S.k = Math.min(1, S.k + dt / 0.75);
+  const e = smooth(0, 1, S.k), [fx, fy] = S.from0 || [S.at.x, S.at.y];
+  S.item = { kind: S.kind, x: lerp(fx, S.at.x, e), y: lerp(fy, S.at.y, e) + Math.sin(e * Math.PI) * 0.08 + Math.sin(time * 1.3) * 0.02 * e, s: 2.4, k: lerp(0.108, SHOW_K * 0.62, e), a: 1 };
+  const step = I.pressed.left ? -1 : I.pressed.right ? 1 : 0;
+  if (step && S.k > 0.5 && S.shelf.length > 1) {
+    S.si = (S.si + step + S.shelf.length) % S.shelf.length; S.from0 = [S.at.x, S.at.y]; S.k = 0.6; shelfItem();
+    A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.2, rate: 1.2, bus: 'ui' });
+    return;
+  }
+  const back = S.k > 0.6 && (I.pressed.pause || I.pressed.act || I.pressed.jump || S.click);
+  S.click = false;
+  if (back) {
+    // put back where it was
+    for (const k2 in I.pressed) I.pressed[k2] = false;
+    S.mode = 'board'; S.hover = S.si; S.t = 0.2; S.item = null; S.kind = null;
+    el.classList.add('sout'); setTimeout(() => { if (SHOW === S && S.mode === 'board') show(el, false); }, 600);
+    shelfBoard();
+    tap(1.5, 0.3); A.play('release', { vol: 0.18, rate: 0.8, bus: 'ui' });
   }
 }
 function showUpdate(dt) {
@@ -872,6 +961,12 @@ addEventListener('mousemove', (e) => {
 });
 addEventListener('mouseup', () => { if (grab && SHOW && grab.far <= 5) SHOW.click = true; grab = null; if (ITEMS) ITEMS.turn.held = false; });
 
+// where the view goes while something is shown: the shelf close, or the thing held up
+function shelfView() {
+  if (!SHOW) return null;
+  if (SHOW.shelf && SHOW.mode === 'board') return BOARD;
+  return { x: SHOW.at.x, y: SHOW.at.y - 0.14 * SHOWV, vh: SHOWV };
+}
 let camSnap = false;                   // the next camera update jumps straight to its target (behind black)
 let respawnT = -99;                    // time of the last respawn: the picture comes back from black
 
@@ -910,7 +1005,7 @@ function updateCamera(dt) {
   lookT = ay ? lookT + dt : 0;
   p.look = damp(p.look || 0, SHOW ? (SHOW.phase === 'in' ? 0.85 : 0) : W.intro && !W.intro.done ? W.intro.look : ay, W.intro && !W.intro.done ? 3 : 9, dt);                                   // her head turns at once
   lookCam = damp(lookCam, lookT > 0.2 ? Math.sign(ay) : 0, 2.6, dt);       // the view follows a beat later
-  if (state === 'shelf') { tx = SHOW ? SHOW.at.x : cam.x; ty = SHOW ? SHOW.at.y - 0.14 * SHOWV : cam.y; vh = SHOWV; }
+  if (state === 'shelf') { const q = shelfView(); tx = q ? q.x : cam.x; ty = q ? q.y : cam.y; vh = q ? q.vh : SHOWV; }
   else if (state === 'title') {
     tx = 27 + Math.sin(time * 0.05) * 1.5; ty = 5.5; vh = 15.5;
   } else if (state === 'ending' && E.view) {
@@ -933,8 +1028,8 @@ function updateCamera(dt) {
     if (a.id === 'loom' && p.y > -452) { const q = smooth(25, 17, p.x); vh = 10.5 - 4.0 * q; tx -= 1.3 * q; }         // at the top of the Loom: close, so little of the place is seen
     if (a.id === 'loom' && p.y < -528 && !W.deep.rise.woke) vh = Math.min(vh, 11);     // among the called
     if (SHOW) {
-      const k = SHOW.phase === 'in' ? smooth(0, 1.2, SHOW.t) : 1 - smooth(0.2, 1.25, SHOW.o);
-      tx = lerp(tx, SHOW.at.x, k); ty = lerp(ty, SHOW.at.y - 0.14 * SHOWV, k); vh = lerp(vh, SHOWV, k);
+      const k = SHOW.phase === 'in' ? smooth(0, 1.2, SHOW.shelf ? 9 : SHOW.t) : 1 - smooth(0.2, 1.25, SHOW.o), q = shelfView();
+      tx = lerp(tx, q.x, k); ty = lerp(ty, q.y, k); vh = lerp(vh, q.vh, k);
     }
     if (W.intro && !W.intro.done) { const k = smooth(WALK.step, WALK.out + 0.5, W.intro.t); vh = WALK.closeVh + (vh - WALK.closeVh) * k; tx = lerp(DOOR.x + 0.6, tx, k); ty = lerp(DOOR.y + 1.3, ty, k); }
     ty += lookCam * (lookCam > 0 ? 0.26 : 0.32) * vh;        // a little more room looking down: that's where the falls are
@@ -1045,7 +1140,9 @@ function tick(now) {
   if (state === 'cine') { cineUpdate(dt); for (const k in I.pressed) I.pressed[k] = false; }
   // (before the credits' check: the press that skips the credits must not skip this too)
   if (state === 'coda' && !busy && (I.pressed.pause || I.pressed.act)) passage(() => enterTitle(), { out: 1.4, back: 1.6 });
-  if (state === 'credits' && !busy && (I.pressed.pause || I.pressed.act)) { $('credits').classList.remove('rolling'); show($('credits'), false); if ($('credits').classList.contains('cut')) coda(); else enterTitle(); }
+  if (state === 'credits' && !busy) holdToSkip(dt, () => leaveCredits(true));
+  else if (cards && !busy && state === 'ending') holdToSkip(dt, () => cards && cards.skip());
+  else if (state !== 'cine' && skipH.hint + skipH.hold > 0) { skipH.hint = skipH.hold = 0; show($('skip'), false); }
 
   if (state === 'coda') { W.time += dt; }
   if ((timeScale > 0 || SHOW) && state !== 'credits' && state !== 'cine' && state !== 'coda') {
@@ -1099,13 +1196,13 @@ function tick(now) {
   });
   const ink = L.INK[0];
   const inkVis = Math.abs(cy - ink.y) < cam.viewH && cx + viewW / 2 > ink.x0 && cx - viewW / 2 < ink.x1;
-  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.5, 1.6, W.player.deadT) : 0, state === 'ending' || state === 'credits' || state === 'coda' ? (CODA ? 1 : E.dark) : 0);
+  const deathFade = Math.max(W.player.dead && state === 'play' ? smooth(0.5, 1.6, W.player.deadT) : 0, state === 'ending' || state === 'credits' || state === 'coda' ? (CODA ? 1 : E.dark) : state === 'cine' ? 1 : 0);      // (under a film the world is black)
   const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
     1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time).concat(ITEMS.frame(W, [cx, cy], viewW, cam.viewH, dt, time)) : [],
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),
-    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.shelf ? (SHOW.phase === 'out' ? 1 - smooth(0, 0.6, SHOW.o) : SHOW.from === 'title' ? 1 : smooth(0, 0.6, SHOW.t + (SHOW.si ? 9 : 0))) : SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,
+    inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.shelf ? (SHOW.phase === 'out' ? 0.6 * (1 - smooth(0, 0.6, SHOW.o)) : SHOW.mode === 'item' ? lerp(0.6, 1, smooth(0, 0.6, SHOW.k * 0.75)) : 0.6 * smooth(0, 0.8, SHOW.t)) : SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,
   });
   requestAnimationFrame(tick);
 }

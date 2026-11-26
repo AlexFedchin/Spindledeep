@@ -42,7 +42,7 @@ export class Kindle {
     // ── sitting ──
     const r = W.rest;
     if (r.at) {
-      if (p.dead || !live || Math.abs(p.x - r.at.x) > 1.2 || inp.axisX || inp.pressed.jump || inp.held.grip) this.stand();
+      if (p.dead || (!live && !r.at.held) || Math.abs(p.x - r.at.x) > 1.2 || inp.axisX || inp.pressed.jump || inp.held.grip) this.stand();      // (held: sat down by the ending, not by the player)
       else { p.x += (r.at.x - p.x) * Math.min(1, dt * 5); p.vx = 0; p.facing = r.at.flip; r.t = (r.t || 0) + dt; }
     } else r.t = 0;
     r.k = clamp(r.k + (r.at ? 0.5 : -1.1) * dt, 0, 1);

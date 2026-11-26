@@ -27,7 +27,7 @@ INK = np.array([0.045, 0.04, 0.06]); PAPER = np.array([0.91, 0.86, 0.75]); RED =
 # (shot, transition into this shot in frames: 0 = cut)
 FILMS = {
     'intro': [('I1', 0), ('I2', 16), ('I2K', 0), ('I3', 0), ('I4', 0), ('I5', 10), ('I5S', 0), ('I6', 0), ('I7', 0), ('I8', 20), ('I9', 0), ('TITLE', 0)],      # shots_intro.py
-    'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0), ('C5', 0)],      # shots_end.py: the bitten ending
+    'cut': [('C1', 0), ('C2', 14), ('C3', 14), ('C4', 0)],      # shots_end.py: the bitten ending (C5, the chairs and the names, is left to names.mp4 after the titles)
     'outro': [('O2', 0), ('O1', 0), ('O3', 0), ('O4', 0), ('O5', 0), ('O6', 0), ('O7', 0)],      # shots_end.py: the tied ending; hard cuts. It opens where the game's ending leaves off, at the lip of the pit
     'names': [('N1', 0)],      # shots_end.py: after the titles of the bitten ending
 }
@@ -296,10 +296,9 @@ def voices(M, E):
 
 
 def cut_sound(M, cuts, at, T, wind):
-    """the bitten ending: the storm lets go, meltwater, the title's music for the only time since; then the well; then chairs and names"""
+    """the bitten ending: the storm lets go, meltwater, the title's music for the only time since; then down the well, into the dark"""
     E = film_events('cut', cuts)
-    when = lambda kind: next(e['t'] for e in E if e['kind'] == kind)
-    t2, t3, t4, t5, t_stop, t_black = at('C2'), at('C3'), at('C4'), at('C5'), when('stop'), when('black')
+    t2, t3, t4 = at('C2'), at('C3'), at('C4')
     soft = decode('amb_wind', af='lowpass=f=700'); far = decode('amb_wind', af='lowpass=f=240')
     M.bed(wind, 0, 3.6, 0.5, fi=1.2, fo=2.8)
     M.bed(soft, 1.0, t4 + 0.4, 0.22, fi=3, fo=0.5)
@@ -307,12 +306,10 @@ def cut_sound(M, cuts, at, T, wind):
     M.bed(decode('amb_drips'), at('C1', 60), t4 + 0.2, 0.34, fi=3, fo=0.5)
     for f in (90, 140, 190):
         M.add(decode('trickle%d' % (f % 3 + 1)), at('C1', f), 0.16, fade_in=0.4, fade_out=0.6)
-    M.bed(far, t4 - 0.6, t5 + 2.0, 0.8, fi=0.6, fo=2.5)
-    M.bed(decode('amb_drips', af='lowpass=f=900,aecho=0.8:0.7:400|900:0.5|0.3'), t4, t_stop + 0.03, 0.30, fi=1, fo=0.03)
-    M.bed(decode('amb_hall'), t5 + 0.5, t_stop + 0.03, 0.22, fi=3, fo=0.03)            # and all of it stops with the chairs
-    place = {'C1': dict(lo=None, hi=None, g=1.0, room=0.0), 'C2': dict(lo=None, hi=None, g=2.2, room=0.0), 'C3': dict(lo=None, hi=None, g=3.2, room=0.0), 'C5': dict(lo=None, hi=None, g=1.0, room=0.3)}
+    M.bed(far, t4 - 0.6, T - 0.3, 0.8, fi=0.6, fo=2.2)
+    M.bed(decode('amb_drips', af='lowpass=f=900,aecho=0.8:0.7:400|900:0.5|0.3'), t4, T - 0.3, 0.30, fi=1, fo=2.0)
+    place = {'C1': dict(lo=None, hi=None, g=1.0, room=0.0), 'C2': dict(lo=None, hi=None, g=2.2, room=0.0), 'C3': dict(lo=None, hi=None, g=3.2, room=0.0)}
     place_events(M, E, place, 'cut'); voices(M, E)
-    M.add(decode('inhale', rate=1.1), t_black - 0.75, 0.4, fade_out=0.05, dur=0.83)
 
 
 def outro_sound(M, cuts, at, T):

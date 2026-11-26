@@ -8,7 +8,8 @@ rm -rf $C/frames_prev/$s $C/graded_prev/$s
 $B -b --factory-startup -P scripts/cine/render.py -- $s --preview --stills=$2 > $C/pv_$s.log 2>&1
 grep -q RENDERED $C/pv_$s.log || { echo FAIL $s; grep -A12 Traceback $C/pv_$s.log | head -30; exit 1; }
 EXP=$(grep -hB1 "^def $s(" scripts/cine/shots_intro.py scripts/cine/shots_end.py | sed -n 's/.*exposure=\([0-9.]*\)).*/\1/p'); AUT=$(grep -hB1 "^def $s(" scripts/cine/shots_intro.py scripts/cine/shots_end.py | sed -n 's/.*auto=\([0-9.]*\).*/--auto=\1/p')
-$PY scripts/cine/post.py $C/frames_prev/$s $C/graded_prev/$s --exposure=$EXP $AUT --wobble=0.3 2>&1 | grep -v "libpng\|^post"
+SOF=$(grep -hB1 "^def $s(" scripts/cine/shots_intro.py scripts/cine/shots_end.py | sed -n 's/.*soft=\([0-9.]*\).*/--soft=\1/p')
+$PY scripts/cine/post.py $C/frames_prev/$s $C/graded_prev/$s --exposure=$EXP $AUT $SOF --wobble=0.3 2>&1 | grep -v "libpng\|^post"
 D=$C/graded_prev/$s; X=png; [ "$4" = "--raw" ] && { D=$C/frames_prev/$s; X=jpg; }
 $PY - "$D" "$X" $C/pv/$s.jpg ${3:-2} <<'P'
 import sys,glob,os

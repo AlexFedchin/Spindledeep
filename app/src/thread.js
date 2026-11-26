@@ -35,7 +35,14 @@ export class Thread {
     this._fix = null;
     this.x[0] = this.ox[0] = ax; this.y[0] = this.oy[0] = ay;
     this.dead.fill(0); this.wear.fill(0);
-    this.locked = false; this.forced = false; this.pivots = []; this.Lfree = 0;
+    this.locked = false; this.forced = false; this.pivots = []; this.Lfree = 0; this.loose = false;
+  }
+  // bitten through at her hand: the end comes away from the doll and falls, and nothing more is paid out
+  letGo() {
+    if (this.locked) { this.locked = false; this.forced = false; this.pivots = []; }
+    this.loose = true; this.anchored = false;
+    // the stretch since the last peg goes on swinging and settles where it falls
+    if (this.liveStart > this.fixedN) this.liveStart = this.fixedN;
   }
 
   _push(px, py) {
@@ -236,7 +243,7 @@ export class Thread {
   // ── per-frame: pay out, take up slack, simulate the warm part ─────────
   update(dt, bx, by, budgetLeft, wantFree) {
     const T = this.T;
-    if (!this.locked) {
+    if (!this.locked && !this.loose) {
       // take up slack when the doll walks back along its thread
       for (let g = 0; g < 4; g++) {
         const last = this.n - 1;
@@ -276,7 +283,7 @@ export class Thread {
         this.x[i] += vx; this.y[i] += vy + g;
         this.contact[i] = 0;
       }
-      const endX = this.locked ? null : bx, endY = by;
+      const endX = this.locked || this.loose ? null : bx, endY = by;
       for (let it = 0; it < 12; it++) {
         // pinned end at the doll (or at the pivot particle when gripped: last particle is fixed)
         if (endX !== null) {
@@ -288,7 +295,7 @@ export class Thread {
         }
         for (let i = Math.max(s0, 1); i < n; i++) {
           const j = i - 1;
-          const fixedJ = j < s0 && this.anchored ? true : j < s0 ? null : false;
+          const fixedJ = j < s0 && (this.anchored || this.loose) ? true : j < s0 ? null : false;      // (let go: still tied at the peg)
           if (fixedJ === null) continue;            // severed start: no constraint behind it
           const fixedI = this.locked && i === n - 1; // the grip pivot particle holds still
           const dx = this.x[i] - this.x[j], dy = this.y[i] - this.y[j], d = Math.hypot(dx, dy);
@@ -313,7 +320,7 @@ export class Thread {
           // the spans between them too: a lip of rock can stand between two particles that are both clear
           for (let i = Math.max(s0, 1); i < n; i++) {
             const j = i - 1;
-            if (j < s0 && !this.anchored) continue;
+            if (j < s0 && !this.anchored && !this.loose) continue;
             const mx = (this.x[i] + this.x[j]) / 2, my = (this.y[i] + this.y[j]) / 2, d = T.d(mx, my);
             if (d >= RAD * 0.8) continue;
             let px, py;
@@ -337,7 +344,7 @@ export class Thread {
       // to where they last stood, which was clear, and lose their speed
       for (let pass = 0; pass < 2; pass++) for (let i = Math.max(s0, 1); i < n; i++) {
         const j = i - 1;
-        if (j < s0 && !this.anchored) continue;
+        if (j < s0 && !this.anchored && !this.loose) continue;
         if (T.d((this.x[i] + this.x[j]) / 2, (this.y[i] + this.y[j]) / 2) > 0.2 || depthAlong(T, this.x[j], this.y[j], this.x[i], this.y[i]) > -0.1) continue;
         for (const k of [i, j]) if (k >= s0) { this.x[k] = this.ox[k] = this.lx[k]; this.y[k] = this.oy[k] = this.ly[k]; }
       }
@@ -384,12 +391,13 @@ export class Thread {
       if (st !== 4 && k > 0) hug(T, lx, ly, x, y, (hx, hy) => { if (k < cap) put(hx, hy, st, wr); }, st === 0 ? FACE : RAD);
       if (k < cap) put(x, y, st, wr);
     };
-    put(bx, by, 3);
+    if (this.loose) { const l = this.n - 1; put(this.x[l], this.y[l], 4); }      // let go: nothing joins it to the doll
+    else put(bx, by, 3);
     if (this.locked) for (let j = this.pivots.length - 1; j >= 0; j--) to(this.pivots[j].x, this.pivots[j].y, 3);
     const startI = this.n - 1;
     const state = (i) => {
-      if (!this.anchored && i === this.liveStart - 1 && i < this.n - 1) return 4;        // gap at the severed end
-      if (!this.anchored && i === startI && this.liveStart >= this.n) return 4;
+      if (!this.anchored && !this.loose && i === this.liveStart - 1 && i < this.n - 1) return 4;        // gap at the severed end
+      if (!this.anchored && !this.loose && i === startI && this.liveStart >= this.n) return 4;
       return this.dead[i] ? 2 : i >= this.liveStart ? 1 : 0;
     };
     for (let i = startI; i >= this.fixedN; i--) to(this.x[i], this.y[i], state(i), this.wear[i]);

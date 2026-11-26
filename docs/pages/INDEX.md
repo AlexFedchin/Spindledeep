@@ -152,3 +152,4 @@ only the flicker metric showed it (contact sheets every N frames missed it).
 | 39. Rolling On: the bobbins ignore the thread and roll over you in the gutter (`bobbins/`) | https://claude.ai/artifact/4xYhjNQfpYWGNPa2p4LDhx |
 | 40. Version 1.2.1: Linux AppImage and portable Windows build; installer needs Wine on Linux (`release121/`) | https://claude.ai/artifact/Qjea5CvFEwKJx4WaDHCMAC |
 | 41. The Yarn Itself: the thread drawn as two twisted plies with fibres and stray hairs (`yarn/`) | https://claude.ai/artifact/A3ppvydST39bXu8EkN4SMr |
+| 37. Let Go: the bitten ending played properly (thread falls away, walk and sit, blow, neck seam, new lines), nothing on black between screens, hold to skip titles, her shelf close up, thinner outlines, softer last film (`shelf/`, the new lines sealed) | https://claude.ai/artifact/CgwYbnUQD45TaSXMycU3aB |

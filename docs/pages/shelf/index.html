@@ -1,0 +1,289 @@
+<title>Let Go: the bitten ending, the shelf</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+<style>
+    details.seal { margin: 18px 0; border: 1px solid var(--rule); padding: 14px 18px; }
+    details.seal summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-dim); }
+    details.seal summary:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+    figure.still { margin: 26px 0; } figure.still img { width: 100%; display: block; border: 1px solid var(--rule); }
+    figure.still figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); margin-top: 8px; }
+    .reveal-cap { margin-top: 10px; }
+  </style>
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the bitten ending, the shelf</div>
+    <h1>Let Go</h1>
+    <p class="tag">the thread falls away<span></span>and her things come down</p>
+  </header>
+
+  <div class="col summary">
+    <p>Thirteen changes from one message. The bitten ending plays out properly in the game now: the thread drops off the doll, she walks to the candle and sits down, the thing blows the candle out where it stands, and its neck meets its head without a gap. No piece of thread is left glowing on black between screens, and the end cards and credits skip when held. Her shelf is now the shelf itself, close up: you take a keepsake down and put it back. The last film is softer, and the film of the bitten ending stops before the chairs.</p>
+  </div>
+  <p class="ask">when I cut it it should actually fall off the doll, not just become grey. When doll is walking to the candle, the legs are moving to slow, it is flowing over the ground. Make it walk to the candle and sit down. [&hellip;]</p>
+
+  <h2>The thread lets go</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/bite_b.jpg" alt="Before: the grey thread still runs into the doll">
+      <img class="after" src="img/bite_a.jpg" alt="After: it has come away from her and lies on the floor">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-bite" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">Two seconds after the bite</p>
+    <ul class="what">
+      <li><b>It comes away from her.</b> Before, the thread was always drawn from her hand, and the stretch since the last pole was pinned to her every frame, so biting only turned it grey. Now the bitten end is unpinned. Nothing more is paid out, it is drawn with a gap at her hand, and the stretch since the last pole falls under its own weight and settles on the rock. It is still tied at the pole.</li>
+      <li><b>Then the red goes out of it</b>, from the bitten end back, once it has fallen. A soft sound of yarn landing goes with the drop.</li>
+    </ul>
+  </div>
+
+  <h2>She walks, and sits</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/sit_b.jpg" alt="Before: she stands by the candle">
+      <img class="after" src="img/sit_a.jpg" alt="After: she sits down beside it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-sit" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>Why she slid.</b> The ending set her speed directly, while her legs were driven by input that was empty; friction ate most of the speed every frame, and the legs and the ground never agreed. Now the ending holds a stick for her the way the walk out of the cottage does, so she walks on her own legs at a walk (about 1.2 m/s), slows over the last metre and stops by the candle.</li>
+      <li><b>Then she sits</b> beside it, facing it, the same way she sits at the seats in the game, with a little sound of cloth.</li>
+    </ul>
+  </div>
+
+  <h2>The candle</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/blow_b.jpg" alt="Before: the head faces away from the candle when it blows">
+      <img class="after" src="img/blow_a.jpg" alt="After: it has come down beside the flame and turned its face to it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-blow" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>Before, the head kept facing the doll while the flame went out a metre away. Now, for the blow, it comes down beside the candle, turns its face to the flame, and blows on it, and then the light goes.</p>
+  </div>
+
+  <h2>Neck and head</h2>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/neck_b.jpg" alt="Before: a dark gap at the seam under the jaw">
+      <img class="after" src="img/neck_a.jpg" alt="After: the neck meets the head closed all round">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-neck" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>The neck is a chain of joints laid along a curve, and each joint used to turn with the curve. The head turns to where it looks. Where those two disagreed (a neck coming in from the side), the last ring of the neck stood tilted against the head and the seam opened dark on one side. The last part of the neck now eases round to the head's own angle, so the ring meets the head square. This applies everywhere the long neck is used, the climb included.</p>
+  </div>
+
+  <h2>Her lines</h2>
+  <div class="col">
+    <p class="ask">The monster should not repeat "What have you done" multiple times, one is okay, but there should be other lines.</p>
+    <p>It said that line three times: once, again slowed down a moment later, and once more as it fell. Now it says it once, and two new lines take the other places. Both were recorded in her voice the same way as all of hers (cast reference, design and clone takes, chosen by words, likeness, age and pace) with the second, lower voice under them. The bite is a second longer so the second line finishes before it lunges.</p>
+    <details class="seal"><summary>Open the two new lines</summary>
+      <p>After the bite, low and cold: <i>&ldquo;You let go. You were never to let go.&rdquo;</i> (the one rule in her first note, turned round).<br>Falling down the well: <i>&ldquo;Hold on to me!&rdquo;</i></p>
+    </details>
+  </div>
+
+  <h2>Nothing on black</h2>
+  <div class="col">
+    <p class="ask">make sure that between cutscenes, titles and etc I don't see just a piece of rope</p>
+    <div class="reveal">
+      <img src="img/rope_b.jpg" alt="Before: red and grey thread across a black screen after the credits">
+      <img class="after" src="img/rope_a.jpg" alt="After: black">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-rope" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">The moment between the credits and the last film, brightened three times so it can be seen</p>
+    <ul class="what">
+      <li><b>Why.</b> The thread is drawn in a pass of its own after the picture. The fade to black covered the picture and not the thread, and the thread was only dimmed in the ending itself, so after the credits, behind a film, and at every other change of screen it stayed lit on black. It now goes out with the picture, wherever the picture fades.</li>
+      <li><b>Also:</b> under a film the world is black; and the last line said before a film no longer hangs on as a subtitle through the film, the cards and the credits.</li>
+    </ul>
+  </div>
+
+  <h2>Hold to skip</h2>
+  <div class="col">
+    <p>The cards after the film and the credits now skip when a key is held, like the films: the same &ldquo;hold to skip&rdquo; with its red line filling, the same keys, and through black. Held on the cards, they go straight to the credits; held on the credits, they go on to what comes after them. A single press no longer skips the credits by accident.</p>
+  </div>
+
+  <h2>The film of the bitten ending</h2>
+  <div class="col">
+    <p>Its last shot, the chairs and the names, is gone: that belongs to the film after the titles. The film now ends going down the well into the dark; it is 31 seconds instead of 45. Its sound was mixed again without that shot and is still exactly on the picture.</p>
+  </div>
+
+  <h2>Her shelf</h2>
+  <div class="col">
+    <p class="ask">for the collectibles on the shelf - their outline is too thick when they are just in the world, make it thinner. And make "Her shelf" more interactive - it should be an actual close up of the shelf where I can pick (click) an item and it opens full screen. And add some sounds of interactions.</p>
+    <div class="reveal">
+      <img src="img/outline_b.jpg" alt="Before: the keepsakes on the shelf in thick ink">
+      <img class="after" src="img/outline_a.jpg" alt="After: a hairline round each">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-outline" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p class="reveal-cap">On the shelf by her door, at the game's own distance. Things lying about in the caves get the same thinner line; held up close they keep the doll's</p>
+    <div class="reveal">
+      <img src="img/board_b.jpg" alt="Before: one keepsake at a time over a dark screen">
+      <img class="after" src="img/board_a.jpg" alt="After: the shelf itself, close, the seed packet pointed at">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-board" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>The shelf, close.</b> &ldquo;Her shelf&rdquo; (from the title, or at her door) now opens on the two boards with everything she has brought home, where she put it. Point at one with the mouse, or step along with left and right: it lifts a little, catches the light and its name comes up.</li>
+      <li><b>Take it down.</b> A click (or the act key) and it comes off the shelf and up to you, large, with its words, to be turned with the mouse; left and right go to the next. Click or Esc and it goes back where it was, and the shelf is there again. Esc on the shelf leaves.</li>
+      <li><b>Sounds.</b> A small wooden tap when you point at one; wood, cloth and a low bowl when you take one down; cloth as you go through them; a tap and a soft breath when it goes back.</li>
+      <li><b>Light.</b> Close up, the window, her own red warmth and her thread washed the boards out pink; while the shelf is open they are turned down, one soft light hangs over the boards and the wall behind goes quiet.</li>
+      <li><b>Keys.</b> A key tapped faster than a frame used to be lost; now it counts, here and in play.</li>
+    </ul>
+    <figure class="still"><img src="img/item_a.jpg" alt="One keepsake taken down, large, with its name and words"><figcaption>Taken down</figcaption></figure>
+  </div>
+
+  <h2>The last film, softer</h2>
+  <div class="col">
+    <p class="ask">the last cinematic has too harsh post processing, make it a bit smoother</p>
+    <div class="reveal">
+      <img src="img/soft_b.jpg" alt="Before: hard-edged lines that stop abruptly">
+      <img class="after" src="img/soft_a.jpg" alt="After: softer lines that fade into the dark">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-soft" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>The engraving of that film has a new gentler setting: the lines have softer edges and blend a little into their own tone, and the dark comes on gradually instead of where a line stops. The contrast and darkness stay as they were, and its flicker went down from 2.95 to 1.79.</p>
+  </div>
+
+  <h2>Checked</h2>
+  <div class="col">
+    <div class="tablebox"><table class="windows"><tr><th>Check</th><th>Result</th></tr>
+      <tr><td>Whole game, bot, plain</td><td class="n">reaches the choice</td></tr>
+      <tr><td>Whole game, bot, frayed</td><td class="n">reaches the choice</td></tr>
+      <tr><td>Bitten ending end to end (hidden window)</td><td class="n">no errors</td></tr>
+      <tr><td>Bitten film, sound against picture</td><td class="n">0.0 ms</td></tr>
+      <tr><td>Last film flicker</td><td class="n">2.95 &rarr; 1.79</td></tr>
+    </table></div>
+  </div>
+
+  <h2>Where it lives</h2>
+  <div class="col"><div class="files">
+    <div><b>The ending</b><span><code>app/src/ending.js</code></span></div>
+    <div><b>Letting go</b><span><code>app/src/thread.js</code> (<code>letGo</code>)</span></div>
+    <div><b>Neck</b><span><code>app/src/figure.js</code> (<code>headTo</code>)</span></div>
+    <div><b>Black, skipping, the shelf</b><span><code>app/src/main.js</code>, <code>app/src/shaders.js</code>, <code>app/src/props3d.js</code></span></div>
+    <div><b>Lines</b><span><code>scripts/voice/lines.py</code>, <code>app/assets/voice/</code></span></div>
+    <div><b>Films</b><span><code>scripts/cine/edit.py</code>, <code>scripts/cine/post.py</code> (<code>--soft</code>)</span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/Eehd7dvGNyVFejMfSPhHng">rock in the dark</a> &middot; <a href="https://claude.ai/artifact/MnAcegRTMK4XrUeUSGuVW9">no two stones</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

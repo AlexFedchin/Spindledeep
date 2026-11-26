@@ -119,7 +119,10 @@ export class Figure {
     for (let q = 0; q < N; q++) {
       const i0 = Math.max(0, q - 1), i1 = Math.min(N - 1, q + 1), d = sub(pts[i1], pts[i0]), t = q / (N - 1);
       // carried along the curve (no twisting), and eased round to the head's own front
-      const f = norm(mix3(prev, f1, t * 0.25 + 0.02)), Rn = turn([0, 1, 0], [0, 0, 1], d, f);
+      const f = norm(mix3(prev, f1, t * 0.25 + 0.02));
+      // the last of the neck turns to meet the head square: a ring tilted against the head's own (a neck coming in from the
+      // side) left a dark gap open on one side of the seam
+      const w = smooth(0.55, 1, t), Rn = turn([0, 1, 0], [0, 0, 1], norm(mix3(norm(d), mul(R, [0, 1, 0]), w)), norm(mix3(f, f1, w)));
       prev = Rn[2];
       const th = lerp(1, size, smooth(0.15, 1, t)) * lerp(1, thick, Math.sin(Math.PI * t));
       this.lock['n' + q] = { p: pts[q], R: Rn, S: stretched(Rn, [0, 1, 0], len(d) / (seg * (i1 - i0) * k0 * th)), k: k0 * th };

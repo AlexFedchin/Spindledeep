@@ -521,7 +521,10 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     if (kind < 0.75 && am > 0.02) {
       let over = mix(smoothstep(-0.30, -0.05, d), 1.0, step(kind, 0.25));
       let sil = min(am, max(ap, 1.0 - a0));
-      paperMask *= 1.0 - max(smoothstep(0.25, 0.75, sil), smoothstep(0.42, 0.72, bend) * 0.9) * over;
+      // small, lying about or on her shelf (kind 0.5): a hairline, and its inner folds barely marked; held up: the doll's line
+      let small = step(0.25, kind);
+      let edge = mix(smoothstep(0.25, 0.75, sil), smoothstep(0.62, 0.98, sil) * 0.8, small);
+      paperMask *= 1.0 - max(edge, smoothstep(0.42, 0.72, bend) * mix(0.9, 0.35, small)) * over;
     }
   }
 
@@ -674,7 +677,9 @@ fn segd(p: vec2f, a: vec2f, b: vec2f) -> vec2f {     // distance to segment ab, 
   // a loose fibre catches the light: paler than the strand it comes out of
   let hc = mix(i.col.rgb, vec3f(1.0, 0.62, 0.52) * max(max(i.col.r, i.col.g), 0.35), 0.42);
   let col = i.col.rgb * tone * ac + hc * ah * (1.0 - ac);
-  return vec4f(col, ac + ah * (1.0 - ac));
+  // it goes out with the picture: a fade to black (any screen change, a death, the end) takes the thread with it
+  let keep = 1.0 - clamp(u.fade, 0.0, 1.0);
+  return vec4f(col * keep, (ac + ah * (1.0 - ac)) * keep);
 }
 `;
 

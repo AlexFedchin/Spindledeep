@@ -109,7 +109,8 @@ export class World {
     const ctx = { slow: this.slow ?? 1, budgetLeft: () => this.budgetLeft(), gates: this.gates, hooks: this.hooks, ropeNear: (x, y, m) => this.deep.ropeNear(x, y, m) };
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt); this.rig.pre();
-    p.update(dt, controls && !p.dead && !this.ending && !(this.rest.at && !inp.axisX && !inp.pressed.jump && !inp.held.grip) ? inp : blank, th, ctx);
+    // (in the ending she is walked by ending.js: `ending.walk` is the stick it holds)
+    p.update(dt, this.ending ? (this.ending.walk || blank) : controls && !p.dead && !(this.rest.at && !inp.axisX && !inp.pressed.jump && !inp.held.grip) ? inp : blank, th, ctx);
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, this.budgetLeft(), false);
     th.buildPoly(p.bx, p.by);
@@ -455,6 +456,9 @@ export class World {
     if (this.extraLights) out.push(...this.extraLights);
     // a found item held up in the showcase: a warm light on it (and on her face below it)
     if (this.showcase && this.showcase.item) { const it = this.showcase.item; out.push({ x: it.x, y: it.y, r: 3.2, i: 0.3 * it.a, c: [1.0, 0.82, 0.6], soft: 10 }); }
+    // her shelf, close: the window, her own warmth and the thread are right beside it and would wash it out; one soft light on the boards
+    const SC = this.showcase;
+    if (SC && SC.shelf && SC.mode === 'board') { for (const l of out) l.i *= 0.3; out.push({ x: 15.1, y: 2.75, z: 1.2, r: 2.6, i: 0.6, c: [0.96, 0.9, 0.8], soft: 12 }); }
     // the cottage doorway while she walks out: warm room light spilling onto the snow
     if (this.intro && this.intro.door > 0.01) out.push({ x: L.COTTAGE.x + 5.975, y: L.COTTAGE.y + 0.15, r: 3.2, i: 0.28 * this.intro.door, c: [1.0, 0.62, 0.3], soft: 10 });   // low, on the step: a lamp at her height washes her out
     return out;

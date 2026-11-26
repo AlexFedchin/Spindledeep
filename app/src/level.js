@@ -519,6 +519,8 @@ export const FINALE = {
   tieit: 'Tie it. Tie it. Tie it. Tie it. Tie it.',
   after: 'Thank you, little one. Now we can all come up.',
   cut: 'What have you done?',
+  cut2: 'You let go. You were never to let go.',
+  cut4: 'Hold on to me!',
   cut3: "Little one? Little one? That isn't a name. What is your name?",
   names: ['Ada?', 'Agnes?', 'Alice?', 'Anna?', 'Beatrice?', 'Bertha?', 'Catherine?', 'Clara?', 'Dora?', 'Edith?', 'Eleanor?', 'Ellen?', 'Emma?'],
 };

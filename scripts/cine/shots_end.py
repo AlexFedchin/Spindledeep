@@ -1830,7 +1830,7 @@ def wall_way(bvh, C, pts):
 NAMES = [(0.0, 0.80), (1.47, 0.86), (2.98, 0.74), (4.28, 0.68), (5.82, 0.92), (7.44, 0.77), (8.87, 0.84), (10.41, 0.76), (11.77, 0.68), (13.27, 0.62), (14.76, 0.89), (16.37, 0.68), (17.80, 0.63)]
 
 
-@shot(exposure=1.0)  # auto=1.2
+@shot(exposure=1.0)  # auto=1.2 soft=0.6
 def N1(out, preview):
     """after the titles of the bitten ending: the doll on the floor at the bottom, in what light comes down the well; behind it,
     along the walls, what is down there with it goes round and tries the names that are left. The view goes back and back"""

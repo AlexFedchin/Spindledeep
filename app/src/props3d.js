@@ -17,6 +17,9 @@ const HOLD = {
   pattern: { tip: 0.02, z: 1.12, sway: 0.16, nod: 0.04, blur: 0, flat: 0.7 }, shoe: { tip: 0.34, z: 1.14, yaw: 0.1, sway: 0.2, nod: 0.05, blur: 1.8 }, skein: { tip: 0.2, z: 0.92, sway: 0.22, nod: 0.06, blur: 2 },
 };
 const KINDS = Object.keys(HOLD);
+const SHELVED = KINDS.filter((k) => k !== 'skein');
+// where each keepsake stands on her shelf by the door
+export function shelfSpot(kind) { const i = SHELVED.indexOf(kind); return [14.76 + (i % 6) * 0.258, 1.84 + (i < 6 ? 0.42 : 0) + 0.11]; }
 
 async function mips(src) {
   const out = [src];
@@ -64,13 +67,19 @@ export class Items {
       out.push(P);
     };
     // her shelf, beside the door: what has been brought home, small
-    if ((W.found || []).length && vis(15.4, 2.2)) KINDS.filter((k) => k !== 'skein').forEach((kind, i) => {
+    const SC = W.showcase, board = SC && SC.shelf;
+    if ((W.found || []).length && vis(15.4, 2.2)) SHELVED.forEach((kind, i) => {
       if (!W.found.includes(kind)) return;
       this.need(kind);
       if (!READY.has(kind)) return;
-      const P = this.one('shelf' + i, kind), H = HOLD[kind];
-      P.at = [14.76 + (i % 6) * 0.258, 1.84 + (i < 6 ? 0.42 : 0) + 0.11, 0.2]; P.k = 0.108; P.gain = 1; P.env = 0.1; P.over = false; P.own = false; P.lights = []; P.blur = H.blur + 1; P.flat = H.flat;
-      P.R = euler(H.tip * 0.6, (H.yaw || 0) + Math.sin(i * 2.1) * 0.2, 0);
+      if (board && SC.mode === 'item' && SC.kind === kind) return;          // taken down: it is in her hands, not on the shelf
+      const P = this.one('shelf' + i, kind), H = HOLD[kind], [x, y] = shelfSpot(kind);
+      // pointed at on the shelf, close: it lifts a little and catches the light
+      const on = board && SC.mode === 'board' && SC.hover >= 0 && SC.shelf[SC.hover].kind === kind;
+      const u = (P.hov = lerp(P.hov || 0, on ? 1 : 0, clamp(dt * 10, 0, 1)));
+      P.at = [x, y + 0.025 * u, 0.2]; P.k = 0.108 * (1 + 0.12 * u); P.gain = 1 + 0.35 * u; P.env = 0.1 + 0.2 * u; P.over = !!board; P.own = false;      // (on the shelf, close: lit while the wall behind goes quiet) P.blur = H.blur + 1 - 0.6 * u; P.flat = H.flat;
+      P.lights = u > 0.02 ? [{ x: x - 0.2, y: y + 0.35, z: 0.6, r: 0.9, i: 0.5 * u, c: [1, 0.86, 0.66] }] : [];
+      P.R = euler(H.tip * 0.6, (H.yaw || 0) + Math.sin(i * 2.1) * 0.2 + Math.sin(t * 1.6) * 0.18 * u, 0);
       out.push(P);
     });
     W.skeins.forEach((s, i) => { if (!s.taken) lying('s' + i, 'skein', s.x, s.y, s.bob); });

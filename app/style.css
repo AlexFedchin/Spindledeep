@@ -122,6 +122,13 @@ body.turning { cursor: grab; } body.turning:active { cursor: grabbing; }
 
 /* a found keepsake or skein: the world darkens around the thing she holds up (the item itself is drawn by the game,
    engraved like everything else, at the bright centre of this vignette); the words come in one after another */
+/* her shelf, close: a caption over the boards; the name of the one pointed at */
+#shelfui { position: fixed; inset: 0; z-index: 15; pointer-events: none; transition: opacity 0.8s ease-in-out; text-align: center; }
+#shelfui .btitle { position: absolute; left: 0; right: 0; top: 6vh; font-family: 'FellSC'; font-size: clamp(22px, 1.9vw, 34px); letter-spacing: 0.22em; color: var(--paper-dim); text-shadow: 0 2px 14px #000; }
+#shelfui .bname { position: absolute; left: 0; right: 0; bottom: 15vh; font-family: 'FellSC'; font-size: clamp(26px, 2.4vw, 44px); letter-spacing: 0.14em; color: var(--paper); text-shadow: 0 2px 18px #000, 0 0 2px #000; transition: opacity 0.25s; }
+#shelfui .bname.swapping { opacity: 0; }
+#shelfui .bcount { position: absolute; left: 0; right: 0; bottom: 10.5vh; font-family: 'FellSC'; font-size: clamp(14px, 1.1vw, 19px); letter-spacing: 0.22em; color: var(--paper-dim); text-shadow: 0 1px 8px #000; }
+#shelfui .bhint { position: absolute; left: 0; right: 0; bottom: 5vh; font-style: italic; font-size: clamp(15px, 1.1vw, 18px); color: var(--paper-dim); text-shadow: 0 1px 8px #000; }
 #show { position: fixed; inset: 0; z-index: 15; pointer-events: none; transition: opacity 1s ease-in-out;
   background: radial-gradient(ellipse 44% 46% at 50% 33%, rgba(8,7,12,0) 42%, rgba(8,7,12,0.5) 74%, rgba(8,7,12,0.86) 100%),
     linear-gradient(180deg, rgba(8,7,12,0.35) 0%, rgba(8,7,12,0) 30%, rgba(8,7,12,0.55) 58%, rgba(8,7,12,0.92) 100%); }

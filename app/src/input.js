@@ -12,7 +12,7 @@ const NAMES = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Right Shift', C
 
 export class Input {
   constructor() {
-    this.keys = new Set();
+    this.keys = new Set(); this.taps = new Set();      // taps: keys that went down since the last poll (a tap shorter than a frame still counts)
     this.held = {}; this.pressed = {}; this.prev = {};
     this.usingPad = false;
     this.map = clone(); this.custom = {};
@@ -20,7 +20,7 @@ export class Input {
     addEventListener('keydown', (e) => {
       if (e.repeat) return;
       if (this.capture) { const f = this.capture; this.capture = null; e.preventDefault(); this.swallow = e.code; f(e.code); return; }
-      this.keys.add(e.code); this.usingPad = false;
+      this.keys.add(e.code); this.taps.add(e.code); this.usingPad = false;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -57,7 +57,9 @@ export class Input {
       if (ax) this.axisX = ax; else if (pad.left || pad.right) this.axisX = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
       if (ay) this.axisY = ay; else if (pad.up || pad.down) this.axisY = (pad.up ? 1 : 0) - (pad.down ? 1 : 0);
     }
-    for (const a in now) { this.pressed[a] = now[a] && !this.prev[a]; this.held[a] = now[a]; }
+    const tap = (a) => this.map[a].some((k) => this.taps.has(k)) || (ALWAYS[a] && this.taps.has(ALWAYS[a]));
+    for (const a in now) { this.pressed[a] = (now[a] && !this.prev[a]) || (!now[a] && tap(a)); this.held[a] = now[a]; }
+    this.taps.clear();
     this.prev = now;
   }
   // label for an action prompt, matching the device in use

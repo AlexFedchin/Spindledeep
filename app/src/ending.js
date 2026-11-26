@@ -89,7 +89,11 @@ export class Ending {
     A.stopVoices();
     w.player.facing = -1;
     if (mode === 'tie') { A.beds({}); A.play('tie', { vol: 0.8 }); }
-    else { A.beds({ amb_breath: 0.5 }); A.play('cut', { vol: 1 }); A.play('tear', { vol: 0.35, rate: 0.8 }); this.n0 = w.thread.n; w.thread.locked = false; w.thread.pivots = []; }
+    else {
+      A.beds({ amb_breath: 0.5 }); A.play('cut', { vol: 1 }); A.play('tear', { vol: 0.35, rate: 0.8 });
+      // bitten through at her hand: the end comes away from her and drops to the floor
+      this.n0 = w.thread.n; w.thread.letGo();
+    }
   }
 
   update(dt) {
@@ -235,21 +239,24 @@ export class Ending {
 
   cut_bite(dt, t) {
     const { W, A, D, cam, playLine } = this.c, w = W(), th = w.thing, f = w.finale, p = w.player, T = w.thread;
-    const n = Math.min(this.n0, Math.floor(t * 260));
+    // the red goes out of it from the bitten end back, once it has fallen
+    const n = Math.min(this.n0, Math.floor(Math.max(0, t - 0.9) * 260));
     for (let i = this.n0 - 1; i >= this.n0 - n && i >= 0; i--) T.dead[i] = 1;
-    if (n >= this.n0) { T.liveStart = T.n; T.anchored = false; }
     this.at(0.1, 'teeth', () => { D().spawn('fiber', p.bx, p.by + 0.1, 16, { speed: 1.2, life: 1.6, vy: 0.4 }); cam.shake = 0.15; });
+    this.at(0.55, 'lands', () => A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.25, rate: 1.2, x: p.x, y: p.y }));
     this.at(3.0, 'c1', () => playLine('cut1', L.FINALE.cut));
-    for (const [s, j] of [[5.4, 1], [5.8, 2], [6.1, 1]]) this.at(s, 'b' + s, () => A.play('bone' + j, { vol: 0.8, rate: 0.6 + Math.random() * 0.2, verb: 1 }));
-    this.at(5.9, 'c1b', () => { A.voice('cut1', null, 0.62); this.c.sub(L.FINALE.cut, 1.3); });
-    this.at(7.3, 'go', () => { this.c.sub('', 0.01); A.play('drag', { vol: 0.9, rate: 0.8, verb: 1 }); A.play('inhale', { vol: 0.8, rate: 1.5, verb: 1 }); cam.shake = 0.3; });
-    th.lean = lerp(this.h0, 1.0, (smooth(5.4, 5.55, t) + smooth(5.8, 5.95, t) + smooth(6.1, 6.2, t)) / 3); th.hollow = lerp(0.9, 1, smooth(5, 6, t));
-    th.mouth = 0.35 * Math.abs(Math.sin(t * 7)) * smooth(2.9, 3.2, t) * (1 - smooth(4.6, 4.9, t)) + 1.5 * smooth(6.0, 6.3, t);
+    // then, colder, the one rule it was made to keep; then it comes for her, a joint at a time
+    this.at(4.9, 'c2', () => { A.voice('cut2', null, 0.94); this.c.sub(L.FINALE.cut2, 4.2); });
+    for (const [s, j] of [[9.1, 1], [9.5, 2], [9.8, 1]]) this.at(s, 'b' + s, () => A.play('bone' + j, { vol: 0.8, rate: 0.6 + Math.random() * 0.2, verb: 1 }));
+    this.at(11.0, 'go', () => { this.c.sub('', 0.01); A.play('drag', { vol: 0.9, rate: 0.8, verb: 1 }); A.play('inhale', { vol: 0.8, rate: 1.5, verb: 1 }); cam.shake = 0.3; });
+    th.lean = lerp(this.h0, 1.0, (smooth(9.1, 9.25, t) + smooth(9.5, 9.65, t) + smooth(9.8, 9.9, t)) / 3); th.hollow = lerp(0.9, 1, smooth(8.7, 9.7, t));
+    const talk = smooth(2.9, 3.2, t) * (1 - smooth(4.4, 4.7, t)) + smooth(4.95, 5.2, t) * (1 - smooth(8.7, 9.0, t));
+    th.mouth = 0.35 * Math.abs(Math.sin(t * 7)) * talk + 1.5 * smooth(9.7, 10.0, t);
     this.lights.push({ x: 17.2, y: f.y + 2.2, z: 1.2, r: 6.5, i: 0.42, c: [0.86, 0.84, 0.95], soft: 0 });
     const inn = smooth(0, 1.2, t) * (1 - smooth(2.4, 4.2, t));
     this.view = { x: lerp(p.x - 1.2, p.x + 0.4, inn), y: lerp(f.y + 1.7, p.y + 0.5, inn), vh: lerp(6.6, 3.4, inn) };
-    this.dark = smooth(7.4, 7.9, t);
-    if (t > 8.3) this.startDies();
+    this.dark = smooth(11.1, 11.6, t);
+    if (t > 12.0) this.startDies();
   }
 
   // the thread, from the dark to her door, as arc lengths (shared with the climb of the other ending)
@@ -341,7 +348,7 @@ export class Ending {
       c.look = damp(c.look, h > 0.45 ? 1 : 0, 9, dt); c.mouth = damp(c.mouth, h < HANG ? 0.15 : 2.2, 10, dt); c.twitch = 0.2;
       this.atS(top + 0.4, 'gasp', () => A.play('inhale', { vol: 0.9, rate: 1.3, verb: 1 }));
       if (t > off) {
-        this.once('off', () => { A.voice('cut1', null, 0.5); cam.shake = 0.5; });
+        this.once('off', () => { A.voice('cut4', null, 0.88); this.c.sub(L.FINALE.cut4, 1.6); cam.shake = 0.5; });
         const q = t - off;
         P.drop = 0.9 + 0.5 * 17 * q * q + 2 * q; this.spin = q * 1.6; c.jump = q > 0.05;
         this.atS(off + 2.2, 'thud', () => { A.play('thud', { vol: 1.0, rate: 0.6, verb: 1.8 }); cam.shake = 0.2; A.play('land', { vol: 0.8, rate: 0.35, verb: 1.6 }); });
@@ -372,9 +379,11 @@ export class Ending {
     const palm = (dx, v) => A.pick(['palm1', 'palm2', 'palm3'], { vol: v, vary: 0.2, x: p.x + dx, y: p.y, verb: 1 });
     // back along her own dead thread to the light, and to her
     if (!this.reached) {
+      // she walks (her own steps, at a walk), slowing for the last metre, and stops by the candle
       p.facing = 1;
-      if (t > 1.6) p.vx = 1.45;
-      if (p.x > GOAL || t > 13) { this.reached = t; p.vx = 0; log('at the candle'); }
+      const left = GOAL - p.x;
+      w.ending.walk = t > 1.6 ? { axisX: clamp(0.08 + left * 0.3, 0.1, 0.24), axisY: 0, held: {}, pressed: {} } : null;
+      if (left < 0.05 || t > 16) { this.reached = t; w.ending.walk = null; log('at the candle'); }
       for (const [s, dx] of [[5.5, -9], [6.4, -8.4], [7.3, -8]]) this.atS(s, 'l' + s, () => palm(dx, 0.4));
     }
     const on = this.reached > 0, r = on ? t - this.reached : 0, R = (s, k, f) => { if (on && r > s) this.once(k, f); };
@@ -382,6 +391,8 @@ export class Ending {
     this.view = { x: lerp(p.x + 1.0, p.x + 0.25, look), y: lerp(p.y + 1.1, p.y + 0.8, look), vh: lerp(5.4, 3.7, look) };
     if (this.lamp) this.lamp.i = 0.9 * (1 - (on ? 0.8 * smooth(3, 10, r) : 0));
     this.dark = Math.max(1 - smooth(0.1, 1.4, t), on ? smooth(19.5, 20.3, r) : 0);
+    // and sits down beside it, facing it
+    R(0.5, 'sit', () => { w.rest.at = { x: p.x, y: p.y, flip: 1, held: true }; A.pick(['cloth1', 'cloth2'], { vol: 0.3, rate: 1.1, x: p.x, y: p.y }); });
     R(0.4, 'r1', () => palm(-7, 0.6)); R(1.2, 'r2', () => palm(-5.8, 0.7)); R(1.7, 'r3', () => palm(-4.8, 0.85));
     R(2.0, 'drg', () => A.play('drag', { vol: 0.5, rate: 0.7, x: p.x - 5, y: p.y }));
     th.lean = on ? smooth(2.4, 5, r) * 0.5 : 0;                 // (the candle leans away from it)
@@ -389,9 +400,17 @@ export class Ending {
       th.gone = false; th.hollow = 1;
       // in from the left, in two pulls; then, while it asks, up over her head and down the other side, to see if that helps
       const come = 0.55 * smooth(2.6, 4.0, r) + 0.45 * smooth(4.5, 5.1, r), over = smooth(9.6, 13.2, r), ph = Math.PI * (1 - over), sn = Math.sin(ph), cs = Math.cos(ph);
-      const ring = [p.x + cs * 1.2, p.y + 0.56 + sn * 1.25, 0.25 + 0.15 * sn], far = [p.x - 5.6, p.y + 2.4, -2.4], at = V3.mix3(far, ring, come);
+      const ring = [p.x + cs * 1.2, p.y + 0.56 + sn * 1.25, 0.25 + 0.15 * sn], far = [p.x - 5.6, p.y + 2.4, -2.4];
+      let at = V3.mix3(far, ring, come);
       at[0] += Math.sin(t * 31) * 0.004;
-      const face = V3.norm([-cs * 0.75, -0.1 - sn * 0.75, 0.8]), up = V3.norm([0.25 * -cs + 1.5 * sn, 1 - 1.7 * sn, 0]);
+      let face = V3.norm([-cs * 0.75, -0.1 - sn * 0.75, 0.8]), up = V3.norm([0.25 * -cs + 1.5 * sn, 1 - 1.7 * sn, 0]);
+      // to put the candle out it turns its head to the flame, comes down beside it, and blows on it
+      const L0 = this.lamp || { x: 26.4, y: -443.3 }, flame = [L0.x, L0.y + 0.06, 0.2], bk = smooth(16.6, 17.8, r) * (1 - smooth(20.2, 21.0, r));
+      if (bk > 0) {
+        at = V3.mix3(at, [flame[0] - 0.62, flame[1] + 0.34, 0.5], bk);
+        face = V3.norm(V3.mix3(face, V3.norm(V3.sub(flame, at)), bk));
+        up = V3.norm(V3.mix3(up, [0.45, 1, 0], bk));
+      }
       this.once('come', () => { A.play('bone1', { vol: 0.6, rate: 0.6, verb: 0.8 }); log('it asks'); });
       R(4.5, 'come2', () => A.play('bone2', { vol: 0.6, rate: 0.6, verb: 0.6 }));
       R(5.2, 'sniff', () => A.play('inhale', { vol: 0.5, rate: 1.1, verb: 0.4 }));
@@ -404,7 +423,7 @@ export class Ending {
         bend: [[p.x - 6.2, p.y + 4.6, -3.4], V3.add(at, [-1.5 - sn * 0.4 + cs * 0.2, lerp(1.5, 2.2, sn) + over * 0.7, -1.7])] };
       th.lights = [{ x: at[0] + 0.5, y: at[1] + 1.0, z: 1.4, r: 3, i: (0.6 - 0.25 * over) * smooth(3.4, 5, r), c: [0.9, 0.9, 1.0] }];
       th.gain = smooth(2.6, 3.6, r) * (1 - smooth(19.5, 20.1, r));
-      R(19.1, 'out', () => { w.candleOut = w.time; w.lamps = w.lamps.filter((l) => !l.finale); A.play('release', { vol: 0.7, rate: 0.4 }); A.beds({}); });
+      R(19.1, 'out', () => { this.c.sub('', 0.01); w.candleOut = w.time; w.lamps = w.lamps.filter((l) => !l.finale); A.play('release', { vol: 0.7, rate: 0.4 }); A.beds({}); });
     }
     R(21.2, 'film', () => this.c.film(CARDS.cut, 'cut', true));
   }
