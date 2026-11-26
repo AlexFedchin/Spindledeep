@@ -2,14 +2,14 @@
 //  · a sinking ring goes down under her while she hangs from it and lifts a door; let go, it creeps back up and the door comes down
 //  · a pull: catch it in the air, land still holding, and wind in: it slides toward her and stays where it is left
 //  · a spindle turns while the thread runs past it; a door opens when all of its spindles turn at once
-//  · a bobbin rolls up and down its lane and crushes; it fouls on a thread lying across its way, and stands a while
+//  · a bobbin rolls up and down its lane and crushes; it rolls over the thread as if it were not there (the user asked: it passes,
+//    it never stops over her), so the way past is to lie in a gutter and let it go over
 // Rules only (world.js calls it, drawrig.js draws it); it says what happened through the world's events.
 import * as L from './level.js';
 import { clamp } from './util.js';
 
 export const SINK = { down: 0.4, up: 0.3, at: 0.36, hold: 6.5, lift: 1.5, drop: 0.35 };
 export const STRIP = { hold: 0.62, back: 3.4 };
-export const BOB = { foul: 4.2, rest: 2.6, cost: 4 };
 
 export class Rig {
   constructor(W) {
@@ -19,7 +19,7 @@ export class Rig {
     this.pulls = W.hooks.filter((h) => h.pull);
     for (const h of this.pulls) { h.f = 0; h.from = h.x; h.tick = 0; }
     this.spindles = L.SPINDLES.map((s, i) => ({ ...s, i, on: false, a: i * 1.3, v: 0 }));
-    this.bobbins = L.BOBBINS.map((b, i) => ({ ...b, i, x: b.x1, y: b.y + b.r, dir: -1, a: 0, st: 'roll', t: 0, free: 0, v: 0 }));
+    this.bobbins = L.BOBBINS.map((b, i) => ({ ...b, i, x: b.x1, y: b.y + b.r, dir: -1, a: 0, t: 0, v: 0 }));
     this.gates = Object.fromEntries(W.gates.filter((g) => g.rig).map((g) => [g.id, g]));
     for (const g of Object.values(this.gates)) { g.base = g.y0; g.hold = 0; g.end = g.x0; }
     this.n = 0;
@@ -124,31 +124,15 @@ export class Rig {
   }
 
   _bobbin(b, dt) {
-    const W = this.W, p = W.player, th = W.thread;
+    const W = this.W, p = W.player;
     const near = p.x > b.x0 - 24 && p.x < b.x1 + 24 && Math.abs(p.y - b.y) < 14;
-    if (!near) { b.x = b.x1; b.dir = -1; b.st = 'roll'; b.v = 0; b.free = 0; return; }
-    b.t += dt; b.free = Math.max(0, b.free - dt);
-    if (b.st === 'foul') {
-      b.v = 0;
-      if (b.t > BOB.foul) { b.st = 'roll'; b.free = BOB.rest; W.emit('bobFree', { x: b.x, y: b.y }); }
-      return;
-    }
+    if (!near) { b.x = b.x1; b.dir = -1; b.v = 0; return; }
+    b.t += dt;
     b.v += (b.dir * b.speed - b.v) * Math.min(1, dt * 1.6);
     b.x += b.v * dt; b.a += b.v * dt / b.r;
     if (b.dir > 0 ? b.x > b.x1 : b.x < b.x0) { b.dir = -b.dir; W.emit('bobTurn', { x: b.x, y: b.y }); }
     if (Math.floor(b.a / 0.9) !== b.k) { b.k = Math.floor(b.a / 0.9); W.emit('bobRoll', { x: b.x, y: b.y - b.r }); }
-    // the thread lying across its way, just where it touches down
-    if (b.free <= 0 && Math.abs(b.v) > 1) {
-      const fx = b.x + Math.sign(b.v) * b.r * 0.55;
-      for (let i = 0; i < th.n; i++) {
-        if (th.dead[i] || Math.abs(th.x[i] - fx) > 0.25 || th.y[i] > b.y - b.r + 0.55 || th.y[i] < b.y - b.r - 0.5) continue;
-        if (Math.hypot(th.x[i] - p.x, th.y[i] - p.y) < 1.1) continue;      // not the bit she is standing on
-        b.st = 'foul'; b.t = 0; b.fx = th.x[i]; b.fy = th.y[i]; W.hurt += BOB.cost;
-        W.emit('foul', { x: b.x, y: b.y });
-        break;
-      }
-    }
     if (!p.dead && !W.ending && Math.abs(b.v) > 0.4 && Math.hypot(p.x - b.x, p.y - b.y) < b.r + p.r * 0.75) W._die('crushed');
   }
-  onRespawn() { for (const b of this.bobbins) { b.x = b.x1; b.dir = -1; b.st = 'roll'; b.v = 0; b.free = 1; } for (const h of this.sinks) h.off = 0; for (const g of this.W.gates) if (g.give) { g.open = 0; g.load = false; } }
+  onRespawn() { for (const b of this.bobbins) { b.x = b.x1; b.dir = -1; b.v = 0; } for (const h of this.sinks) h.off = 0; for (const g of this.W.gates) if (g.give) { g.open = 0; g.load = false; } }
 }

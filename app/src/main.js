@@ -496,8 +496,6 @@ function handleEvents() {
       case 'latched': A.play('gate', { vol: 0.6, rate: 1.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.25, rate: 0.7, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y, 10, { speed: 1.6, life: 0.7 }); save(); break;
       case 'spindle': A.any('whirr', { vol: 0.5, vary: 0.1, x: e.x, y: e.y }); A.play('chime', { vol: 0.4, rate: 0.85 + e.i * 0.18, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1.4, life: 0.7 }); break;
       case 'spindleOff': A.any('clack', { vol: 0.3, rate: 0.9, x: e.x, y: e.y }); break;
-      case 'foul': A.play('snag', { vol: 0.7, rate: 0.7, x: e.x, y: e.y }); A.any('timber', { vol: 0.5, rate: 0.7, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.18); D.spawn('fiber', e.x, e.y - 1, 10, { speed: 1.6, life: 1.2 }); break;
-      case 'bobFree': A.play('release', { vol: 0.5, rate: 0.6, x: e.x, y: e.y }); A.any('timber', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); break;
       case 'bobRoll': A.any('roll', { vol: 0.5, vary: 0.1, x: e.x, y: e.y }); break;
       case 'bobTurn': A.play('gate', { vol: 0.35, rate: 0.5, x: e.x, y: e.y }); break;
       case 'secretOpen': startReveal(e); break;

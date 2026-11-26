@@ -125,7 +125,7 @@ Builds: `build.cmd` bumps the patch version. Trailer: `scripts/trailer/capture.p
 ## The thread's machinery and the six rooms (2026-11-25)
 
 `rig.js` (rules), `drawrig.js`, `drawrooms.js` (furniture), data in `level.js`: hooks with `sink` (goes down under her, lifts a `rig` gate) or `pull` (wound in
-from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (fouls on the thread). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
+from the ground, stays), `SPINDLES` (turn while the thread runs past), `BOBBINS` (roll over the thread and everything else; the user asked 2026-11-26 that they never stop over her: lie in a gutter and let one pass). Rooms: mat in the Hall's hole → Weighing Room → Pews → H1;
 H1 → Slabs → Pin Walk → rope → H2; well ledge → bobbin's lane → lower room → the Loom's well. `LEVEL` planes their floors. Gate 0 and 1 must stay g2 and east.
 Check: `scripts/checks/rooms.mjs [frayed]` (`ONLY=name`, `TRACE=1`, `HANDS=1`). Beds of pins at floor level need the ring ~3.6 m up.
 Hands: `deaf` ones strike where she was heading (she stopped). They need open air to her to stir or seize, and the arm stops at rock (`_sees`, `_free`); scratchpad-style check: count arm frames inside rock. Pluck is `;` by default (F, J, C too). Frayed mode (`World.mode`): yarn x0.8 but never under 91 (the fall into the Loom).

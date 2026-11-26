@@ -544,7 +544,7 @@ function makeHints() {
     { x0: 29, x1: 44, y0: -262, y1: -248, keys: ['grip'], text: 'hang from the ring and it goes down · the door goes up · swing on before it drops', until: (w) => w.player.x < 15 },
     { x0: 4, x1: 13, y0: -284, y1: -268, when: (w) => w.rig.pulls[0].f < 1, keys: ['jump', 'grip', 'up'], text: 'catch the handle in the air · land, still holding · wind in', until: (w) => w.player.x > 24 },
     { x0: 26, x1: 68, y0: -305, y1: -294, text: 'the spindles turn where your thread runs past them · the door wants both', until: (w) => w.player.x < 27 },
-    { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it pass · it will foul on your thread', until: (w) => w.player.x < 62 },
+    { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it roll over you', until: (w) => w.player.x < 62 },
     { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck, but not too often', until: (w) => w.player.x > 62 },
     { x0: 55, x1: 98, y0: -92, y1: -76, keys: ['dim'], text: 'hold to dim the thread · your eyes get used to the dark', until: (w) => w.dim > 0.9 },
     { x0: 66, x1: 98, y0: -327, y1: -314, keys: ['dim'], text: 'hold to dim · in the dark they feel less of you', until: (w) => w.player.x < 66 },

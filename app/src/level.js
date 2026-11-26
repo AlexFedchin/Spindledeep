@@ -460,7 +460,7 @@ export const DRIPS = [{ x: 67.6, y: -171 }, { x: 46.2, y: -173 }, { x: 89.2, y: 
 export const SPINDLES = [
   { x: 54.2, y: -300.1, r: 0.95, gate: 'h1' }, { x: 37.6, y: -302.3, r: 0.95, gate: 'h1' },
 ];
-// A bobbin as big as a cart rolls between x0 and x1 on a floor at y. It fouls on a thread across its way.
+// A bobbin as big as a cart rolls between x0 and x1 on a floor at y, over the thread and everything else.
 export const BOBBINS = [{ x0: 63, x1: 93.5, y: -405, r: 1.25, speed: 5.2 }, { x0: 58.6, x1: 75.4, y: -471.4, r: 1.25, speed: 5.6 }];
 
 // The knitter's grey thread: from her door, down through the deep, to her chair. Knots hold her voice.

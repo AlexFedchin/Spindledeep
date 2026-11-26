@@ -93,7 +93,7 @@ export function drawRig(D, ctx, ectx) {
   // ── the bobbin ──
   for (const b of R.bobbins) {
     if (!D.vis(b.x, b.y, 4)) continue;
-    const jit = b.st === 'foul' ? Math.sin(D.time * 50) * 0.02 * Math.min(1, b.t / 4) : 0, x = b.x + jit;
+    const x = b.x;
     // gutters of its lane are in the rock; the rail it runs on is worn into the floor
     disc(x, b.y, b.r, 0.26, 0.02, 0.05);
     ctx.save(); ctx.translate(X(x), Y(b.y)); ctx.rotate(b.a);
@@ -108,10 +108,6 @@ export function drawRig(D, ctx, ectx) {
     for (let q = 0; q < 5; q++) { const a = r() * TAU; ctx.strokeStyle = g(0.5); ctx.lineWidth = lw(0.02); ctx.beginPath(); ctx.moveTo(Math.cos(a) * b.r * 0.9 * k, Math.sin(a) * b.r * 0.9 * k); ctx.quadraticCurveTo(Math.cos(a + 0.3) * b.r * 1.25 * k, Math.sin(a + 0.3) * b.r * 1.25 * k, Math.cos(a + 0.5) * b.r * 1.02 * k, Math.sin(a + 0.5) * b.r * 1.02 * k); ctx.stroke(); }
     ctx.restore();
     disc(x, b.y, 0.34, 0.14, 0.02, 0.03); disc(x, b.y, 0.16, 0.02, 0.4, 0.015);
-    if (b.st === 'foul') {
-      ectx.strokeStyle = 'rgba(255,50,40,0.7)'; ectx.lineWidth = lw(0.03, 1.4);
-      for (let q = 0; q < 3; q++) { ectx.beginPath(); ectx.arc(X(x), Y(b.y), (b.r + 0.02) * k, Math.PI * 0.5 - 0.5 - q * 0.3, Math.PI * 0.5 + 0.7 + q * 0.5); ectx.stroke(); }
-    }
   }
 }
 

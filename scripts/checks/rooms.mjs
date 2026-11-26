@@ -64,8 +64,8 @@ sweep('Pin Walk: second ring (swinging)', 37, (rel) => ring(1, 56.2, rel, 61.4),
 sweep('Pin Walk: the rope up', 38, () => { let off = false; return (W, p, t, inp) => { inp.axisX = p.x < 83.9 && !p.climb ? 1 : 0; if (p.x > 83.2 && p.y < -285 && !off) { inp.held.grip = true; inp.axisY = 1; if (p.grounded && !p.climb) inp.pressed.jump = inp.held.jump = true; } if (p.climb) { inp.held.grip = true; inp.axisY = 1; } if (p.climb && p.y > -284.4) { inp.pressed.jump = true; inp.held.jump = true; inp.axisX = 1; off = true; } if (off) inp.axisX = 1; if (off && p.grounded && p.x > 85.5) return 'ok'; }; }, 0, 0.3, 0.1, 30);
 sweep('Bobbin: gutter to gutter', 39, (d) => { let g = 0, wait = d; const G = [86, 76, 66, 61]; return (W, p, t, inp) => {
   const b = W.rig.bobbins[0], goal = G[g], far = Math.abs(p.x - goal), low = p.y < -405.4 && far < 0.7;
-  if (low && g < 3) { // lying low: go when it has gone past, or stands fouled behind her
-    const behind = b.x > p.x + 1.8, off = behind ? (b.dir > 0 && b.st === 'roll' ? b.x - p.x > 2.5 : b.st === 'foul') : b.x < p.x - 1.5 && b.dir < 0 && false;
+  if (low && g < 3) { // lying low: go when it has rolled over her and away behind (east)
+    const off = b.x > p.x + 1.8 && b.dir > 0 && b.x - p.x > 2.5;
     if (off) { g++; return; }
     return;
   }

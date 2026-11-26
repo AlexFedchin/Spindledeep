@@ -156,7 +156,7 @@ const M = {
     while (n++ < 60 * 120) {
       if (died) return false;
       const to = all[g], far = Math.abs(p.x - to), lie = p.y < floor - 0.4 && far < 0.7, i = inp0();
-      if (g < G.length && lie) { if (B.x > p.x + 1.8 && (B.st === 'foul' || (B.dir > 0 && B.x - p.x > 2.5))) g++; else { step(i); continue; } }
+      if (g < G.length && lie) { if (B.x > p.x + 1.8 && B.dir > 0 && B.x - p.x > 2.5) g++; else { step(i); continue; } }
       if (g === 0 && p.x > B.x1 + 0.8 && !(B.dir > 0 ? B.x < G[0] - 2 : B.x < G[0] - 6)) { step(i); continue; }
       i.axisX = far > 0.15 ? Math.sign(to - p.x) : 0;
       if (p.y < floor - 0.4 && p.grounded && far > 1) i.pressed.jump = i.held.jump = true;
