@@ -1,0 +1,155 @@
+<title>Spindledeep The Yarn Itself</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; changes of 26 November, fourth batch</div>
+    <h1>The Yarn Itself</h1>
+    <p class="tag">Two plies twisted together<span></span>and a few loose hairs</p>
+  </header>
+
+  <div class="col summary">
+    <p>The red thread is now drawn as real yarn: two plies twisted round each other, rounded and lit from above, with fibres running along the twist and short stray hairs standing off its sides. It used to be a flat red band with faint stripes. The knitter&#39;s grey thread gets the same, though it is so thin that mostly the fuzz shows.</p>
+  </div>
+
+  <h2>Thread, Not a Line</h2>
+  <p class="ask">Can you slightly improve the visuals of the thread itself? It is currently just a line with some stripes, can you make it more detailed so that it actually looks like a thread? Maybe some tiny hairs out of it or something, idk</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/b_lip.jpg" alt="Before: a close view of the doll by her pole, the thread a flat striped red band">
+      <img class="after" src="img/a_lip.jpg" alt="After: the same view, the thread a twisted two-ply cord with stray hairs">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-lip" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Close in, at pole 1: the thread to the pole and along the ledge</p>
+
+    <div class="reveal">
+      <img src="img/b_play.jpg" alt="Before: the normal view, enlarged twice: a plain red line hanging off the lip">
+      <img class="after" src="img/a_play.jpg" alt="After: the same, the line now shows its twist and a slight fuzz">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-play" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">The normal playing view, enlarged 2&times; so the pixels can be seen</p>
+
+    <figure class="solo" style="max-width:100%">
+      <img src="img/macro.jpg" alt="The red thread very close up: a twisted cord with dark seams between two plies, fibres along each ply, and fine pale hairs curling off both sides.">
+      <figcaption>As close as the camera gets: the plies, the fibres, the hairs.</figcaption>
+    </figure>
+    <ul class="what">
+      <li><b>The twist:</b> two plies spiral round each other, with a dark seam where they meet. Each ply is lit along its middle and the strand is rounded, catching a little more light on top.</li>
+      <li><b>Fibres:</b> faint streaks running along each ply, so it reads as spun wool, not plastic.</li>
+      <li><b>Hairs:</b> short loose fibres curling off both sides, thinning to the tip and a little paler than the strand, as loose fibres catch the light.</li>
+      <li><b>They belong to the thread.</b> The twist and every hair are fixed to a point on the yarn, so they travel with it as it slides and pays out. They no longer slide when the camera moves, as the old stripes did.</li>
+      <li><b>Size and brightness:</b> the thread is a little thicker (about 4 px across at normal zoom on your 2560&times;1080 screen, was 3.5) and just as bright on average as the old line. It is the light you carry, so it must not dim. When it is too thin to show its make, it fades back to a plain line, so nothing flickers.</li>
+      <li><b>Joints:</b> where two pieces of the thread meet, the pattern runs on without a seam.</li>
+    </ul>
+    <p style="margin-top:14px">Nothing about how the thread behaves changed, only how it is drawn. A run from the cottage to the top of the Loom gave no errors. The shots on this page were taken at your screen&#39;s size; before, the test window was limited to 960&times;540.</p>
+  </div>
+
+  <div class="col">
+    <div class="files">
+      <div><b>app/src/shaders.js</b><span>THREAD: plies, fibres, hairs, rounded shading, seamless joints</span></div>
+      <div><b>app/src/main.js</b><span>each point of the thread carries how far along it is; the thread a little thicker</span></div>
+    </div>
+  </div>
+
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/Qjea5CvFEwKJx4WaDHCMAC">version 1.2.1</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

@@ -959,15 +959,18 @@ function buildPts(viewW, viewH, k) {
   const mx = viewW / 2 + 3, my = viewH / 2 + 3;
   const inV = (x, y) => Math.abs(x - cam.x) < mx && Math.abs(y - cam.y) < my;
   let open = false;
-  const put = (x, y, w, a, r, g, b) => { const o = n * 8; pts[o] = x; pts[o + 1] = y; pts[o + 2] = w; pts[o + 3] = a; pts[o + 4] = r; pts[o + 5] = g; pts[o + 6] = b; pts[o + 7] = 0; n++; };
+  // s: metres along the thread from its home end (the shader hangs the twist and the hairs on it, so they travel with the yarn)
+  const put = (x, y, w, a, r, g, b, s = 0) => { const o = n * 8; pts[o] = x; pts[o + 1] = y; pts[o + 2] = w; pts[o + 3] = a; pts[o + 4] = r; pts[o + 5] = g; pts[o + 6] = b; pts[o + 7] = s; n++; };
   const brk = () => { if (open) { put(0, 0, 0, 0, 0, 0, 0); open = false; } };
-  const wLive = Math.max(1.5, k * 0.024);
+  const wLive = Math.max(1.6, k * 0.027);
   // the knitter's grey thread
   const g = W.grey;
   const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1), low = 1 - 0.82 * (W.dim || 0);      // the threads go out with the picture
   const redTo = E && E.pulse ? E.pulse.total : -1;
+  let gs = 0;
   for (let i = 0; i < g.n; i++) {
     const x = g.x[i]; let y = g.y[i];
+    if (i > 0) gs += Math.hypot(x - g.x[i - 1], g.y[i] - g.y[i - 1]);
     if (!inV(x, y)) { brk(); continue; }
     let r = 0.6, gg = 0.58, b = 0.55, a = 0.75, w = Math.max(1, k * 0.014);
     if (redTo > 0 && i <= E.pulse.gi && E.pulse.arc[i] <= redTo) { const gone = E.pulse.arc[i] < E.pulse.s; if (!gone || !E.pulse.bite) { r = gone ? 0.12 : 0.85; gg = 0.1; b = 0.1; a = gone ? 0.5 : 1; w = wLive * 0.85; } }
@@ -977,13 +980,14 @@ function buildPts(viewW, viewH, k) {
       if (a <= 0 || !inV(x, y) || (i > 0 && E.pulse.arc[i - 1] >= E.pulse.cut)) { brk(); if (a <= 0 || !inV(x, y)) continue; }
     }
     a *= lit;
-    put(x, y, w, a, r, gg, b); open = true;
+    put(x, y, w, a, r, gg, b, gs); open = true;
   }
   // its end, in the hands of whoever is holding it out
   const hd = W.thing && !W.thing.gone && !W.thing.slack && W.thing.hands;
   if (hd && state !== 'title' && inV(hd[0], hd[1])) {
     const gx = g.x[g.n - 1], gy = g.y[g.n - 1], a = 0.75 * lit * (W.thing.gain ?? 1);
-    for (let i = 0; i <= 12; i++) { const u = i / 12; put(lerp(gx, hd[0], u), lerp(gy, hd[1], u) - Math.sin(u * Math.PI) * 0.12, Math.max(1, k * 0.014), a, 0.6, 0.58, 0.55); }
+    const hl = Math.hypot(hd[0] - gx, hd[1] - gy);
+    for (let i = 0; i <= 12; i++) { const u = i / 12; put(lerp(gx, hd[0], u), lerp(gy, hd[1], u) - Math.sin(u * Math.PI) * 0.12, Math.max(1, k * 0.014), a, 0.6, 0.58, 0.55, gs + hl * u); }
     open = true;
   }
   brk();
@@ -1015,7 +1019,7 @@ function buildPts(viewW, viewH, k) {
     if (W.deep.rise.level > W.deep.rise.y0 + 0.5 && y < W.deep.rise.level && y > -560) { r *= 0.22; gg = 0.03; b = 0.04; a *= 0.6; }
     if (wear > 0) { const q = clamp(wear, 0, 1); r = lerp(r, 0.18, q); gg = lerp(gg, 0.05, q); w *= 1 - q * 0.55; }
     a *= lit * low;
-    put(x, y, w, a, r, gg, b); open = true;
+    put(x, y, w, a, r, gg, b, th.totalArc - arc); open = true;
   }
   brk();
   return n;

@@ -54,6 +54,7 @@ or stealing focus, no taskbar entries, nothing played or opened for them to see.
 - When comparing against the old build, stash only `app/src` (`git stash push -- app/src`), never the whole tree:
   stashing `electron/main.js` brings back a visible window.
 - **On Linux (Wayland GNOME)** the transparent smoke window is not guaranteed to stay hidden: add `--ozone-platform=headless` to every electron run
+  (headless the screen is 960x540 and clamps `--size`: add `--ozone-override-screen-size=2560,1080` for the user's real size)
   (`node_modules/electron/dist/electron . --ozone-platform=headless --smoke=… --shots=…`); WebGPU renders and nothing reaches the desktop. Node 24 has no
   `--experimental-default-type`: run the checks as plain `node scripts/checks/x.mjs`. Page screenshots: `google-chrome --headless=new --mute-audio`.
 - Page screenshots: headless Edge only (`--headless=new`). Never open pages, images, videos or audio in a viewer/player
@@ -253,7 +254,8 @@ that goes out >3 cm and comes back next frame; staged runs at pole 1's lip and u
 `terrain.js` never goes through a yes/no grid: level shapes as a continuous field, `redistance` (distance to the marching-squares line), noise,
 LEVEL planes, `wear` (rounds corners; more passes cost landing lips: re-run gal/lip/play), `redistance`. The GPU texture is rg16float: distance and
 `grain` (smoothed with depth: the engraved lines and the light in rock follow it, so no seams). `shaders.js`: `fieldAt` (cubic), `kindAt/chip/body`
-= the nine kinds of rock, `roughOf` how rough their lines are (the user finds smooth parallel lines too clean; twice the present strength hides the cracks); keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js.
+= the nine kinds of rock, `roughOf` how rough their lines are (the user finds smooth parallel lines too clean; twice the present strength hides the cracks); keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js. How the thread looks: THREAD_WGSL (two plies, fibres, stray hairs, all hung on `s` = metres from home, the 8th float of
+each point from `buildPts`); it fades to a plain line under ~2 px, and keep its mean brightness at the old line's (it is the light she carries).
 `life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: dimming (`dim`, Q/LB; knots of light were removed 2026-11-26 at the user's request), seats
 (`RESTS`), `PLACES`; drawing in `drawkindle.js`. `HAND.rouse`: plucking in the Hush rouses the earth. `Drawer.doll()` = her pose, `sift`/`shake` = grit.
 Two quiet places off the way: the Orchard (pole 49), the Long Room (pole 50). Skeins and poles go at the end of their lists (saves index them).

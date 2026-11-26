@@ -1,7 +1,7 @@
 // WGSL for Spindledeep. Three passes:
 //  LIGHT   (compute, 1/3 res): thread + lamps + moon, soft shadows marched through the world SDF.
 //  ENGRAVE (fullscreen): rock, backdrops, ink, sprites → one tone per pixel → intaglio line work.
-//  THREAD  (instanced segments): the red thread and the knitter's grey one, drawn crisp on top.
+//  THREAD  (instanced segments): the red thread and the knitter's grey one, drawn crisp on top: two plies, fibres, stray hairs.
 
 const COMMON = /* wgsl */ `
 struct U {
@@ -559,7 +559,8 @@ struct U {
   res: vec2f, cam: vec2f,
   viewH: f32, time: f32, boil: f32, fade: f32,
 };
-struct Pt { pos: vec2f, width: f32, alpha: f32, color: vec3f, glow: f32 };
+// s: metres along the thread from its home end, so the yarn's twist and hairs belong to the thread and travel with it
+struct Pt { pos: vec2f, width: f32, alpha: f32, color: vec3f, s: f32 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> pts: array<Pt>;
 
@@ -570,17 +571,21 @@ struct VO {
   @location(2) @interpolate(flat) b: vec2f,
   @location(3) @interpolate(flat) w: f32,
   @location(4) col: vec4f,
+  @location(5) @interpolate(flat) s: vec2f,
 };
 fn toScreen(p: vec2f) -> vec2f {
   let aspect = u.res.x / u.res.y;
   let n = (p - u.cam) / vec2f(u.viewH * aspect, u.viewH);
   return vec2f((n.x + 0.5) * u.res.x, (0.5 - n.y) * u.res.y);
 }
+// how far out its hairs reach, in pixels, for a strand w pixels across (half-width)
+fn hairLen(w: f32) -> f32 { return max(2.6, w * 1.9); }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VO {
   let p0 = pts[ii]; let p1 = pts[ii + 1u];
   var o: VO;
   let a = toScreen(p0.pos); let b = toScreen(p1.pos);
   let w = max(p0.width, p1.width);
+  o.s = vec2f(p0.s, p1.s);
   if (p1.width <= 0.0 || p0.width <= 0.0) {
     o.pos = vec4f(2.0, 2.0, 2.0, 1.0); o.sp = vec2f(0.0); o.a = a; o.b = b; o.w = 0.0; o.col = vec4f(0.0);
     return o;
@@ -588,25 +593,88 @@ fn toScreen(p: vec2f) -> vec2f {
   var dir = b - a; let L = length(dir);
   dir = select(vec2f(1.0, 0.0), dir / L, L > 1e-4);
   let nrm = vec2f(-dir.y, dir.x);
-  let ext = w + 1.5;
+  let ext = w + hairLen(w) + 1.5;
   let corner = array<vec2f, 4>(vec2f(-1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0))[vi];
   let base = select(a, b, corner.x > 0.0);
-  let s = base + dir * corner.x * ext + nrm * corner.y * ext;
-  o.pos = vec4f(s.x / u.res.x * 2.0 - 1.0, 1.0 - s.y / u.res.y * 2.0, 0.0, 1.0);
-  o.sp = s; o.a = a; o.b = b; o.w = w;
+  let sp = base + dir * corner.x * ext + nrm * corner.y * ext;
+  o.pos = vec4f(sp.x / u.res.x * 2.0 - 1.0, 1.0 - sp.y / u.res.y * 2.0, 0.0, 1.0);
+  o.sp = sp; o.a = a; o.b = b; o.w = w;
   let right = corner.x > 0.0;
   o.col = vec4f(select(p0.color, p1.color, right), select(p0.alpha, p1.alpha, right));
   return o;
 }
+fn h21(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453); }
+fn h24(p: vec2f) -> vec4f { return fract(sin(vec4f(dot(p, vec2f(127.1, 311.7)), dot(p, vec2f(269.5, 183.3)), dot(p, vec2f(419.2, 371.9)), dot(p, vec2f(21.7, 97.3)))) * 43758.5453); }
+fn vnoise(p: vec2f) -> f32 {
+  let i = floor(p); let f = fract(p); let q = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2f(1.0, 0.0)), q.x), mix(h21(i + vec2f(0.0, 1.0)), h21(i + vec2f(1.0, 1.0)), q.x), q.y);
+}
+fn segd(p: vec2f, a: vec2f, b: vec2f) -> vec2f {     // distance to segment ab, and how far along it (0..1)
+  let pa = p - a; let ba = b - a; let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+  return vec2f(length(pa - ba * h), h);
+}
 @fragment fn fs(i: VO) -> @location(0) vec4f {
-  let pa = i.sp - i.a; let ba = i.b - i.a;
-  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+  let ba = i.b - i.a; let pa = i.sp - i.a;
+  let L2 = max(dot(ba, ba), 1e-6);
+  let hr = dot(pa, ba) / L2; let h = clamp(hr, 0.0, 1.0);
   let dist = length(pa - ba * h);
-  let core = smoothstep(i.w + 0.7, i.w - 0.7, dist);
-  // fibre texture: a faint twist along the strand
-  let twist = 0.85 + 0.15 * sin((dot(i.sp, normalize(ba + 1e-4)) ) * 0.9);
-  let a = core * i.col.a;
-  return vec4f(i.col.rgb * twist * a, a);
+  let cr = (ba.x * pa.y - ba.y * pa.x) / sqrt(L2);   // across, measured square to the segment even past its ends
+  let side = select(-1.0, 1.0, cr >= 0.0);
+  let w = i.w;
+  // where this pixel is on the yarn: x along (pixels, carried by the thread), y across (pixels, signed). Measured on the
+  // segment's straight line, not round its end, so where the next segment's rounded end lies over this one the pattern agrees
+  let k = u.res.y / u.viewH;
+  let x = mix(i.s.x, i.s.y, hr) * k;
+  let y = cr;
+  let D = 2.0 * w;
+  let detail = smoothstep(1.8, 5.0, D);              // too thin to show its make: just a line, as before
+  // ── the strand: two plies twisted round each other, each rounded, with fibres running along the twist ──
+  let core = smoothstep(w + 0.7, w - 0.7, dist);
+  let v = clamp(y / max(w, 1e-3), -1.0, 1.0);
+  let round = sqrt(max(0.0, 1.0 - v * v));
+  let t = x / (D * 1.35) + asin(v) * 0.32;           // the twist: diagonal across the strand
+  let f = fract(t);
+  let aa = clamp(fwidth(t) * 1.2, 0.02, 0.5);
+  let groove = smoothstep(0.5 - 0.09 - aa, 0.5 - 0.02, abs(f - 0.5));   // the dark seam between the two plies
+  let ply = sin(f * 3.14159);                        // each ply rounded: lit along its middle
+  let fib = vnoise(vec2f(t * 9.0, v * 2.2 + floor(t) * 7.0)) - 0.5;    // fibres laid along the ply
+  var tone = mix(0.8, 0.55 + 0.5 * round, detail);
+  let seam = mix(0.3, 0.55, smoothstep(4.0, 10.0, D));                 // thin, a seam must not dim the whole strand
+  tone *= mix(1.0, (0.78 + 0.3 * ply) * (1.0 - seam * groove) * (1.0 + fib * 0.35), detail);
+  tone *= 1.0 + 0.18 * detail * smoothstep(0.2, 0.9, -v) * round;      // light from above catches the top of it
+  tone *= mix(1.0, 1.24, detail);                    // as bright on average as the plain line was: it is the light she carries
+  // ── hairs: short stray fibres standing off both sides, curling a little; fixed to the thread ──
+  let H = hairLen(w);
+  var hair = 0.0;
+  let cell = max(3.0, w * 1.3);
+  let ci = floor(x / cell);
+  if (abs(y) > w - 1.0 && abs(y) < w + H + 1.0) {
+    for (var c = -2; c <= 2; c++) {
+      let id = ci + f32(c);
+      let r = h24(vec2f(id, side * 1.7 + 3.0));
+      if (r.x > 0.62) { continue; }                   // most cells have one on this side
+      let len = H * (0.45 + 0.55 * r.w);
+      let lean = (r.z - 0.5) * 2.2;                   // radians off straight out
+      let root = vec2f((id + r.y) * cell, side * (w - 0.6));
+      let d1 = vec2f(sin(lean), cos(lean) * side);
+      let bend = lean + (r.y - 0.5) * 2.4;            // and it curls
+      let d2 = vec2f(sin(bend), cos(bend) * side);
+      let p1 = root + d1 * len * 0.55; let p2 = p1 + d2 * len * 0.45;
+      let q = vec2f(x, y);
+      let e1 = segd(q, root, p1); let e2 = segd(q, p1, p2);
+      let along = select(0.55 + e2.y * 0.45, e1.y * 0.55, e1.x < e2.x);
+      let dd = min(e1.x, e2.x);
+      let thick = mix(0.75, 0.3, along);              // thinning to the tip
+      hair = max(hair, smoothstep(thick + 0.6, thick - 0.3, dd) * (1.0 - along * 0.55));
+    }
+  }
+  hair *= smoothstep(1.4, 2.6, D) * (1.0 - core);
+  let ac = core * i.col.a;
+  let ah = hair * i.col.a * 0.85;
+  // a loose fibre catches the light: paler than the strand it comes out of
+  let hc = mix(i.col.rgb, vec3f(1.0, 0.62, 0.52) * max(max(i.col.r, i.col.g), 0.35), 0.42);
+  let col = i.col.rgb * tone * ac + hc * ah * (1.0 - ac);
+  return vec4f(col, ac + ah * (1.0 - ac));
 }
 `;
 
