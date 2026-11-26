@@ -266,4 +266,7 @@ scripts with the Write tool.
 
 ## Builds
 
-`build.cmd` writes `release/Spindledeep-1.0.0-portable.exe` and `-setup.exe`.
+`build.cmd` writes `release/Spindledeep-<version>-portable.exe` and `-setup.exe` (Windows). On Linux: `npm version patch --no-git-tag-version`, then
+`npx electron-builder --linux AppImage --x64 --publish never` (`npm run dist:linux`) and `npx electron-builder --win portable --x64 --publish never`; the
+NSIS `-setup.exe` needs Wine on Linux (it runs the uninstaller to make it), so build it on Windows. Smoke-test a package with
+`release/linux-unpacked/spindledeep --ozone-platform=headless --smoke=… --shots=…`.

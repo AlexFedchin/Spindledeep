@@ -150,3 +150,4 @@ only the flicker metric showed it (contact sheets every N frames missed it).
 | 37. Solid Walls: hands in the Hush need open air to stir, reach and seize; knots of light removed; larger, brighter tips (`tips/`) | https://claude.ai/artifact/Tf58WPzhxyP3PeN33PAtZH |
 | 38. Thread and Stone: the thread steady at rock edges (no whip through thin slabs, corners keep their shape); hidden rooms open only at the drawn rock; why the bobbins stop over you (`edges/`) | https://claude.ai/artifact/7sJXVvjsqR48zPwHZGmQCF |
 | 39. Rolling On: the bobbins ignore the thread and roll over you in the gutter (`bobbins/`) | https://claude.ai/artifact/4xYhjNQfpYWGNPa2p4LDhx |
+| 40. Version 1.2.1: Linux AppImage and portable Windows build; installer needs Wine on Linux (`release121/`) | https://claude.ai/artifact/Qjea5CvFEwKJx4WaDHCMAC |
