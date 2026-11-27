@@ -82,6 +82,9 @@ export function drawPlaces(D, ctx, ectx) {
     ctx.fillStyle = g(0.36); ctx.beginPath(); ctx.moveTo(x - 0.5 * k, y + 0.06 * k); ctx.lineTo(x - 0.44 * k, y - 0.13 * k); ctx.quadraticCurveTo(x, y - 0.19 * k, x + 0.46 * k, y - 0.12 * k); ctx.lineTo(x + 0.5 * k, y + 0.06 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = g(0.62); ctx.beginPath(); ctx.moveTo(x - 0.27 * k, y - 0.16 * k); ctx.quadraticCurveTo(x, y - 0.25 * k, x + 0.27 * k, y - 0.16 * k); ctx.lineTo(x + 0.3 * k, y - 0.1 * k); ctx.quadraticCurveTo(x, y - 0.17 * k, x - 0.3 * k, y - 0.1 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = g(0.25); ctx.lineWidth = Math.max(0.6, 0.01 * k); for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 0.1 * k, y - 0.2 * k); ctx.lineTo(x + i * 0.11 * k, y - 0.13 * k); ctx.stroke(); }
+    // the seat is pale red (colour comes only through the glow layer: the stone, and the folded cloth a little stronger)
+    ectx.fillStyle = 'rgba(235,120,110,0.2)'; ectx.beginPath(); ectx.moveTo(x - 0.5 * k, y + 0.06 * k); ectx.lineTo(x - 0.44 * k, y - 0.13 * k); ectx.quadraticCurveTo(x, y - 0.19 * k, x + 0.46 * k, y - 0.12 * k); ectx.lineTo(x + 0.5 * k, y + 0.06 * k); ectx.closePath(); ectx.fill();
+    ectx.fillStyle = 'rgba(245,140,130,0.26)'; ectx.beginPath(); ectx.moveTo(x - 0.27 * k, y - 0.16 * k); ectx.quadraticCurveTo(x, y - 0.25 * k, x + 0.27 * k, y - 0.16 * k); ectx.lineTo(x + 0.3 * k, y - 0.1 * k); ectx.quadraticCurveTo(x, y - 0.17 * k, x - 0.3 * k, y - 0.1 * k); ectx.closePath(); ectx.fill();
     // a stub of candle at the seat's end, always burning, so a seat is seen from far off (its light: world.js lights)
     const cx = x + 0.38 * s.flip * k, cb = y - 0.12 * k, ch = 0.17 * k, cw = 0.045 * k;
     ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(0.8, 0.014 * k); ctx.fillStyle = g(0.8);

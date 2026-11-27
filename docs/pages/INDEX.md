@@ -156,3 +156,4 @@ only the flicker metric showed it (contact sheets every N frames missed it).
 | 38. The Whole Neck: the old neck back, bending over its whole length to meet the head along its own line (`neck/`) | https://claude.ai/artifact/6EzdGQteQf5cDNQcud4jVe |
 | 39. Unbound: the thread never runs out (fraying instead), ten poles out of the deep, nine skeins become her letters, seats mend and say something, the bitten ending screams and runs (`unbound/`, letters and seat lines sealed) | https://claude.ai/artifact/XvSAYtuFThoPtUK6YTG1SB |
 | 42. A Candle by Each Seat: a burning candle stub on every seat, seen from across the cave (`seat-candles/`) | https://claude.ai/artifact/3C5nb632w1gs7DtHhMTir6 |
+| 43. The Seats in Red: the seat stone and cloth tinted pale red through the glow layer (`seat-red/`) | https://claude.ai/artifact/AYKzta15bUY8tubMhJjCjH |
