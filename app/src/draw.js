@@ -134,7 +134,9 @@ export class Drawer {
     const f = p.facing;
     const swing = th.locked && !p.grounded;
     const moving = p.grounded && Math.abs(p.vx) > 0.4;
-    const P0 = this.doll(dt, moving, swing), seat = this.w.rest && this.w.rest.at && this.w.rest.ph ? this.w.rest.at : null, seatH = seat ? seat.h ?? 0.19 : 0;      // (on a seat she sits seatH up)
+    const P0 = this.doll(dt, moving, swing), seat = this.w.rest && this.w.rest.at && this.w.rest.ph ? this.w.rest.at : null;
+    // on a seat the whole of her is lifted so that the underside of her body (0.2275 m under her middle, sat, at her size) rests on its top
+    const seatH = seat ? Math.max(0, (seat.top ?? seat.y + (seat.h ?? 0.19)) - (p.y - 0.2275 * s)) : 0;
     const sq = p.squash + P0.stumble * 0.16 + (P0.sq || 0);
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
     // springs: the yarn tuft and the ribbon tails lag behind the motion
@@ -143,7 +145,7 @@ export class Drawer {
     const rib = clamp(-p.vx * 0.06 * f + p.vy * 0.03, -0.6, 0.6) + Math.sin(this.time * 2.6) * 0.06;
 
     ctx.save();
-    ctx.translate(X, Y - ((P0.hop || 0) + P0.sit * seatH) * k * s);
+    ctx.translate(X, Y - ((P0.hop || 0) * s + P0.sit * seatH) * k);
     let tilt = 0;
     if (swing) { const P = th.pivots[th.pivots.length - 1]; tilt = Math.atan2(p.bx - P.x, -(p.by - P.y)) * 0.6; }
     else if (!p.grounded) tilt = clamp(p.vx * 0.03, -0.25, 0.25);

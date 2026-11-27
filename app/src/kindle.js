@@ -12,8 +12,8 @@ export class Kindle {
   constructor(W) {
     this.W = W;
     W.rest = { k: 0, at: null };
-    // h: how high she sits (the seats' stone); view: what the camera opens out to while she sits there; key: the seat's place, for saves
-    this.seats = L.RESTS.map(([x, y, flip, view]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; return { x, y: (W.T.ground(x, y0, 6) ?? y) - 0.02, flip: flip || 1, view, h: 0.19, key: `${x},${y}`, used: false, said: false }; });
+    // top: where her weight rests on the folded cloth (drawPlaces: the middle of its top face, 0.12 over the stone's foot; its back rim is 0.2); h: how high it is; view: what the camera opens out to while she sits there; key: the seat's place, for saves
+    this.seats = L.RESTS.map(([x, y, flip, view]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; const gy = (W.T.ground(x, y0, 6) ?? y) - 0.02; return { x, y: gy, top: gy + 0.12, flip: flip || 1, view, h: 0.19, key: `${x},${y}`, used: false, said: false }; });
     this.places = L.PLACES.map((q) => ({ ...q, seen: false }));
   }
 

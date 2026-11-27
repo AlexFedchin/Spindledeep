@@ -420,7 +420,7 @@ export class Ending {
     if (this.lamp) this.lamp.i = 0.9 * (1 - (on ? 0.8 * smooth(3, 10, r) : 0));
     this.dark = Math.max(1 - smooth(0.1, 1.4, t), on ? smooth(19.5, 20.3, r) : 0);
     // and sits down beside it, facing it
-    R(0.5, 'sit', () => { w.rest.at = { x: L.BASKET.x, y: p.y, flip: 1, held: true, h: L.BASKET.h }; /* on her basket (drawRemains) */ A.pick(['cloth1', 'cloth2'], { vol: 0.3, rate: 1.1, x: p.x, y: p.y }); });
+    R(0.5, 'sit', () => { w.rest.at = { x: L.BASKET.x, y: p.y, top: w.remainsY + L.BASKET.h * 0.88 - 0.02, flip: 1, held: true, h: L.BASKET.h }; /* on her basket (drawRemains) */ A.pick(['cloth1', 'cloth2'], { vol: 0.3, rate: 1.1, x: p.x, y: p.y }); });
     R(0.4, 'r1', () => palm(-7, 0.6)); R(1.2, 'r2', () => palm(-5.8, 0.7)); R(1.7, 'r3', () => palm(-4.8, 0.85));
     R(2.0, 'drg', () => A.play('drag', { vol: 0.5, rate: 0.7, x: p.x - 5, y: p.y }));
     th.lean = on ? smooth(2.4, 5, r) * 0.5 : 0;                 // (the candle leans away from it)

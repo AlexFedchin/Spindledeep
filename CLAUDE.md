@@ -293,7 +293,8 @@ keeps its old pass and width and gets a second pass with its own seed for x > 12
 crates, a hole down to the floor → west to the well's old ledge; the well is filled; the Drying Loft past the hole; poles 55-59).
 Their furniture is in drawrooms.js (`shelf`, `bale`, `skeins`, `well`), props in `LORE`, paintings `falls`/`stores` (generate.py, pack.py), sound in `LIFE`/`AREA_BEDS`.
 Bot legs for 51-59 are in play.mjs. Every seat has a line (`REST_SAYS` in `RESTS` order; the user asked for that later the same day); a seat may carry its own camera view (`RESTS[i][3]`,
-the Dry Falls' basin seat shows the whole cave) and a height (`h`; she sits on top, knees bent). Saves keep spoken seats by place (`saidAt`).
+the Dry Falls' basin seat shows the whole cave) and `top`, the world height her weight rests at (middle of the cloth's top face, 0.12 over a stone's foot; draw.js lifts her so the
+underside of her body, 0.2275 m under her middle when sat, meets it: measured on screen, don't go back to a fixed lift). Saves keep spoken seats by place (`saidAt`).
 The Dry Falls drip and sweat (drawfalls.js, `WATER_DRIPS`). The Underway's sights: boat, shrine ledge, mooring under a roof crack, bones in the roof
 (`FIXED` in buried.js). pics.py has views for all of it.
 Seats (`SIT` in kindle.js, `seatPose`/`GAZE` in draw.js): sit down, look about, any key (not pause) starts getting up and she is not controllable until up.
