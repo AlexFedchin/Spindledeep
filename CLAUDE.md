@@ -266,7 +266,7 @@ LEVEL planes, `wear` (rounds corners; more passes cost landing lips: re-run gal/
 `grain` (smoothed with depth: the engraved lines and the light in rock follow it, so no seams). `shaders.js`: `fieldAt` (cubic), `kindAt/chip/body`
 = the nine kinds of rock, `roughOf` how rough their lines are (the user finds smooth parallel lines too clean; twice the present strength hides the cracks); keep `chip` within ~0.1 m of the collision edge. Thread faces: `RAD`/`FACE` in thread.js. How the thread looks: THREAD_WGSL (two plies, fibres, stray hairs, all hung on `s` = metres from home, the 8th float of
 each point from `buildPts`); it fades to a plain line under ~2 px, and keep its mean brightness at the old line's (it is the light she carries).
-`life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: dimming (`dim`, Q/LB; knots of light were removed 2026-11-26 at the user's request), seats
+`life.js`: weak lights (`GLOW`) and beasts (none from the Hush down, only thread ends); `kindle.js`: seats (dimming was removed 2026-11-27 at the user's request, knots of light 2026-11-26), seats
 (`RESTS`), `PLACES`; drawing in `drawkindle.js`. `HAND.rouse`: plucking in the Hush rouses the earth. `Drawer.doll()` = her pose, `sift`/`shake` = grit.
 Two quiet places off the way: the Orchard (pole 49), the Long Room (pole 50). Skeins and poles go at the end of their lists (saves index them).
 Art and props are packed small: paintings/sprites lossless `.webp`, `scripts/props3d/slim.py` after `pack.py`. The films can't be re-encoded smaller.
@@ -282,3 +282,17 @@ scripts with the Write tool.
 `npx electron-builder --linux AppImage --x64 --publish never` (`npm run dist:linux`) and `npx electron-builder --win portable --x64 --publish never`; the
 NSIS `-setup.exe` needs Wine on Linux (it runs the uninstaller to make it), so build it on Windows. Smoke-test a package with
 `release/linux-unpacked/spindledeep --ozone-platform=headless --smoke=… --shots=…`.
+
+## The long way round, seats, voice notes (2026-11-27)
+
+The world is 240 m wide (`WORLD.w`, `OLD_W` = 120 the old edge). Nothing west of 120 moved: every seeded scatter (glows, beasts, hanging things, buried bones)
+keeps its old pass and width and gets a second pass with its own seed for x > 120; keep it that way. The Brink and the Throat keep the old camera edge (main.js,
+`cam.y > -52`), and a rock fill above ground east of 120.4 stops her walking out of the old world. Two stretches east of it, no dangers, rings, ropes or words:
+**the Dry Falls** (shaft foot → dry channel → seven basins → chute → the Cistern → the Underway west → the Mere's east shore; poles 51-54) and **the Stores**
+(heddle corridor → five galleries, east/west, dropping off each end → west to the well's old ledge; the well is filled; the Drying Loft off the third; poles 55-59).
+Their furniture is in drawrooms.js (`shelf`, `bale`, `skeins`, `well`), props in `LORE`, paintings `falls`/`stores` (generate.py, pack.py), sound in `LIFE`/`AREA_BEDS`.
+Bot legs for 51-59 are in play.mjs. Seats 7-9 and places 2-3 have no words (the user wants no new narration). pics.py has views for them.
+Seats (`SIT` in kindle.js, `seatPose`/`GAZE` in draw.js): sit down, look about, any key (not pause) starts getting up and she is not controllable until up.
+Voice notes queue (`MEMQ` in main.js): none starts over another or over an open letter; a seat's line waits for the voice too (`W.voiceBusy`).
+The rising earth in the Loom (`drawDark`, drawend.js): arm feet stay under the earth's lowest point across their width; cold lights ride its crest (world.js lights).
+

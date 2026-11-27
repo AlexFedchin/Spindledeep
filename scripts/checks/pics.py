@@ -24,6 +24,10 @@ SPOTS = {
     'tread': (19, None, 18), 'heddle': (21, None, 18), 'lane': (40, None, 16), 'lower': (42, None, 16), 'well': (29, None, 16),
     'seat_throat': (12, (64.5, -33), 11), 'seat_gardens': (2, (24.5, -60.4), 11), 'seat_orchard': (3, (72.5, -87.6), 11),
     'seat_mere': (7, (102.5, -193.8), 11), 'seat_hall': (9, (19.5, -193.8), 11), 'seat_long': (18, (75, -340.8), 11), 'seat_beam': (41, (44, -420.6), 11),
+    # (2026-11-27) the Dry Falls and the Stores (poles 51-59 do not exist before this: --ref older than it can't draw them)
+    'falls_in': (51, None, 17), 'basins': (51, (150, -173), 18), 'basins_low': (52, None, 18), 'cistern': (53, None, 15), 'underway': (54, None, 15),
+    'stores_top': (55, None, 19), 'stores_mid': (56, (170, -369.4), 19), 'loft': (57, (121, -381), 13), 'stores_low': (58, None, 19), 'stores_out': (59, None, 16),
+    'seat_cistern': (53, (221.5, -194.8), 11), 'seat_loft': (57, (119.5, -381.2), 11), 'seat_basin': (52, (192, -183.8), 11),
     'loom_in': (23, None, 20), 'cloth': (24, None, 14), 'n2': (45, None, 18), 'machine': (47, None, 16), 'beam': (28, (36, -442), 12),
 }
 HIDE = "document.head.insertAdjacentHTML('beforeend','<style>.card,#card,#hint,#hints,#sub,#subs,#subtitle,#toast,#prompt,#hud,#yarn{opacity:0!important;visibility:hidden!important}</style>');"

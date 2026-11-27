@@ -1,0 +1,286 @@
+<title>Spindledeep · The Long Way</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; a longer way down</div>
+    <h1>The Long Way</h1>
+    <p class="tag">More of the dark to cross<span></span>and less said in it</p>
+  </header>
+
+  <div class="col summary">
+    <p>Your last playthrough's log, read against all the earlier ones, led to this batch. The way down is now longer: two new stretches, the Dry Falls and the Stores, add roughly five minutes, with nothing in them that can hurt you and no new words. Her voice notes no longer talk over each other. The earth that rises in the Loom has been rebuilt, sitting on a seat is a small scene of its own, and the dimming key is gone.</p>
+  </div>
+
+  <h2>The logs read again</h2>
+  <p class="ask">Okay, fix the logs</p>
+  <div class="col">
+    <p><code>scripts/checks/logs.py</code> still looked for the old line about yarn left, which 1.2.1 no longer writes, so it counted nothing from the current build. It now reads all three formats the game has written, and it also lists where deaths cluster. This is from all of your sessions together:</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Where</th><th>Deaths</th></tr></thead>
+        <tbody>
+          <tr><td>Ink, the first island off the Mere's east shore (x 92&ndash;96)</td><td class="n">9</td></tr>
+          <tr><td>Ink, the second island (x 80&ndash;84)</td><td class="n">11</td></tr>
+          <tr><td>Thorns under the Bell Gallery (x 32&ndash;36)</td><td class="n">5</td></tr>
+          <tr><td>Ink, the third, sixth and west shore (x 68, 28, 20)</td><td class="n">5 each</td></tr>
+          <tr><td>Thorns on the Pin Walk, past pole 37</td><td class="n">3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>No more dimming</h2>
+  <p class="ask">remove the dimming feature (I don't understand what it does, it seems to be useless)</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>Gone.</b> The key (Q, V, H, or LB on a pad) and its line in Controls are removed, along with the two hints that taught it and the breath that ran out while you held it. LB now holds the thread, like the other shoulder buttons.</li>
+      <li><b>What it did.</b> Held, it turned her light down: moths lost her, the hands in the Hush felt her from less far, and what crept along the thread was slower. In your run it was pressed four times. Nothing else depended on it. The Hush is tuned for plucking, and the bots cross it without dimming.</li>
+    </ul>
+  </div>
+
+  <h2>The earth that rises in the Loom</h2>
+  <p class="ask">improve the rising dirt with hands in the loom, it looks kind of unpolished: I can see the beginning of the cut hands, the dirt is not detailed at all</p>
+  <div class="col">
+    <p>The same moment, with the earth held just under her ledge.</p>
+    <div class="reveal">
+      <img src="img/dark_near_before.jpg" alt="Before: rows of arms with their cut ends showing">
+      <img class="after" src="img/dark_near_after.jpg" alt="After: the arms come out of a ridge of earth">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-near" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>Further out, with the earth a few metres lower:</p>
+    <div class="reveal">
+      <img src="img/dark_far_before.jpg" alt="Before: a band of arms floating over a flat black">
+      <img class="after" src="img/dark_far_after.jpg" alt="After: two ridges of earth with arms rooted in them">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-far" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>No arm ends.</b> It is drawn back to front: a dim row of arms, the ridge of earth they come out of, the near arms, then the near earth. Each arm's foot goes under the lowest point of the earth across its whole width, so no cut end can show however the ground heaves.</li>
+      <li><b>Earth with a surface.</b> The crest is lumpy: a clod sits on it every 30 cm or so and the outline swells under each. There are pale stones among the clods, roots and here and there a strand of old yarn standing out of it, and broken lines of grain underneath that fade into the black.</li>
+      <li><b>It moves like earth.</b> Long swells travel along it, it churns and swells harder while it gathers to heave, the clods jostle, and crumbs fall off the crest.</li>
+      <li><b>It can be seen.</b> A few weak cold lights ride along the crest, so the engraving shades the soil and the arms instead of leaving a flat shape. Nothing below the crest is lit or drawn.</li>
+      <li><b>Arms that reach.</b> Between the clusters stand single arms. Those near her come up further and lean toward her.</li>
+    </ul>
+  </div>
+
+  <h2>Sitting on a seat</h2>
+  <p class="ask">For the pillows: make a short cute sit down animation and when sitting the doll should be looking around. Then If I press any key once - the doll should have a cute little stand up animation and only after that become controllable.</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/sit_before.jpg" alt="Before: she sinks into the stone">
+      <img class="after" src="img/sit_after.jpg" alt="After: she sits up on it, legs over the edge, looking round at you">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-sit" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <figure style="margin:22px 0"><img src="img/sit_frames.jpg" alt="Frames: walking up, crouch, hop, plop; sitting and looking about; one key, push off, hop, land" style="width:100%;display:block"><figcaption>Frames from one sit: crouch, hop, plop (top row); looking about (middle); one key, then push off, hop and land (last row)</figcaption></figure>
+    <ul class="what">
+      <li><b>Sitting down, under a second.</b> A little crouch, a hop up onto the stone, a plop with a bounce. She now sits on top of the seat rather than half inside it, and her legs dangle off its front and kick.</li>
+      <li><b>Looking about.</b> While she sits she looks ahead, turns her face round toward you, looks up, looks down into her lap, and now and then back over her shoulder, on a slow loop of about sixteen seconds.</li>
+      <li><b>Any key gets her up.</b> Any key or button except pause: she puts her hands down, leans, pushes off, hops and wobbles as she lands. Only then is she yours again. The key you pressed does nothing else, so Space does not also jump.</li>
+    </ul>
+  </div>
+
+  <h2>A longer way down</h2>
+  <p class="ask">make the map bigger without adding new mechanics or dangers [&hellip;] It should feel like a lonely descent but I am only listening to notes all the time and reading letters [&hellip;] The new parts of the map should come to around +5 minutes of gameplay.</p>
+  <div class="col">
+    <p>The world is twice as wide below ground now. Everything that was there is where it was; the new caves are cut into fresh rock east of the old edge, and the way down passes through them twice. Nothing in them can hurt you: no ink, thorns, hands, machines or moths, and no rings or ropes are needed. Every drop is a step down and no fall does harm. There are no new knots, letters or lines at the seats. Each stretch has a quiet room with a seat, its own backdrop painting, lamps, things left lying about and its own sound.</p>
+    <div class="tablebox">
+      <table class="windows">
+        <thead><tr><th>Stretch</th><th>Bot</th><th>You, ~1.7&times;</th></tr></thead>
+        <tbody>
+          <tr><td>The Dry Falls (Bell Gallery to Ink Mere)</td><td class="n">54 s</td><td class="n">~1.5 min</td></tr>
+          <tr><td>The Stores (heddles to the bobbin's lane)</td><td class="n">~75 s</td><td class="n">~2.1 min</td></tr>
+          <tr><td>The two quiet rooms and their seats</td><td class="n">&mdash;</td><td class="n">~1 min if you stop</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>The Dry Falls</h2>
+  <div class="col">
+    <p>The shaft under the veil no longer drops straight into the Mere. Its foot opens onto a dry stream bed that runs east into a tall cave of stone basins, seven of them stepping down, each with a worn rim where water once stood and stone curtains hanging far overhead. A chute at the far end drops into the Cistern, a round quiet room with a seat. From there the Underway, a long low gallery, runs about a hundred metres back west under the basins and comes out on the Ink Mere's east shore. Poles stand at the foot of the shaft, at the lowest basins, in the Cistern and halfway along the Underway.</p>
+    <figure style="margin:22px 0"><img src="img/map_falls.jpg" alt="The Dry Falls in plan (air light, rock dark): red poles, blue seats, yellow the old woman's grey thread. In from the shaft top left, down the basins, into the Cistern, back along the bottom to the Mere" style="width:100%;display:block"><figcaption>The Dry Falls in plan (air light, rock dark): red poles, blue seats, yellow the old woman's grey thread. In from the shaft top left, down the basins, into the Cistern, back along the bottom to the Mere</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/falls_in.jpg" alt="The foot of the shaft" style="width:100%;display:block"><figcaption>The foot of the shaft</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/basins.jpg" alt="The upper basins" style="width:100%;display:block"><figcaption>The upper basins</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/basins_low.jpg" alt="The lowest basins, with a seat" style="width:100%;display:block"><figcaption>The lowest basins, with a seat</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/cistern.jpg" alt="The Cistern" style="width:100%;display:block"><figcaption>The Cistern</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/underway.jpg" alt="The Underway" style="width:100%;display:block"><figcaption>The Underway</figcaption></figure>
+
+    <p>Where it comes out, before and after:</p>
+    <div class="reveal">
+      <img src="img/seat_mere_before.jpg" alt="Before: the Mere's east shore ends in rock">
+      <img class="after" src="img/seat_mere_after.jpg" alt="After: the Underway opens onto it">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-mere" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/shaft_before.jpg" alt="Before: the shaft runs on down into the Mere">
+      <img class="after" src="img/shaft_after.jpg" alt="After: it turns east into the Dry Falls">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shaft" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>The Stores</h2>
+  <div class="col">
+    <p>The heddle corridor no longer ends at the well: it runs on east into a storehouse hall cut in the rock, sixty metres tall and eighty-five long, with five galleries one under another. You go east along the top, step off its end onto the next, go back west along that one, and so on down, five floors, then west out of the bottom to the well's old ledge. The well itself is filled in. Shelves of great empty bobbins stand on every gallery, timber posts hold them up, and bales of wool hang on chains between them. Off the third gallery's west end is the Drying Loft, a small quiet room with skeins hung over poles, candles and a seat.</p>
+    <figure style="margin:22px 0"><img src="img/map_stores.jpg" alt="The Stores in plan: in from the heddle corridor top left, down the five galleries, out at the bottom to the well's ledge; the Loft is the pocket on the left, middle" style="width:100%;display:block"><figcaption>The Stores in plan: in from the heddle corridor top left, down the five galleries, out at the bottom to the well's ledge; the Loft is the pocket on the left, middle</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_top.jpg" alt="The top gallery" style="width:100%;display:block"><figcaption>The top gallery</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_mid.jpg" alt="The second gallery" style="width:100%;display:block"><figcaption>The second gallery</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/loft.jpg" alt="The Drying Loft" style="width:100%;display:block"><figcaption>The Drying Loft</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_low.jpg" alt="The fourth gallery" style="width:100%;display:block"><figcaption>The fourth gallery</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_out.jpg" alt="The floor, by the way out" style="width:100%;display:block"><figcaption>The floor, by the way out</figcaption></figure>
+    <div class="reveal">
+      <img src="img/well_before.jpg" alt="Before: the well shaft">
+      <img class="after" src="img/well_after.jpg" alt="After: filled in, the way is through the Stores">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-well" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>Voice notes wait their turn</h2>
+  <p class="ask">also I sometimes reach next voice note before the old one finished playing. Then there are notes overlapping with them.</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>One at a time.</b> A knot you reach while she is still speaking, or while a letter is open, waits. It starts 1.8 seconds after the last one has finished, or after the letter is put away. A seat's line waits for her voice too.</li>
+      <li><b>Further apart.</b> The Dry Falls lies between her knot in the Bell Gallery and the one in the Ink Mere, and the Stores between the Treadles' knot and the lower room's. One letter on the Bell Gallery's crowded east ledge (you found two there twelve seconds apart) now lies in the Cistern. Nothing new was written.</li>
+    </ul>
+  </div>
+
+  <h2>Checked</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>The whole game by bot,</b> cottage to the choice, plain (seeds 1 and 2) and frayed: it reaches the choice every time, through both new stretches, which it crosses on the first try.</li>
+      <li><b>The route checks</b> (lip, gal, reach, shelfrun, fuzz, hands, rooms, quiet) pass. The quiet-place check now tests that one key gets her up and that she cannot be moved until she is up.</li>
+      <li><b>Nothing drawn in rock:</b> the inside-the-rock scan now covers the wider world and the furniture, and finds only the old known spots.</li>
+      <li><b>Nothing else moved:</b> all 45 old views were compared with the last build. Only the shaft, the well, the Mere's east shore and the Bell Gallery's east ledge (the letter) changed, plus the Loom's entrance view, whose camera no longer stops at the old edge. The Brink is framed exactly as before, and its ground still ends where it did.</li>
+      <li><b>Loading</b> builds the wider rock in about 2.3 s instead of 1.6 s.</li>
+    </ul>
+  </div>
+  <div class="col"><div class="files">
+    <div><b>app/src/level.js</b><span>the new caves, poles, seats, places, lights, backdrops; the shaft and the well</span></div>
+    <div><b>app/src/drawend.js</b><span>the rising earth</span></div>
+    <div><b>app/src/draw.js, kindle.js</b><span>sitting down, looking about, getting up</span></div>
+    <div><b>app/src/drawrooms.js, props.js</b><span>shelves, bales, skeins, the Cistern's buckets; things left lying about</span></div>
+    <div><b>app/src/main.js</b><span>voice notes in turn; the Brink's camera</span></div>
+    <div><b>app/src/life.js, buried.js, draw.js</b><span>glows, beasts, bones and hanging things for the new ground (the old keep their seeds)</span></div>
+    <div><b>app/assets/art/falls.webp, stores.webp</b><span>two new backdrop paintings</span></div>
+    <div><b>scripts/checks/logs.py, play.mjs, quiet.mjs, pics.py, inside.js</b><span>the log reader; the bot's new legs; new views</span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/3C5nb632w1gs7DtHhMTir6">a candle by each seat</a> &middot; <a href="https://claude.ai/artifact/AYKzta15bUY8tubMhJjCjH">the seats in red</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

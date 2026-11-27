@@ -5,7 +5,9 @@
 // into the Hush (east, down, then a long dark gallery west) → the Treadles (rings over the barbs, a rope up, the
 // heddles) → down the well into the Loom (the cloth floor, then the climb up the warp to the breast beam).
 
-export const WORLD = { x0: 0, y0: -562, w: 120, h: 604, ppm: 8 };
+// (2026-11-27: widened east from 120 to 240 for the Dry Falls and the Stores; nothing west of 120 moved. The Brink's camera and ground stop at 120.)
+export const WORLD = { x0: 0, y0: -562, w: 240, h: 604, ppm: 8 };
+export const OLD_W = 120;
 
 const T = (pts) => ({ s: 'tunnel', pts });
 const E = (cx, cy, rx, ry) => ({ s: 'ellipse', cx, cy, rx, ry });
@@ -35,6 +37,7 @@ export const SHELVES = [
 ];
 
 export const OPS = [
+  ['fill', B(120.4, -2, 240, 46, 0.2)],      // (2026-11-27) the Brink ends where it always did: the world is wider below it, not up here
   // ── the Throat: the pit under the Brink ────────────────────────────────────
   ['carve', P([[41.5, 2], [43, -5], [46, -11], [44.5, -20], [46.5, -29], [45, -38], [46.5, -46], [49, -58], [52, -63],
     [70, -63], [74, -56], [76.5, -45], [74.5, -35], [77, -26], [75, -16], [77.5, -6], [78.5, 2]])],
@@ -78,7 +81,7 @@ export const OPS = [
   ['fill', B(0, -152, 120, -146.5, 0.5)],      // the floor (brambles grow on it)
 
   // ── shaft to the Mere ──────────────────────────────────────────────────────
-  ['carve', T([[109, -123, 2.4], [110, -135, 2.4], [108.5, -147, 2.4], [109.5, -160, 2.6], [107.6, -169, 2.6], [105.8, -176, 2.6]])],  // breaks through into the Mere's roof
+  ['carve', T([[109, -123, 2.4], [110, -135, 2.4], [108.5, -147, 2.4], [109.5, -160, 2.6], [110.5, -166, 2.6]])],  // (2026-11-27: it no longer breaks into the Mere's roof; it ends in the Dry Falls)
 
   // ── the Ink Mere ───────────────────────────────────────────────────────────
   ['carve', E(60, -182, 55, 22)],
@@ -158,7 +161,6 @@ export const OPS = [
   ['carve', B(62.5, -366.2, 70, -349.5, 1.0)], // the slot the rope hangs in
   ['carve', B(66, -358.2, 113, -350, 1.0)],    // the heddle corridor
   // the well down to the Loom, in two drops with a ledge between (one fall would be longer than the yarn)
-  ['carve', T([[110, -357, 2.6], [111, -372, 3.0], [110, -390, 3.0], [110, -402, 3.0]])],
   ['carve', B(99.5, -404.6, 113, -398.5, 1.0)],
   ['fill', B(104, -412, 116, -404.6, 0.6)],
   // the lower Treadles (2026-11-25): west along the bobbin's lane, down, and back east to the well's foot
@@ -187,6 +189,47 @@ export const OPS = [
   ['fill', B(44.6, -465.6, 85.4, -463.6, 0.4)],   // its roof
   ['fill', B(0, -450.4, 40, -444, 0.8)],       // the breast beam
   ['carve', B(3, -444.1, 44, -424.5, 2.4)],    // and the high dark place above it
+
+  // ── the Dry Falls (2026-11-27): off the foot of the shaft, east along a dry stream bed into a cave of stone basins stepping
+  // down, a chute into the Cistern, and the Underway, a long low gallery back west that comes out on the Ink Mere's east shore.
+  // Nothing in it can hurt her: it is only a long way. Every drop is a step down; nothing here needs a ring or a rope.
+  ['carve', T([[110.5, -166, 2.6], [118, -166.5, 2.2], [126, -167.5, 2.0], [134, -169, 2.2]])],      // the dry channel
+  ['carve', B(132, -190, 206, -150, 6)], ['carve', E(170, -153, 30, 9)], ['carve', E(150, -158, 12, 6)], ['carve', E(192, -158, 11, 7)],
+  ['fill', B(130, -196, 146, -171.5, 0.5)], ['fill', B(146, -196, 155, -173.5, 0.5)], ['fill', B(155, -196, 163, -175.0, 0.5)],
+  ['fill', B(163, -196, 172, -177.5, 0.5)], ['fill', B(172, -196, 180, -179.0, 0.5)], ['fill', B(180, -196, 190, -181.5, 0.5)], ['fill', B(190, -196, 208, -184.0, 0.5)],
+  // a rim of old flowstone along the lip of each basin, and the hollow it held water in
+  ['fill', E(145.3, -171.5, 0.8, 0.42)], ['fill', E(154.3, -173.5, 0.8, 0.42)], ['fill', E(162.3, -175.0, 0.8, 0.42)], ['fill', E(171.3, -177.5, 0.8, 0.42)],
+  ['fill', E(179.3, -179.0, 0.8, 0.42)], ['fill', E(189.3, -181.5, 0.8, 0.42)],
+  ['carve', E(139.5, -171.4, 3.2, 0.42)], ['carve', E(150.3, -173.4, 2.4, 0.4)], ['carve', E(158.8, -174.9, 2.0, 0.38)], ['carve', E(167.3, -177.4, 2.6, 0.42)],
+  ['carve', E(175.8, -178.9, 1.9, 0.36)], ['carve', E(184.8, -181.4, 2.8, 0.42)], ['carve', E(198, -183.9, 4.5, 0.4)],
+  // its walls are not cut square: hollows and bulges where the water turned
+  ['carve', E(133.5, -160, 3.4, 6.5)], ['carve', E(206, -168, 3.2, 9)], ['carve', E(204, -155, 5, 4)], ['carve', E(137, -153.5, 6, 3.5)],
+  ['fill', E(207.6, -178.6, 1.4, 3)], ['fill', E(162, -146.4, 5, 1.6)], ['fill', E(183.5, -145.6, 4, 1.4)],
+  // curtains of stone from the roof, well above every jump
+  ['fill', P([[141, -151], [143.2, -161], [145.6, -151]])], ['fill', P([[157, -150], [158.6, -163.5], [160.4, -150]])], ['fill', P([[166, -146], [167.2, -158], [168.8, -146]])],
+  ['fill', P([[176, -147], [178.4, -165], [180.6, -147]])], ['fill', P([[186.5, -151], [187.6, -168.5], [189, -151]])], ['fill', P([[198, -152], [199.6, -172.5], [201.4, -152]])],
+  ['fill', P([[152, -151.5], [152.8, -157], [153.8, -151.5]])], ['fill', P([[171.5, -146.5], [172.2, -153], [173.2, -146.5]])], ['fill', P([[193.5, -151], [194.2, -159], [195.2, -151]])],
+  // the chute and the Cistern, a round room the water once filled; the Underway leaves it low on its west side
+  ['carve', T([[204, -181.6, 2.0], [209, -186, 2.0], [213, -190.6, 2.2]])],
+  ['carve', E(219, -190.6, 10.5, 5.6)], ['fill', B(207, -202, 232, -195.0, 0.6)],
+  ['fill', E(229, -195, 2.4, 1.0)], ['fill', E(209.6, -195, 1.2, 0.5)],
+  ['carve', T([[211, -193.4, 1.7], [198, -193.3, 1.75], [184, -193.2, 1.8], [170, -193.0, 1.8], [156, -192.9, 1.75], [142, -192.7, 1.7], [130, -192.6, 1.7], [120, -192.4, 1.6], [108, -192.4, 1.6]])],
+  ['carve', E(191, -193.6, 4, 1.7)], ['carve', E(163, -193.4, 5, 1.6)], ['carve', E(137, -193.2, 3.5, 1.5)],      // where it widens
+  ['fill', E(177, -195.0, 2.2, 0.5)], ['fill', E(149, -194.9, 1.8, 0.45)],                                       // low humps of old silt on its floor
+
+  // ── the Stores (2026-11-27): the heddle corridor runs on east into a hall of shelves cut in the rock, five galleries deep.
+  // East along the top, drop, west, drop, east, drop, west, drop to the floor, and west out of it to the well's ledge.
+  // Off the third gallery's west end, the Drying Loft. Nothing in it moves.
+  ['carve', T([[111, -355.6, 2.2], [120, -356.0, 2.0], [129, -356.2, 2.0]])],
+  ['carve', B(128, -412, 214, -349, 3)], ['carve', E(171, -350, 36, 6)],
+  ['carve', E(212, -362, 3.5, 6)], ['carve', E(130, -372, 3, 5)], ['carve', E(213, -386, 3, 5.5)], ['carve', E(130, -396, 3, 5)], ['fill', E(171, -344.6, 9, 1.8)],   // its ends are rock, not walls
+  ['fill', B(126, -360.0, 196, -358.3, 0.4)],       // G1: east
+  ['fill', B(142, -371.6, 216, -369.8, 0.4)],       // G2: west
+  ['fill', B(124, -383.2, 198, -381.4, 0.4)],       // G3: east (and west into the loft)
+  ['fill', B(142, -394.8, 216, -393.0, 0.4)],       // G4: west
+  ['fill', B(124, -420, 216, -404.6, 0.5)],         // the floor: east, then back west out of it
+  ['carve', E(119, -379.4, 7.5, 3.4)], ['carve', B(123, -381.4, 131, -377.4, 0.8)], ['fill', B(110, -386, 126, -381.4, 0.4)],          // the Drying Loft, open to the hall
+  ['carve', T([[130, -402.9, 1.75], [122, -402.9, 1.75], [114, -402.8, 1.8]])],            // out of the floor, west to the well's ledge
 
   // ── hidden rooms ───────────────────────────────────────────────────────────
   // Each is a narrow crack off the beaten way into a small room with a keepsake. The cracks are real rock
@@ -257,10 +300,15 @@ export const LEVEL = [
   [34, 99, -421],
   [34.8, 39.0, -488], [50.6, 53.8, -487], [59.8, 64.2, -486.6], [80.2, 87.8, -484], [42.0, 49.2, -471.4], [55.2, 64.1, -471.4], [65.9, 72.1, -471.4], [73.9, 84.4, -471.4],
   [18.5, 22.1, -194.2],      // the Mere's west shore, where the last jump lands
+  [110, 118, -168.4],        // the foot of the shaft
 ];
 
 // Areas: title card on first entry, ambience/music state, camera framing.
 export const AREAS = [
+  // (2026-11-27) the two long ways round, east of the old world's edge
+  { id: 'falls', name: 'The Dry Falls', y1: -150, y0: -200, x0: 120, viewH: 18, amb: [0.026, 0.026, 0.032], moon: 0 },
+  { id: 'falls', name: 'The Dry Falls', y1: -150, y0: -173, x0: 104, viewH: 18, amb: [0.026, 0.026, 0.032], moon: 0 },      // the shaft's foot, over the Mere's roof (the Underway's last stretch is the Mere's)
+  { id: 'stores', name: 'The Stores', y1: -349, y0: -412, x0: 113, viewH: 19, amb: [0.026, 0.023, 0.022], moon: 0 },
   { id: 'brink', name: 'The Brink', y1: 50, y0: -6, viewH: 17, amb: [0.16, 0.17, 0.2], moon: 1.0 },
   { id: 'throat', name: 'The Throat', y1: -6, y0: -46, viewH: 19, amb: [0.032, 0.032, 0.04], moon: 0.45, x0: 36, x1: 82 },
   { id: 'gardens', name: 'The Root Gardens', y1: -44, y0: -103, x1: 44, viewH: 16, amb: [0.026, 0.028, 0.03], moon: 0 },
@@ -286,6 +334,8 @@ export const BACKDROPS = [
   { img: 'loom', cx: 24, cy: -264, w: 58, h: 40, par: 0.6 },
   { img: 'treadles', cx: 64, cy: -408, w: 94, h: 44, par: 0.6 },
   { img: 'loomdeep', cx: 60, cy: -492, w: 116, h: 130, par: 0.45 },
+  { img: 'falls', cx: 172, cy: -175, w: 112, h: 58, par: 0.55 },
+  { img: 'stores', cx: 170, cy: -381, w: 100, h: 66, par: 0.55 },
 ]
 
 export const START = { x: 20.5, y: 1.2 };
@@ -345,6 +395,16 @@ export const PEGS = [
   { x: 56.4, y: -471.4 },   // 48: past the bobbin
   { x: 62, y: -87.6 },      // 49: the Orchard
   { x: 57, y: -341.2 },     // 50: the Long Room
+  // (2026-11-27) the Dry Falls and the Stores
+  { x: 114, y: -168.4 },    // 51: the foot of the shaft
+  { x: 186, y: -181.5 },    // 52: the lowest basins
+  { x: 216, y: -195.0 },    // 53: the Cistern
+  { x: 160, y: -194.7 },    // 54: halfway along the Underway
+  { x: 131, y: -358.3 },    // 55: the top gallery of the Stores
+  { x: 150, y: -369.8 },    // 56: the second gallery, at its west end
+  { x: 190, y: -381.4 },    // 57: the third gallery, at its east end
+  { x: 150, y: -393.0 },    // 58: the fourth
+  { x: 134, y: -404.6 },    // 59: the floor of the Stores, by the way out
 ];
 
 // Iron rings. Hold the thread near one in the air and it snags there: swing.
@@ -371,7 +431,8 @@ export const HOOKS = [
 ];
 
 // Seats, where she can sit a while [x, y, which way she faces], and the quiet places' names [ellipse].
-export const RESTS = [[69.6, -33.2, -1], [28.5, -60.6, -1], [78, -87.8, 1], [107, -194, -1], [15.0, -194, 1], [80, -341, -1], [49.0, -420.8, 1]];
+export const RESTS = [[69.6, -33.2, -1], [28.5, -60.6, -1], [78, -87.8, 1], [107, -194, -1], [15.0, -194, 1], [80, -341, -1], [49.0, -420.8, 1],
+  [223.5, -195, -1], [117.5, -381.4, 1], [194, -184, -1]];      // (2026-11-27) the Cistern, the Drying Loft, the lowest basin: no words at these (REST_SAYS stops at 7)
 // What she notices the first time she sits at each seat (in RESTS order; written, not spoken). Escalation map in docs/STORY.md.
 export const REST_SAYS = [
   'Someone rested here often, on the way down. By the seat, scratched small, a tally: one mark a winter. Then the marks stop.',
@@ -382,7 +443,8 @@ export const REST_SAYS = [
   'The seat is warm. Nothing down here is warm. Something was sitting here, and got up when it heard you coming.',
   'Beside the seat, scratched deep: DO NOT SLEEP HERE. Under it, in another hand, the same. Under that, the same, in yours.',
 ];
-export const PLACES = [{ name: 'The Orchard', x: 76, y: -84, rx: 18, ry: 6 }, { name: 'The Long Room', x: 76, y: -338.4, rx: 25, ry: 4.4 }];
+export const PLACES = [{ name: 'The Orchard', x: 76, y: -84, rx: 18, ry: 6 }, { name: 'The Long Room', x: 76, y: -338.4, rx: 25, ry: 4.4 },
+  { name: 'The Cistern', x: 219, y: -191, rx: 9, ry: 4.5 }, { name: 'The Drying Loft', x: 119, y: -379.6, rx: 6, ry: 3 }];
 
 // Bell flowers: a pluck travelling past rings them; rung bells light the dark and keep moths off.
 export const BELLS = [
@@ -449,7 +511,7 @@ export const SKEINS = [
   { x: 9.2, y: -50.2 },
   { x: 47, y: -50.8, letter: "My dear, I drop one of these down the well every winter, the night the first snow comes. I don't know how far paper falls. I keep the kettle on. — me" },
   { x: 83, y: -122.8, letter: "My dear, the bells under the gallery rang again last night. I counted. I always count. It was nobody we knew, this time. — me" },
-  { x: 100.6, y: -121.4, letter: "My dear, the ringer's wife came up the hill to ask what the bells meant. I told her they meant nothing. She stopped asking. Then the bells rang for him. — me" },
+  { x: 226.5, y: -195.0, letter: "My dear, the ringer's wife came up the hill to ask what the bells meant. I told her they meant nothing. She stopped asking. Then the bells rang for him. — me" },
   { x: 26, y: -193.4, letter: "My dear, I have stopped saying it, even to myself. You said mine that last night, down at the well, and something said it back. I keep it in my mouth like a stone. — me" },
   { x: 18.6, y: -259, letter: "My dear, I dreamt of a room full of chairs, and you in one, rocking, telling someone who you missed. You always were too honest. Don't tell it anything else. — me" },
   { x: 31, y: -303, letter: "My dear, your voice has been at the door three nights running. It knows what you called me. It doesn't know which of us takes sugar. I don't open it. — me" },
@@ -492,6 +554,9 @@ export const GREY = [
   [30, -60.4], [20, -61], [14, -60], [12.8, -66], [16, -71], [22, -82], [30, -81.6], [37, -81], [40.2, -84], [37, -92],
   [31, -99], [28.5, -106], [24, -117.6], [26.5, -118], [32.5, -115.3], [42, -122.2], [48.3, -119.9], [56.5, -120.2],
   [62.2, -119.4], [69, -123.2], [75.8, -121.9], [83, -122.6], [88.8, -120.3], [93, -121.8], [96.8, -118.8], [101, -121.4], [109, -125], [110, -136], [108.6, -148], [109.6, -160],
+  [111, -167.8], [118, -168.4], [126, -169.2], [134, -170.9], [145, -171.2], [146.5, -173.3], [154.5, -173.2], [156, -174.8], [162.5, -174.7], [164, -177.3],
+  [171.5, -177.2], [173, -178.8], [179.5, -178.7], [181, -181.3], [189.5, -181.2], [191, -183.8], [203, -183.8], [209, -186.4], [213, -191.6], [217, -194.8],
+  [211, -194.9], [198, -194.9], [184, -194.9], [170, -194.7], [156, -194.6], [142, -194.4], [130, -194.2], [118, -194.0], [109, -194.0],
   [104, -193.9], [99, -194], [93.4, -191.0], [88, -192.8], [82.5, -191], [76, -191.8], [71.2, -189.2], [63.5, -190.2],
   [57.5, -187.9], [50, -191.8], [44.5, -189.5], [37, -192.8], [31, -191.5], [26, -193.2], [17, -194], [11, -196], [9.6, -204], [12.6, -212], [17, -218], [22, -246], [31, -246.2],
   // past her chair, down the hole, through the Hush
@@ -502,7 +567,9 @@ export const GREY = [
   [50, -324.5], [40, -325.8], [30, -325.8], [27, -330], [25, -340], [20.5, -352], [19.6, -358], [18, -365.8],
   // the Treadles: across the rings, up the rope, along the heddle corridor and down the well
   [25.6, -365.8], [29.1, -363.6], [34, -366.3], [41.0, -364.0], [47, -365.8], [53.1, -363.6], [58, -365.8], [66, -365.8], [68.4, -358],
-  [70, -358], [90, -358], [108, -358], [110.5, -372], [110, -398], [108, -404.4], [98, -404.8], [60, -404.8], [38, -404.8], [35.6, -409], [36.6, -420.8], [45.2, -420.8], [48.7, -417.5], [52.4, -420.8], [66, -420.8], [85.2, -420.8], [88.7, -417.5], [92.4, -420.8], [97.5, -420.6], [100.4, -425], [104, -440], [106, -458], [102, -461.8], [96.6, -462],
+  [70, -358], [90, -358], [108, -358], [120, -358.0], [130, -358.1], [160, -358.1], [195.5, -358.1], [197.5, -369.6], [170, -369.6], [143, -369.6],
+  [141, -381.2], [170, -381.2], [197.5, -381.2], [199.5, -392.8], [175, -392.8], [143, -392.8], [140.5, -404.4],
+  [130, -404.5], [122, -404.6], [113, -404.5], [108, -404.4], [98, -404.8], [60, -404.8], [38, -404.8], [35.6, -409], [36.6, -420.8], [45.2, -420.8], [48.7, -417.5], [52.4, -420.8], [66, -420.8], [85.2, -420.8], [88.7, -417.5], [92.4, -420.8], [97.5, -420.6], [100.4, -425], [104, -440], [106, -458], [102, -461.8], [96.6, -462],
   // the Loom: down to the cloth, across it, and up the warp to her
   [93, -505], [88, -539.8], [72, -539.8], [56, -539.8], [57.2, -520], [52, -503.4], [43, -501], [35, -503.0], [31.6, -495], [32.2, -487], [36.6, -487.8], [42, -487.3], [46.6, -486.9], [52, -486.8], [57, -484.4], [62, -486.4], [67.6, -485.8], [72.3, -485.1], [76.8, -484.5], [84, -483.8], [86.6, -477], [84, -471.2],
   [74.6, -471.2], [65, -471.2], [56, -471.2], [52.2, -469.0], [48.4, -471.2], [42.6, -471.2], [38, -469.8],
@@ -565,6 +632,16 @@ export const LIGHTS = [
   { x: 62, y: -360, r: 8, i: 0.5, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 88, y: -352, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },
   { x: 108, y: -400, r: 7, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 },
+  // (2026-11-27) the Dry Falls: a cold grey in the basins, nothing in the Underway but what she brings; the Cistern a little warmer
+  { x: 150, y: -165, r: 16, i: 0.2, c: [0.72, 0.78, 0.86], flicker: 0 }, { x: 178, y: -170, r: 16, i: 0.2, c: [0.72, 0.78, 0.86], flicker: 0 }, { x: 199, y: -176, r: 13, i: 0.18, c: [0.72, 0.78, 0.86], flicker: 0 },
+  { x: 214, y: -190, r: 9, i: 0.26, c: [0.8, 0.82, 0.86], flicker: 0 }, { x: 225, y: -190, r: 9, i: 0.26, c: [0.8, 0.82, 0.86], flicker: 0 },
+  // the Stores: a lamp left on each gallery, the loft's own
+  { x: 134, y: -356.6, r: 9, i: 0.45, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 186, y: -356.6, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 206, y: -368.2, r: 9, i: 0.42, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 156, y: -368.2, r: 8, i: 0.36, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 136, y: -379.8, r: 8, i: 0.36, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 180, y: -379.8, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 206, y: -391.4, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 160, y: -391.4, r: 8, i: 0.36, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 146, y: -403, r: 9, i: 0.4, c: [1.0, 0.62, 0.3], flicker: 1 }, { x: 196, y: -403, r: 9, i: 0.42, c: [1.0, 0.62, 0.3], flicker: 1 },
+  { x: 116, y: -379.6, r: 7, i: 0.3, c: [0.86, 0.8, 0.72], flicker: 0 }, { x: 122, y: -379.6, r: 7, i: 0.3, c: [0.86, 0.8, 0.72], flicker: 0 },
   { x: 40, y: -528, r: 26, i: 0.15, c: [0.7, 0.76, 0.9], flicker: 0 },
   { x: 82, y: -528, r: 26, i: 0.15, c: [0.7, 0.76, 0.9], flicker: 0 },
   { x: 30, y: -478, r: 20, i: 0.16, c: [0.7, 0.76, 0.9], flicker: 0 },

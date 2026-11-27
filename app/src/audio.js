@@ -34,8 +34,10 @@ const AREA_BEDS = {
   hush: { amb_hum: 0.5, amb_drips: 0.08 },
   treadles: { amb_cave: 0.35, amb_beat: 0.7 },
   loom: { amb_breath: 0.4 },
+  falls: { amb_cave: 0.5, amb_drips: 0.12, amb_hum: 0.1 },
+  stores: { amb_cave: 0.4, amb_beat: 0.25, amb_hall: 0.2 },
 };
-const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', hall: null, hush: null, treadles: null, loom: null };
+const AREA_MUSIC = { brink: null, throat: null, gardens: 'mus_gardens', gallery: 'mus_gallery', mere: 'mus_mere', hall: null, hush: null, treadles: null, loom: null, falls: null, stores: null };
 const BEDS = ['amb_cave', 'amb_drips', 'amb_ink', 'amb_hum', 'amb_beat', 'amb_breath', 'amb_hall', 'amb_pit', 'amb_deep'];
 // a minor pentatonic over two octaves: the thread only ever sings in tune
 const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];

@@ -13,7 +13,6 @@ const BOTS = {
   'stop dead 0.3 s after a warning, no pluck': () => ({ stop: 0.3 }),
   'stop dead, and tear free if seized': () => ({ stop: 0.3, tear: 0.35 }),
   'never pluck until seized, then tear free': () => ({ tear: 0.35 }),
-  'dim when one stirs, tear free': () => ({ dim: 1, tear: 0.35 }),
 
 };
 for (const [rn, peg, goal] of RUNS) for (const [bn, mk] of Object.entries(BOTS)) {
@@ -32,7 +31,6 @@ for (const [rn, peg, goal] of RUNS) for (const [bn, mk] of Object.entries(BOTS))
       const active = W.deep.hands.filter((h) => ['stir', 'lunge', 'grope'].includes(h.st));
       if (active.length && warnT < 0) warnT = t; if (!active.length) warnT = -1;
       const pl = () => { if (t - last > 0.56) { inp.pressed.pluck = true; last = t; warnT = -1; } };
-      if (b.dim && active.length) inp.held.dim = true;
       if (b.every && t - last > b.every) pl();
       if (b.react && warnT > 0 && t - warnT > b.react + r() * 0.1) pl();
       if (W.seized) { if (seizeT < 0) { seizeT = t; seized++; } if (b.tear && t - seizeT > b.tear) pl(); } else seizeT = -1;

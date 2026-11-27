@@ -157,3 +157,4 @@ only the flicker metric showed it (contact sheets every N frames missed it).
 | 39. Unbound: the thread never runs out (fraying instead), ten poles out of the deep, nine skeins become her letters, seats mend and say something, the bitten ending screams and runs (`unbound/`, letters and seat lines sealed) | https://claude.ai/artifact/XvSAYtuFThoPtUK6YTG1SB |
 | 42. A Candle by Each Seat: a burning candle stub on every seat, seen from across the cave (`seat-candles/`) | https://claude.ai/artifact/3C5nb632w1gs7DtHhMTir6 |
 | 43. The Seats in Red: the seat stone and cloth tinted pale red through the glow layer (`seat-red/`) | https://claude.ai/artifact/AYKzta15bUY8tubMhJjCjH |
+| 44. The Long Way: the Dry Falls and the Stores (+~5 min, no dangers, no words), the rising earth in the Loom rebuilt, sitting down / looking about / getting up, voice notes in turn, dimming removed, logs.py reads 1.2.1 (`longway/`) | https://claude.ai/artifact/SrvQP1ij65rUBgeNK4R38z |

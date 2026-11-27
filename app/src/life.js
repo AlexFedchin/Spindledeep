@@ -24,6 +24,8 @@ const BEASTS = [
   [-150, -196, 'fish', 9], [-150, -190, 'bat', 5], [-209, -262, 'mouse', 16],
   [-262, -340, 'end', 46], [-340, -430, 'end', 34], [-430, -538, 'end', 40],
 ];
+// (2026-11-27) east of the old world: bats and beetles in the Dry Falls, loose ends of thread in the Stores
+const BEASTS_EAST = [[-150, -198, 'bat', 12], [-165, -197, 'beetle', 16], [-349, -412, 'end', 30]];
 
 // walk from a point in the air to the nearest rock along a direction; null if too far
 function cast(T, x, y, dx, dy, max) {
@@ -38,9 +40,10 @@ export function growGlows(T) {
     || pegs.some((q) => Math.hypot(q.x - x, q.y - y) < 3.5) || L.SECRETS.some((s) => x > s.hide[0] - 1 && x < s.hide[2] + 1 && y > s.hide[1] - 1 && y < s.hide[3] + 1)
     || L.THORNS.some(([a, b, yr]) => x > a - 2 && x < b + 2 && y < yr + 6 && y > yr - 12) || L.INK.some((k) => x > k.x0 && x < k.x1 && y < k.y + 0.6 && y > k.y - 8)
     || L.GATES.some((q) => x > q.x0 - 1 && x < q.x1 + 1 && y > q.y0 - 1.4 && y < q.y1 + 1.4) || (x < 46 && y < -420 && y > -452) || (y < -532);
-  for (const [y0, y1, kind, gap, c, reach, i, on] of GLOW) {
-    for (let n = 0; n < 2600; n++) {
-      const x = 2 + r() * 116, y = y1 + r() * (y0 - y1), d = T.d(x, y);
+  // (2026-11-27) the old world first, with its own seed, so nothing in it moves; then the ground east of it, seeded apart
+  const pass = (r, xa, xw, n0) => { for (const [y0, y1, kind, gap, c, reach, i, on] of GLOW) {
+    for (let n = 0; n < n0; n++) {
+      const x = xa + r() * xw, y = y1 + r() * (y0 - y1), d = T.d(x, y);
       if (d < 0.5 || d > 7) continue;
       const a = on === 'floor' ? -Math.PI / 2 : on === 'wall' ? (r() < 0.5 ? 0 : Math.PI) + (r() - 0.5) * 0.7 : r() * TAU;
       const h = cast(T, x, y, Math.cos(a), Math.sin(a), 8);
@@ -51,7 +54,9 @@ export function growGlows(T) {
       if (taken(h[0], h[1], gap)) continue;
       out.push({ x: h[0], y: h[1], nx, ny, kind, c, r: reach, i, b: 1, seed: r(), ph: r() * TAU, dim: 0 });
     }
-  }
+  } };
+  pass(r, 2, 116, 2600);
+  pass(mulberry(2027), L.OLD_W + 2, L.WORLD.w - L.OLD_W - 4, 2600);
   return out;
 }
 
@@ -61,10 +66,12 @@ export class Life {
     this.glows = W.glows;
     const T = W.T, r = mulberry(77);
     this.beasts = [];
-    for (const [y0, y1, kind, n] of BEASTS) {
+    // (the ground east of the old world has its own list and seed: BEASTS_EAST)
+    for (const [y0, y1, kind, n, east] of [...BEASTS, ...BEASTS_EAST.map((b) => [...b, true])]) {
       let left = n;
+      const rr = east ? (this._re ||= mulberry(78)) : r;
       for (let k = 0; k < n * 60 && left > 0; k++) {
-        const x = 3 + r() * 114, y = y1 + r() * (y0 - y1), d = T.d(x, y);
+        const r = rr, x = east ? L.OLD_W + 3 + r() * (L.WORLD.w - L.OLD_W - 6) : 3 + r() * 114, y = y1 + r() * (y0 - y1), d = T.d(x, y);
         if (kind === 'fish') { const p = L.INK[0]; this.beasts.push({ kind, x: p.x0 + 4 + r() * (p.x1 - p.x0 - 8), y: p.y, t: r() * 20, seed: r(), vx: 0, dir: r() < 0.5 ? -1 : 1, up: 0, nx: 0, ny: 1 }); left--; continue; }
         if (kind === 'crow') { const gx = [33.4, 25.2, 47.0, 7.6][left - 1]; const gy = T.ground(gx, 9, 14); if (gy !== null) this.beasts.push({ kind, x: gx, y: gy, hx: gx, hy: gy, t: r() * 9, seed: r(), st: 'sit', vx: 0, vy: 0, flap: 0, face: r() < 0.5 ? -1 : 1, nx: 0, ny: 1 }); left--; continue; }
         if (d < 0.4 || d > 9) continue;
@@ -88,10 +95,10 @@ export class Life {
 
   // how much light is on a spot: her, and the thread when it is near
   _lit(x, y) {
-    const W = this.W, p = W.player, dim = 1 - (W.dim || 0);
-    let l = p.dead ? 0 : Math.max(0, 1 - Math.hypot(p.x - x, p.y + 0.3 - y) / 4.2) * dim;
+    const W = this.W, p = W.player;
+    let l = p.dead ? 0 : Math.max(0, 1 - Math.hypot(p.x - x, p.y + 0.3 - y) / 4.2);
     const P = W.thread.poly, n = W.thread.polyN;
-    for (let k = 0; k < n; k += 4) { const d = Math.abs(P[k * 5] - x) + Math.abs(P[k * 5 + 1] - y); if (d < 3) l = Math.max(l, (1 - d / 3) * 0.7 * dim); }
+    for (let k = 0; k < n; k += 4) { const d = Math.abs(P[k * 5] - x) + Math.abs(P[k * 5 + 1] - y); if (d < 3) l = Math.max(l, (1 - d / 3) * 0.7); }
     return l;
   }
 
@@ -111,7 +118,7 @@ export class Life {
       if (near(q.x, q.y, 3.4)) q.sing = 1;                          // a pluck passing by
       q.sing = Math.max(0, (q.sing || 0) - dt * 0.4);
       if (plant) { to += q.sing * 2.4; if (d < 1.3 && speed > 1) { q.shut = 1; } q.shut = Math.max(0, (q.shut || 0) - dt * 0.3); to *= 1 - 0.75 * q.shut; } else to += q.sing * 0.8;
-      to *= 1 + 1.7 * (W.dim || 0) + 0.8 * sit;                       // (and eyes get used to the dark)
+      to *= 1 + 0.8 * sit;
       if (q.kind === 'stub' && W.hallOut !== undefined) to = 0;         // (what goes past them on the way up puts them out)
       q.b += (to - q.b) * Math.min(1, dt * (to > q.b ? 5 : 1.6));
     }
@@ -177,7 +184,7 @@ export class Life {
           // something under the ink that follows the light of the thread across it
           const pool = L.INK[0], over = p.y < pool.y + 12 && p.x > pool.x0 - 4 && p.x < pool.x1 + 4;
           let tx = b.x + b.dir * 3;
-          if (over && d < 22 && !(W.dim > 0.5)) tx = p.x + (b.seed - 0.5) * 7;
+          if (over && d < 22) tx = p.x + (b.seed - 0.5) * 7;
           b.vx += (clamp(tx - b.x, -1, 1) * (over ? 1.5 : 0.5) - b.vx) * Math.min(1, dt * 0.8);
           b.x = clamp(b.x + b.vx * dt, pool.x0 + 1, pool.x1 - 1);
           if (b.x < pool.x0 + 2 || b.x > pool.x1 - 2) b.dir = -b.dir;
@@ -189,7 +196,7 @@ export class Life {
         }
         case 'end': {
           // a loose end of thread in the wall: it turns to her light, shrinks from a pluck, and in the dark it hangs
-          const lit = this._lit(b.x, b.y), see = d < 6 ? (1 - d / 6) * (1 - (W.dim || 0)) : 0;
+          const lit = this._lit(b.x, b.y), see = d < 6 ? (1 - d / 6) : 0;
           const pull = scare ? -1 : see * (0.5 + 0.5 * clamp(lit * 2, 0, 1));
           b.a += (pull - b.a) * Math.min(1, dt * (scare ? 9 : 1.4));
           b.ta = [dx / d, dy / d];

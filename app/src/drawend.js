@@ -108,36 +108,130 @@ export function drawCalled(D, ctx, ectx) {
 }
 
 // ── the dark that rises ──────────────────────────────────────────────────
+// Earth, heaving up the Loom with the arms in it (the user, 2026-11-27: no cut-off arms showing, the dirt in detail). Back to front:
+// a dim row of arms, the ridge of earth they come out of, the near arms, then the near earth with its clods, stones, roots and the
+// grain of its layers. Every arm's foot stays under the earth in front of it. Nothing below the crest is drawn but black.
+const hash = (i, s = 0) => { const j = Math.sin(i * 12.9898 + s * 78.233) * 43758.5453; return j - Math.floor(j); };
 export function drawDark(D, ctx, ectx) {
   const w = D.w, r = w.deep.rise;
   if (D.cam[1] > -420 || r.level <= r.y0 + 0.05 || !D.vis(60, r.level, 70)) return;
-  const k = D.k, top = r.level, t = D.time;
+  const k = D.k, top = r.level, t = D.time, hv = r.heave || 0, p = w.player, dt = D.dtLast || 0;
   const xa = Math.max(r.x0, D.cam[0] - D.viewW / 2 - 3), xb = Math.min(r.x1, D.cam[0] + D.viewW / 2 + 3);
-  const surf = (x) => top + 0.5 * Math.sin(x * 0.45 + t * 0.8) + 0.3 * Math.sin(x * 1.3 - t * 1.9) - 0.4;
-  const im = D.img?.arms;
-  // rows of arms, the back one higher and dimmer; each stretch of them heaves on its own
-  const rows = (c2, a, dark) => {
-    if (!im) return;
-    for (const [dx, up, hh, tone] of [[1.7, 1.15, 3.6, 0.5], [0, 0.35, 3.2, 0.9]]) {
-      const W = hh * im.width / im.height * 0.92;
-      for (let i = Math.floor((xa - dx) / W) - 1; i * W + dx < xb + W; i++) {
-        const x = i * W + dx, j = Math.sin(i * 12.9898 + dx) * 43758.5453, f = j - Math.floor(j);
-        const heave = 0.45 * Math.sin(t * (1.6 + f) + f * 9) + 0.25 * Math.sin(t * 5.1 + f * 20);
-        if (!D.vis(x, surf(x) + 1, W + 2)) continue;
-        img(D, c2, im, x, surf(x) + up + heave - 0.9, hh, { flip: f > 0.5 ? 1 : -1, alpha: a, dark: dark ? tone : 1, rot: 0.06 * Math.sin(t * 2.3 + f * 7) });
-      }
+  if (top < D.cam[1] - D.viewH / 2 - 5) return;
+  const X = (x) => D.sx(x), Y = (y) => D.sy(y), lw = (m) => Math.max(0.6, m * k);
+  // the near face: long swells that travel, a quicker churn, and more of both while it gathers itself to heave
+  const surf = (x) => top - 0.4 + (0.5 + 0.45 * hv) * Math.sin(x * 0.45 + t * 0.8) + 0.3 * Math.sin(x * 1.3 - t * 1.9) + 0.1 * Math.sin(x * 3.7 + t * 2.6);
+  // the ridge behind it, a little higher
+  const ridge = (x) => surf(x) + 0.8 + 0.35 * Math.sin(x * 0.7 - t * 0.6 + 1.3);
+  // the crumbling edge of a face: small steps that stay with the ground (hashed by place, not by frame)
+  // clods sit in it every CLOD m (where the hash lets one be); the face swells under each, so the crest is lumpy in outline
+  const CLOD = 0.3, clod = (c, s) => { const q = hash(c, s); if (q > 0.62) return null; return { q, x: (c + hash(c, s + 1)) * CLOD, sz: 0.07 + 0.2 * hash(c, s + 2) ** 2 }; };
+  const edge = (f, x, s) => {
+    let y = f(x) + 0.06 * (hash(Math.floor(x / 0.11), s) - 0.5);
+    for (let c = Math.floor(x / CLOD) - 1; c <= Math.floor(x / CLOD) + 1; c++) { const o = clod(c, s); if (o) { const u = (x - o.x) / (o.sz * 1.5); if (Math.abs(u) < 1) y = Math.max(y, f(x) + o.sz * 0.55 * (1 - u * u)); } }
+    return y;
+  };
+  const face = (c2, f, s, step = 0.08) => {
+    c2.beginPath(); c2.moveTo(X(xa), Y(r.y0 - 3));
+    for (let x = Math.floor(xa / step) * step; x <= xb + step; x += step) c2.lineTo(X(x), Y(edge(f, x, s)));
+    c2.lineTo(X(xb + step), Y(r.y0 - 3)); c2.closePath();
+  };
+  // the lowest the face comes across a picture's width: its foot goes under that
+  const low = (f, x, hw) => { let m = Infinity; for (let j = -4; j <= 4; j++) m = Math.min(m, f(x + j / 4 * hw)); return m - 0.05; };
+  const ims = D.img || {}, cluster = ims.arms, singles = [ims.arm0, ims.arm1].filter(Boolean);
+  // a row of the clusters, standing in `f`: their feet at least `deep` m under it
+  const clusters = (f, hh, dx, dark, deep, seed) => {
+    if (!cluster) return;
+    const Wd = hh * cluster.width / cluster.height * 0.9;
+    for (let i = Math.floor((xa - dx) / Wd) - 1; i * Wd + dx < xb + Wd; i++) {
+      const q = hash(i, seed), x = i * Wd + dx + (q - 0.5) * Wd * 0.3;
+      const heave = 0.5 * (0.6 * Math.sin(t * (1.6 + q) + q * 9) + 0.4 * Math.sin(t * 5.1 + q * 20)) - 0.5;      // -1..0
+      const h = hh * (0.85 + 0.3 * hash(i, seed + 1));
+      if (!D.vis(x, f(x) + 1, Wd + 2)) continue;
+      const foot = low(f, x, h * cluster.width / cluster.height * 0.5) - deep + heave * 0.6 + hv * 0.4;
+      img(D, ctx, cluster, x, foot, h, { flip: q > 0.5 ? 1 : -1, dark, rot: 0.06 * Math.sin(t * 2.3 + q * 7) });
+      img(D, ectx, cluster, x, foot, h, { flip: q > 0.5 ? 1 : -1, alpha: 0.04 * dark, rot: 0.06 * Math.sin(t * 2.3 + q * 7) });
     }
   };
-  rows(ctx, 1, true);
-  ectx.save(); rows(ectx, 0.05, false); ectx.restore();
-  // below them nothing at all: not even the lines of the engraving
-  const below = (c2) => {
-    c2.beginPath(); c2.moveTo(D.sx(xa), D.sy(r.y0 - 2));
-    for (let x = xa; x <= xb; x += 0.4) c2.lineTo(D.sx(x), D.sy(surf(x) - 0.15 + 0.25 * Math.sin(x * 5.3 + t * 3)));
-    c2.lineTo(D.sx(xb), D.sy(r.y0 - 2)); c2.closePath(); c2.fill();
+  // single arms between the clusters; the ones near her lean toward her and come up further
+  const reachers = (f, every, seed, dark) => {
+    if (!singles.length) return;
+    for (let i = Math.floor(xa / every) - 1; i * every < xb + every; i++) {
+      const q = hash(i, seed); if (q < 0.25) continue;
+      const x = i * every + (hash(i, seed + 2) - 0.5) * every * 0.7, im = singles[i & 1], dxp = p.x - x;
+      const near = p.dead ? 0 : clamp(1 - Math.abs(dxp) / 7, 0, 1) * clamp(1 - (p.y - f(x)) / 9, 0, 1);
+      const h = (1.7 + 1.1 * hash(i, seed + 3)) * (1 + 0.25 * near);
+      const grope = Math.sin(t * (2.2 + q * 2) + q * 17);
+      const rot = clamp(dxp * 0.05, -0.32, 0.32) * near + 0.12 * (q - 0.5) + 0.05 * grope;
+      const foot = Math.min(low(f, x, h * 0.2 + Math.abs(rot) * h * 0.3) - 0.3, f(x) - h * 0.32 + 0.25 * near + 0.12 * grope + hv * 0.3);
+      if (!D.vis(x, f(x) + h / 2, h)) continue;
+      img(D, ctx, im, x, foot, h, { flip: hash(i, seed + 4) > 0.5 ? 1 : -1, dark, rot });
+    }
   };
-  ctx.fillStyle = g(0); below(ctx);
-  ectx.save(); ectx.globalCompositeOperation = 'destination-out'; ectx.fillStyle = '#000'; below(ectx); ectx.restore();
+  // the ground's own marks: clods and stones sitting on a face, threads of root out of it, and the grain of its layers under it
+  const dress = (f, seed, tone) => {
+    // grain: broken lines along the face at a few depths, fading down into the black
+    for (const [dd, v] of [[0.16, 0.75], [0.34, 0.6], [0.58, 0.46], [0.9, 0.32], [1.3, 0.2]]) {
+      ctx.strokeStyle = g(v * tone); ctx.lineWidth = lw(0.022);
+      for (let x0 = Math.floor(xa / 1.3) * 1.3; x0 < xb; x0 += 1.3) {
+        const c = Math.floor(x0 / 1.3), a = x0 + hash(c, seed + dd * 10) * 0.5, b = a + 0.4 + hash(c, seed + dd * 20) * 0.7;
+        ctx.beginPath();
+        for (let x = a; x <= b; x += 0.12) { const y = f(x) - dd + 0.04 * Math.sin(x * 9 + c); x === a ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y)); }
+        ctx.stroke();
+      }
+    }
+    // clods and stones on the crest; the earth shrugs them as it comes
+    for (let c = Math.floor(xa / CLOD); c * CLOD < xb; c++) {
+      const o = clod(c, seed); if (!o) continue;
+      const { q, x, sz } = o, stone = hash(c, seed + 3) > 0.86;
+      const jig = (0.02 + 0.05 * hv) * Math.sin(t * (7 + q * 5) + c);
+      const cx = X(x), cy = Y(f(x) + sz * 0.5 + jig), n = 6, rot = hash(c, seed + 4) * TAU + jig * 3;
+      // the hollow it sits in, in shadow
+      ctx.fillStyle = g(0.01); ctx.beginPath(); ctx.ellipse(cx + sz * k * 0.15, cy + sz * k * 0.45, sz * k * 1.1, sz * k * 0.5, 0, 0, TAU); ctx.fill();
+      ctx.beginPath();
+      for (let j = 0; j < n; j++) {
+        const a = rot + j / n * TAU, rr = sz * k * (0.7 + 0.45 * hash(c * 7 + j, seed + 5));
+        const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr * (stone ? 0.75 : 0.85);
+        j ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = g((stone ? 0.85 : 0.5 + 0.3 * q) * tone); ctx.fill();
+      ctx.strokeStyle = g(0.01); ctx.lineWidth = lw(0.028); ctx.stroke();
+      // the side the thread lights
+      ctx.strokeStyle = g((stone ? 1 : 0.92) * tone); ctx.lineWidth = lw(0.03);
+      ctx.beginPath(); ctx.arc(cx, cy, sz * k * 0.55, Math.PI * 1.1, Math.PI * 1.75); ctx.stroke();
+    }
+    // roots like hair, and here and there a strand of old yarn, out of the crest
+    ctx.lineWidth = lw(0.012);
+    for (let x0 = Math.floor(xa / 0.9) * 0.9; x0 < xb; x0 += 0.9) {
+      const c = Math.round(x0 / 0.9), q = hash(c, seed + 6); if (q > 0.45) continue;
+      const x = x0 + hash(c, seed + 7) * 0.9, y = f(x), len = 0.2 + 0.4 * hash(c, seed + 8), sw = 0.12 * Math.sin(t * 1.3 + c) + (hash(c, seed + 9) - 0.5) * 0.3;
+      ctx.strokeStyle = g((q < 0.08 ? 0.85 : 0.55) * tone);
+      ctx.beginPath(); ctx.moveTo(X(x), Y(y - 0.05)); ctx.quadraticCurveTo(X(x + sw * 0.4), Y(y + len * 0.6), X(x + sw), Y(y + len)); ctx.stroke();
+    }
+  };
+  const fill = (f, s, crest) => {
+    const gr = ctx.createLinearGradient(0, Y(top + 1.2), 0, Y(top - 2.6));
+    gr.addColorStop(0, g(crest)); gr.addColorStop(0.3, g(crest * 0.55)); gr.addColorStop(0.7, g(crest * 0.15)); gr.addColorStop(1, g(0));
+    ctx.fillStyle = gr; face(ctx, f, s); ctx.fill();
+    ctx.strokeStyle = g(Math.min(1, crest * 1.8)); ctx.lineWidth = lw(0.024); face(ctx, f, s); ctx.stroke();
+  };
+  // back to front
+  clusters(ridge, 3.3, 1.7, 0.42, 1.05, 3);
+  fill(ridge, 11, 0.24); dress(ridge, 11, 0.7);
+  reachers(surf, 2.9, 40, 0.62);
+  clusters(surf, 3.0, 0, 0.86, 0.95, 5);
+  reachers(surf, 3.7, 60, 0.95);
+  fill(surf, 13, 0.42); dress(surf, 13, 1);
+  // crumbs fall off the crest, more while it heaves
+  if (dt && D.vis(p.x, top, 12)) for (let n = Math.random() < dt * (5 + 18 * hv) ? 1 : 0; n > 0; n--) {
+    const x = D.cam[0] + (Math.random() - 0.5) * D.viewW * 0.9;
+    D.spawn('grit', x, surf(x) + 0.15, 1, { speed: 0.6, vy: 1.2 + 1.5 * hv, life: 1.2, r: 0.6 + Math.random() });
+  }
+  // the glow layer sees none of it below the crest
+  ectx.save(); ectx.globalCompositeOperation = 'destination-out'; ectx.fillStyle = '#000'; face(ectx, surf, 13); ectx.fill(); ectx.restore();
+  // but its crest catches a cold breath of light, so the edge of it can be seen coming
+  ectx.save(); ectx.strokeStyle = `rgba(170,180,200,${0.05 + 0.05 * hv})`; ectx.lineWidth = lw(0.02); face(ectx, surf, 13); ectx.stroke(); ectx.restore();
 }
 
 // ── what is left of her ──────────────────────────────────────────────────

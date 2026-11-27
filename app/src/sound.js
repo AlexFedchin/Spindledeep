@@ -12,7 +12,7 @@ const RAYS = 20, FAR = 40;
 // sizes (m, geometric mean of the rays) at which each of the four reverbs is at its fullest
 const SIZE = [1.3, 2.8, 5.2, 8.5];
 // how live an area's walls are, and whether its ground swallows sound
-const WET = { brink: 0.12, throat: 1.0, gardens: 0.72, gallery: 1.25, mere: 1.2, hall: 0.85, hush: 0.42, treadles: 0.95, loom: 1.3 };
+const WET = { brink: 0.12, throat: 1.0, gardens: 0.72, gallery: 1.25, mere: 1.2, hall: 0.85, hush: 0.42, treadles: 0.95, loom: 1.3, falls: 1.35, stores: 0.8 };
 
 // what happens on its own, by area: [group, seconds between (min, max), level, rate (min, max), metres away (min, max), where]
 // where: 'air' in the open, 'wall' on a face of rock, 'rock' inside it (heard through it), 'floor', 'roof', 'far' a direction only
@@ -36,6 +36,9 @@ const LIFE = {
   hall: [['chair', 12, 30, 0.17, 0.75, 0.95, 6, 16, 'floor', 'shy'], ['floor', 9, 22, 0.24, 0.7, 1.0, 5, 14, 'floor', 'shy'], ['wood', 16, 36, 0.2, 0.5, 0.8, 8, 18, 'wall'], ['cloth', 20, 44, 0.12, 0.55, 0.75, 4, 9, 'floor', 'shy']],
   hush: [['trickle', 10, 24, 0.22, 0.5, 0.8, 3, 9, 'roof'], ['scratch', 9, 22, 0.2, 0.6, 0.85, 3, 8, 'rock'], ['rumble', 50, 100, 0.22, 0.6, 0.8, 16, 26, 'far']],
   treadles: [['loomwork', 14, 30, 0.3, 0.7, 0.95, 10, 22, 'rock'], ['timber', 10, 24, 0.34, 0.7, 1.0, 6, 16, 'wall'], ['chain', 12, 28, 0.2, 0.6, 0.85, 6, 16, 'air'], ['wood', 12, 28, 0.2, 0.45, 0.7, 8, 18, 'rock'], ['groan', 40, 80, 0.22, 0.5, 0.8, 14, 24, 'rock']],
+  // (2026-11-27) a dry place that remembers water; a store nobody has opened in a long time
+  falls: [['tick', 7, 18, 0.2, 0.6, 1.0, 6, 18, 'wall'], ['stones', 20, 44, 0.28, 0.7, 1.0, 10, 24, 'wall'], ['trickle', 30, 60, 0.12, 0.5, 0.7, 10, 22, 'rock'], ['rumble', 70, 140, 0.22, 0.7, 0.9, 20, 30, 'far']],
+  stores: [['wood', 10, 24, 0.2, 0.5, 0.75, 6, 18, 'wall'], ['chain', 14, 32, 0.12, 0.6, 0.8, 8, 18, 'air'], ['timber', 20, 44, 0.22, 0.6, 0.85, 8, 20, 'wall'], ['cloth', 24, 50, 0.1, 0.6, 0.8, 5, 14, 'air']],
   loom: [['groan', 26, 56, 0.2, 0.4, 0.6, 18, 30, 'far'], ['rumble', 40, 90, 0.26, 0.6, 0.8, 22, 30, 'far'], ['timber', 24, 50, 0.18, 0.5, 0.7, 12, 24, 'air']],
 };
 // landings and steps by what is underfoot: [step group, level, second group, its level, landing sound]
@@ -252,6 +255,8 @@ export class Sound {
     if (a === 'treadles') return y > -359 && y < -346 && x > 62 ? 'wood' : 'stone';
     if (a === 'loom') return y < -535 || y > -446 ? 'soft' : y > -507 && x < 60 ? 'wood' : 'stone';
     if (a === 'hall') return y < -243 ? 'wood' : 'stone';
+    if (a === 'falls') return y < -192 ? 'grit' : 'stone';
+    if (a === 'stores') return y < -402 || x < 127 ? 'stone' : 'wood';
     return 'stone';
   }
   step(W) {

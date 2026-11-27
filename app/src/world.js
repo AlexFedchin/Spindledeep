@@ -113,12 +113,13 @@ export class World {
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt); this.rig.pre();
     // (in the ending she is walked by ending.js: `ending.walk` is the stick it holds)
-    p.update(dt, this.ending ? (this.ending.walk || blank) : controls && !p.dead && !(this.rest.at && !inp.axisX && !inp.pressed.jump && !inp.held.grip) ? inp : blank, th, ctx);
+    p.update(dt, this.ending ? (this.ending.walk || blank) : controls && !p.dead && !this.rest.at ? inp : blank, th, ctx);      // (sat, she is still hers only once she has got up)
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, Infinity, false);
     th.buildPoly(p.bx, p.by);
 
-    if (!p.dead && !this.ending && controls) this._interact(inp, dt);
+    if (!p.dead && !this.ending && controls && !this.rest.at) this._interact(inp, dt);
+    else if (this.rest.at) this.prompt = null;
     this.kindle.update(dt, controls ? inp : blank, controls && !p.dead && !this.ending);
     this._bells(dt);
     this._gates(dt);
@@ -237,8 +238,7 @@ export class World {
       let tx = m.nest.x + Math.cos(m.t * 0.7 + m.seed) * m.nest.r * 0.6, ty = m.nest.y + Math.sin(m.t * 1.1 + m.seed) * 2.5;
       if (m.st === 'land') {
         // chewing the thread
-        m.dark = this.dim > 0.6 ? (m.dark || 0) + dt : 0;                  // (in the dark it loses the thread it sits on)
-        if (m.idx < th.liveStart || m.idx >= th.n || th.dead[m.idx] || m.flee > 0 || m.dark > 1.1) { m.st = 'wander'; m.idx = -1; m.near = 0; }
+        if (m.idx < th.liveStart || m.idx >= th.n || th.dead[m.idx] || m.flee > 0) { m.st = 'wander'; m.idx = -1; m.near = 0; }
         else {
           m.x = th.x[m.idx] + Math.sin(m.t * 3) * 0.02; m.y = th.y[m.idx] + 0.08;
           th.wear[m.idx] += dt / (this.mode === 'frayed' ? 2.8 : 4.2);
@@ -251,7 +251,7 @@ export class World {
         }
       }
       if (m.st === 'doll') {
-        if (m.flee > 0 || p.dead || this.rest.at || (this.dim > 0.6 && Math.random() < dt * 1.5)) m.st = 'wander';      // (sitting down, she is left be)
+        if (m.flee > 0 || p.dead || this.rest.at) m.st = 'wander';      // (sitting down, she is left be)
         else {
           m.x = p.x + Math.cos(m.seed) * 0.25; m.y = p.y + 0.15 + Math.sin(m.seed) * 0.2;
           this.hurt += dt * 0.9;
@@ -260,8 +260,7 @@ export class World {
         }
       }
       // pick a target: the warm thread or the doll, if near and not guarded by a bell
-      if (m.flee <= 0 && m.st !== 'flee' && this.dim > 0.6) m.st = 'wander';
-      else if (m.flee <= 0 && m.st !== 'flee') {
+      if (m.flee <= 0 && m.st !== 'flee') {
         let best = -1, bd = 9;
         const step = 3;
         for (let i = th.liveStart; i < th.n; i += step) {
@@ -411,7 +410,7 @@ export class World {
     const out = [];
     const mx = viewW / 2 + 6, my = viewH / 2 + 6;
     const vis = (x, y) => Math.abs(x - cam[0]) < mx && Math.abs(y - cam[1]) < my;
-    const t = this.time, p = this.player, th = this.thread, low = 1 - 0.9 * (this.dim || 0), eyes = 1 + 0.9 * (this.dim || 0);
+    const t = this.time, p = this.player, th = this.thread, low = 1, eyes = 1;
     for (const l of this.lamps) if (vis(l.x, l.y)) {
       const fl = 1 + (Math.sin(t * 13 + l.x) * 0.05 + Math.sin(t * 7.3) * 0.06) * l.flicker;
       out.push({ x: l.x, y: l.y, r: l.r, i: l.i * fl * eyes, c: l.c, soft: 10 });
@@ -445,6 +444,9 @@ export class World {
       const [x, y] = chain[i];
       if (vis(x, y)) out.push({ x, y: y + 0.6, r: 3.2, i: 0.32, c: [0.75, 0.8, 0.95], soft: 0 });
     }
+    // and along the crest of the earth that rises in the Loom, so its clods and the arms in it are seen (not what is under it)
+    const rs = this.deep.rise;
+    if (rs.level > rs.y0 + 0.5 && Math.abs(rs.level - cam[1]) < my) for (let x = Math.floor((cam[0] - mx) / 4.5) * 4.5; x < cam[0] + mx; x += 4.5) out.push({ x: x + 2.2, y: rs.level + 0.5, r: 4.6, i: 0.3 + 0.25 * (rs.heave || 0), c: [0.72, 0.76, 0.9], soft: 0 });
     for (const pg of this.pegs) if (pg.glow > 0.05 && vis(pg.x, pg.y)) out.push({ x: pg.x, y: pg.y + 0.6, r: 2.6, i: 0.5 * pg.glow, c: RED, soft: 10 });
     for (const [sx0, sx1, sy] of L.SHELVES) if (vis((sx0 + sx1) / 2, sy)) out.push({ x: (sx0 + sx1) / 2, y: sy + 0.7, r: 2.8, i: 0.2, c: [0.72, 0.76, 0.88], soft: 0 });
     for (const s of this.rig.spindles) if (vis(s.x, s.y)) out.push({ x: s.x, y: s.y + 0.4, r: 3.2, i: 0.36 + 0.35 * s.v, c: s.v > 0.5 ? RED : [0.72, 0.76, 0.88], soft: 10 });
@@ -560,8 +562,6 @@ function makeHints() {
     { x0: 26, x1: 68, y0: -305, y1: -294, text: 'the spindles turn where your thread runs past them · the door wants both', until: (w) => w.player.x < 27 },
     { x0: 88, x1: 104, y0: -407, y1: -396, text: 'lie low in the gutter and let it roll over you', until: (w) => w.player.x < 62 },
     { x0: 34, x1: 62, y0: -286, y1: -266, keys: ['pluck'], text: 'when the earth crumbles, stop dead · it strikes where you were going · or pluck, but not too often', until: (w) => w.player.x > 62 },
-    { x0: 55, x1: 98, y0: -92, y1: -76, keys: ['dim'], text: 'hold to dim the thread · your eyes get used to the dark', until: (w) => w.dim > 0.9 },
-    { x0: 66, x1: 98, y0: -327, y1: -314, keys: ['dim'], text: 'hold to dim · in the dark they feel less of you', until: (w) => w.player.x < 66 },
     { x0: 56, x1: 72, y0: -368, y1: -360, keys: ['grip', 'up'], text: 'hold to grip the rope · climb · jump to leap off', until: (w) => w.player.y > -359 },
     { x0: 70, x1: 80, y0: -359, y1: -351, text: 'the heddles fall to the beat · wait for the creak, then run', until: (w) => w.player.x > 81 },
     { x0: 60, x1: 90, y0: -541, y1: -530, when: (w) => w.deep.rise.on, keys: ['grip', 'up'], text: 'climb', until: (w) => w.player.y > -515 },

@@ -81,6 +81,8 @@ let ambient = [0.16, 0.17, 0.2], moon = 1;
 let time = 0;
 const pts = new Float32Array(16384 * 8);
 let voicePlaying = 0;
+// her voice notes wait their turn: one never starts over another, nor over a letter being read (the user, 2026-11-27)
+let MEMQ = [], memGap = 0;
 let subTimer = 0, cardTimer = 0, toastTimer = 0;
 let settings = { ...DEFAULTS };
 let E = null;              // the ending (ending.js)
@@ -124,7 +126,7 @@ async function boot() {
     await (STAGE = new Stage(R, log)).load();
     ITEMS = new Items(R, log);
     await step('listening for her voice…', 0.6);
-    W = new World(T);
+    W = new World(T); MEMQ = [];
     D = new Drawer(W);
     I = new Input();
     A = new Audio(); SC = new Sound(A);
@@ -208,7 +210,7 @@ function enterTitle() {
   state = 'title';
   // back from the credits (or the pause menu) the title shows a fresh world, not the last run's red thread and lamps
   E.reset(); CODA = false; clearShow();
-  W = new World(T); D = new Drawer(W); SD.W = W;
+  W = new World(T); D = new Drawer(W); SD.W = W; MEMQ = [];
   R.setSDF(T.visualHalf(W.secrets.map((k) => k.hide)));
   const has = !!loadSave(true);
   log(`title screen · save ${has ? 'present' : 'none'}`);
@@ -266,7 +268,7 @@ function startGame(cont, walkOut = false, mode = '') {
   clearShow();
   show($('title'), false);
   if (cont) mode = (loadSave(true) || {}).mode || '';
-  W = new World(T, mode);
+  W = new World(T, mode); MEMQ = [];
   D = new Drawer(W);
   if (cont) applySave(loadSave()); else clearSave();
   log(cont ? `continue run from pole ${W.checkpoint.i}` : `NEW RUN${mode ? ' · ' + mode : ''} (save replaced)`);
@@ -419,10 +421,10 @@ function updateUI(dt) {
 
 // ── what each stretch between two poles was like (session log; scripts/checks/logs.py adds them up) ──
 let SEC = newSection(0);
-function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, dims: 0, low: 1, rest: 0 }; }
+function newSection(from) { return { from, t: 0, still: 0, deaths: [], tries: 1, plucks: 0, low: 1, rest: 0 }; }
 function sectionDone(to) {
   const s = SEC;
-  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · most frayed ${(100 * (1 - s.low)).toFixed(0)}% · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks} · dims ${s.dims}${W.mode ? ' · ' + W.mode : ''}`);
+  if (s.t > 0.5 || s.deaths.length) log(`section ${s.from}>${to} · ${s.t.toFixed(1)} s · tries ${s.tries} · deaths ${s.deaths.length}${s.deaths.length ? ' (' + s.deaths.join(',') + ')' : ''} · most frayed ${(100 * (1 - s.low)).toFixed(0)}% · standing ${s.still.toFixed(1)} s · sitting ${s.rest.toFixed(0)} s · plucks ${s.plucks}${W.mode ? ' · ' + W.mode : ''}`);
   SEC = newSection(to);
 }
 function sectionTick(dt) {
@@ -456,8 +458,14 @@ function handleEvents() {
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
       // the thread's light (kindle.js)
-      case 'dim': SEC.dims++; A.any('st_soft', { vol: 0.3, rate: 0.8, x: e.x, y: e.y }); break;
-      case 'dimSpent': A.any('st_soft', { vol: 0.35, rate: 1.1, x: e.x, y: e.y }); break;
+      case 'getUp': A.any('st_soft', { vol: 0.25, rate: 0.9, x: e.x, y: e.y }); A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.18, rate: 1.3, x: e.x, y: e.y }); break;
+      case 'rise':
+        log('the dark wakes');
+        A.play('thud', { vol: 1.0, verb: 1.6 }); A.play('drag', { vol: 0.8, rate: 0.5, verb: 1.4 }); A.play('inhale', { vol: 1.0, rate: 1.6, verb: 1.5 });
+        if (e.first) A.voice('call', null, 0.8);       // every mouth in the place
+        cam.shake = 0.7;
+        if (e.first) toast('climb', 4);
+        break;
       case 'sit': log(`sits at ${e.x.toFixed(0)},${e.y.toFixed(0)}`); A.any('st_soft', { vol: 0.3, rate: 0.7, x: e.x, y: e.y }); A.play('bowl', { vol: 0.2, rate: 0.5, verb: 1.4, bus: 'ui' }); break;
       case 'frayed': if (!W._frayedSeen) { W._frayedSeen = true; toast('she is fraying · sit a while, or reach a pole, to mend', 4); } break;
       case 'whole': A.play('mend', { vol: 0.35, rate: 0.8, x: e.x, y: e.y }); D.spawn('spark', e.x, e.y + 0.3, 8, { speed: 1, life: 0.8 }); break;
@@ -519,7 +527,7 @@ function handleEvents() {
         if (!settings.found.includes(e.kind)) { settings.found.push(e.kind); window.host?.setSettings?.(settings); }
         save();
         break;
-      case 'memory': playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 }); save(); break;
+      case 'memory': MEMQ.push(e); save(); break;
       case 'area': log(`entered ${e.name}`); if (state === 'play') card(e.name); else W.areaSeen.delete(e.id); A.setArea(e.id); break;
       case 'areaQuiet': A.setArea(e.id); break;
       case 'drip': A.play('drip', { vol: 0.5, vary: 0.2, x: e.x, y: e.y, verb: 1 }); break;
@@ -543,13 +551,6 @@ function handleEvents() {
         if (Math.hypot(e.x - p.x, e.y - p.y) < 14) D.sift(e.x, e.y, 2, 3);
         if (e.kind !== 'needle') { A.any('timber', { vol: 0.4, x: e.x, y: e.y }); A.play('gate', { vol: 0.25, rate: 1.8, x: e.x, y: e.y }); if (state === 'play' && Math.hypot(e.x - p.x, e.y - p.y) < 14) cam.shake = Math.max(cam.shake, 0.18); }
         break;
-      case 'rise':
-        log('the dark wakes');
-        A.play('thud', { vol: 1.0, verb: 1.6 }); A.play('drag', { vol: 0.8, rate: 0.5, verb: 1.4 }); A.play('inhale', { vol: 1.0, rate: 1.6, verb: 1.5 });
-        if (e.first) A.voice('call', null, 0.8);       // every mouth in the place
-        cam.shake = 0.7;
-        if (e.first) toast('climb', 4);
-        break;
       case 'surgeWarn': D.sift(p.x, p.y, 4, 9); A.any('heave', { vol: 0.75, rate: 0.8, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.2); break;
       case 'surge': A.any('heave', { vol: 1.0, rate: 1.1, x: e.x, y: e.y, verb: 1.2 }); A.play('thud', { vol: 0.9, rate: 0.6, x: e.x, y: e.y, verb: 1.4 }); A.any('groan', { vol: 0.5, rate: 0.55, x: e.x, y: e.y }); cam.shake = Math.max(cam.shake, 0.7); D.spawn('fiber', p.x, p.y - 4, 26, { speed: 3, vy: 5, life: 1.4 }); break;
       case 'crawlNear': A.play('inhale', { vol: 0.8, rate: 0.8, x: e.x, y: e.y }); if (!W._nearSeen) { W._nearSeen = true; toast('it is on your thread · pluck', 3); } break;
@@ -560,6 +561,15 @@ function handleEvents() {
     }
   }
   W.events.length = 0;
+}
+function memoryStep(dt) {
+  W.voiceBusy = voicePlaying > 0;
+  if (voicePlaying > 0 || SHOW) { memGap = 1.8; return; }
+  memGap = Math.max(0, memGap - dt);
+  if (!MEMQ.length || memGap > 0 || state !== 'play') return;
+  const e = MEMQ.shift(), m = W.memories.find((q) => q.id === e.id);
+  if (m) m.at = W.time;      // (the Loom's dark counts from when her last words begin)
+  playLine(e.id, e.text); A.play('chime', { vol: 0.5, x: e.x, y: e.y }); D.spawn('pale', e.x, e.y, 1, { speed: 0, life: 2 });
 }
 function playLine(id, text) {
   voicePlaying++;
@@ -1054,12 +1064,12 @@ function updateCamera(dt) {
   cam.x = damp(cam.x, tx, rate, dt); cam.y = damp(cam.y, ty, rate * 1.15, dt);
   cam.viewH = SD.viewLock ? SD.viewLock : damp(cam.viewH, vh, SHOW ? 5 : W.intro && !W.intro.done ? 4 : state === 'play' ? 0.9 : 2.2, dt);
   const halfW = cam.viewH * R.w / R.h / 2;
-  cam.x = clamp(cam.x, L.WORLD.x0 + halfW, L.WORLD.x0 + L.WORLD.w - halfW);
+  cam.x = clamp(cam.x, L.WORLD.x0 + halfW, (cam.y > -52 ? L.OLD_W : L.WORLD.x0 + L.WORLD.w) - halfW);      // (the Brink and the Throat stop at the old edge)
   cam.y = clamp(cam.y, L.WORLD.y0 + cam.viewH / 2, 30);
   cam.shake = Math.max(0, cam.shake - dt);
   const amb = state === 'ending' && E.mode ? (E.pulse ? areaAt(cam.x, cam.y).amb : a.amb) : a.amb;
-  const eyes = 1 + 1.5 * (W.dim || 0);      // (eyes get used to the dark)
-  ambient = ambient.map((v, i) => damp(v, amb[i] * eyes * (state === 'ending' ? 1 - E.black : 1), W.dim > 0.1 ? 0.9 : 1.5, dt));
+  const eyes = 1;
+  ambient = ambient.map((v, i) => damp(v, amb[i] * eyes * (state === 'ending' ? 1 - E.black : 1), 1.5, dt));
   moon = damp(moon, state === 'ending' && E.pulse ? areaAt(cam.x, cam.y).moon : a.moon, 1.5, dt);
 }
 
@@ -1075,7 +1085,7 @@ function buildPts(viewW, viewH, k) {
   const wLive = Math.max(1.6, k * 0.027);
   // the knitter's grey thread
   const g = W.grey;
-  const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1), low = 1 - 0.82 * (W.dim || 0);      // the threads go out with the picture
+  const lit = (1 - (W.snuff || 0)) * (state === 'ending' ? 1 - E.dark : 1), low = 1;      // the threads go out with the picture
   const redTo = E && E.pulse ? E.pulse.total : -1;
   let gs = 0;
   for (let i = 0; i < g.n; i++) {
@@ -1172,7 +1182,7 @@ function tick(now) {
       acc -= FIXED; steps++;
     }
     if (steps >= 10) acc = 0;
-    if (state === 'play') E.approach(gdt, !paused && !busy && !SHOW);
+    if (state === 'play') { E.approach(gdt, !paused && !busy && !SHOW); if (!paused) memoryStep(gdt); }
     else if (state === 'ending') E.update(gdt);
     updateCamera(SHOW ? dt : gdt);
     revealStep(gdt);

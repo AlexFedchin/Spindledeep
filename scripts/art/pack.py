@@ -32,6 +32,8 @@ PICKS = {
     'hush': ('realvis/hush_13.png', 0.72),
     'treadles': ('realvis/treadles_12.png', 0.70),
     'loomdeep': ('realvis/loomdeep_11.png', 0.74),
+    'falls': ('realvis/falls_33.png', 0.72),
+    'stores': ('realvis/stores_13.png', 0.70),
 }
 
 _depth = None

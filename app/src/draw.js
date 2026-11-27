@@ -12,6 +12,30 @@ import { drawRig } from './drawrig.js';
 import { drawRooms } from './drawrooms.js';
 import { Life } from './life.js';
 import { drawPlaces } from './drawkindle.js';
+import { SIT } from './kindle.js';
+
+// sitting down on a seat and getting up again (kindle.js runs the clock): how far she is sat, how high she hops, how squashed, how far she
+// leans forward to push off. Down: a little crouch, a hop, a plop and a bounce. Up: hands down, lean, push off, a hop, a wobble on landing.
+const ease = (a) => a * a * (3 - 2 * a);
+function seatPose(ph, t) {
+  if (ph === 'down') {
+    const u = t / SIT.down;
+    if (u < 0.2) { const a = u / 0.2; return { sit: 0, hop: 0, sq: 0.14 * Math.sin(a * Math.PI / 2), lean: 0 }; }
+    if (u < 0.58) { const a = (u - 0.2) / 0.38; return { sit: ease(a), hop: 0.2 * Math.sin(a * Math.PI), sq: 0.14 * (1 - a) * (1 - a) - 0.1 * Math.sin(a * Math.PI), lean: 0 }; }
+    const a = (u - 0.58) / 0.42; return { sit: 1, hop: 0, sq: 0.2 * Math.exp(-a * 3.5) * Math.cos(a * 15), lean: 0 };
+  }
+  if (ph === 'up') {
+    const u = t / SIT.up;
+    if (u < 0.3) { const a = u / 0.3; return { sit: 1, hop: 0, sq: 0.1 * ease(a), lean: ease(a) }; }
+    if (u < 0.68) { const a = (u - 0.3) / 0.38; return { sit: 1 - ease(a), hop: 0.17 * Math.sin(a * Math.PI), sq: 0.1 * (1 - a) * (1 - a) - 0.1 * Math.sin(a * Math.PI), lean: 1 - a }; }
+    const a = (u - 0.68) / 0.32; return { sit: 0, hop: 0, sq: 0.15 * Math.exp(-a * 4) * Math.cos(a * 13), lean: 0 };
+  }
+  return { sit: 1, hop: 0, sq: 0.012 * Math.sin(t * 2.4), lean: 0 };      // sat: she breathes
+}
+// what she looks at while she sits: [face (0 ahead, -1 round at you), or 'back' over her shoulder; head up (+) or down; seconds]
+const GAZE = [[0, 0, 1.3], [-1, 0, 1.8], [-1, 0.3, 0.9], [0, 0.5, 1.6], [0, 0, 0.7], ['back', 0.1, 1.7], [0, -0.35, 1.4], [-0.6, 0, 1.3], [0, 0.2, 1.1], ['back', 0.45, 1.3], [-1, -0.2, 1.5]];
+const GAZE_T = GAZE.reduce((a, q) => a + q[2], 0);
+function gazeAt(t) { let u = t % GAZE_T; for (const q of GAZE) { if (u < q[2]) return q; u -= q[2]; } return GAZE[0]; }
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
 
@@ -30,7 +54,7 @@ export class Drawer {
     });
     this.tuft = { a: 0, v: 0 };
     this.life = new Life(world);
-    this.pose = { slope: 0, teeter: 0, stumble: 0, sit: 0, idle: 0, cup: 0, fear: 0, push: 0, turn: 0, vy: 0, g: true };
+    this.pose = { slope: 0, teeter: 0, stumble: 0, sit: 0, idle: 0, cup: 0, fear: 0, push: 0, turn: 0, vy: 0, g: true, face: 0, hop: 0, sq: 0, lean: 0 };
     this.lore = world.lore;
     this.wind = 4; this.gust = 0; this.out = 1;
     this.fog = makeFog();
@@ -108,8 +132,8 @@ export class Drawer {
     const f = p.facing;
     const swing = th.locked && !p.grounded;
     const moving = p.grounded && Math.abs(p.vx) > 0.4;
-    const P0 = this.doll(dt, moving, swing);
-    const sq = p.squash + P0.stumble * 0.16;
+    const P0 = this.doll(dt, moving, swing), onSeat = !!(this.w.rest && this.w.rest.at && this.w.rest.ph);
+    const sq = p.squash + P0.stumble * 0.16 + (P0.sq || 0);
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
     // springs: the yarn tuft and the ribbon tails lag behind the motion
     this.tuft.v += (-p.vx * 0.08 - this.wind * this.out * 0.035 * (1 + Math.sin(this.time * 9) * 0.3) - this.tuft.a * 30) * dt - this.tuft.v * 6 * dt;
@@ -117,11 +141,11 @@ export class Drawer {
     const rib = clamp(-p.vx * 0.06 * f + p.vy * 0.03, -0.6, 0.6) + Math.sin(this.time * 2.6) * 0.06;
 
     ctx.save();
-    ctx.translate(X, Y);
+    ctx.translate(X, Y - (P0.hop || 0) * k * s);
     let tilt = 0;
     if (swing) { const P = th.pivots[th.pivots.length - 1]; tilt = Math.atan2(p.bx - P.x, -(p.by - P.y)) * 0.6; }
     else if (!p.grounded) tilt = clamp(p.vx * 0.03, -0.25, 0.25);
-    else tilt = clamp(p.vx * 0.02, -0.1, 0.1) - P0.slope * 0.32 + f * (P0.stumble * 0.42 - P0.teeter * (0.16 + 0.1 * Math.sin(this.time * 7.3)) + P0.push * 0.16 + P0.sit * 0.04 * Math.sin(this.time * 0.7));
+    else tilt = clamp(p.vx * 0.02, -0.1, 0.1) - P0.slope * 0.32 + f * (P0.stumble * 0.42 - P0.teeter * (0.16 + 0.1 * Math.sin(this.time * 7.3)) + P0.push * 0.16 + P0.sit * 0.04 * Math.sin(this.time * 0.7) + (P0.lean || 0) * 0.22);
     const shiver = P0.fear * Math.sin(this.time * 47) * 0.012 * k;
     ctx.translate(shiver, 0);
     ctx.rotate(tilt);
@@ -151,14 +175,14 @@ export class Drawer {
       let fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.25 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
       // each foot finds the ground under itself; sitting, they go out in front of her and swing a little
       if (p.grounded && !wi) { const off = clamp(P0.foot[side < 0 ? 0 : 1], -0.14, 0.2); fy -= off * u / Math.max(0.5, s); fx += Math.sin(P0.slope) * off * 0.3 * u; }
-      if (P0.sit > 0.01) { fx += (0.2 * u + side * 0.02 * u - fx + lx) * P0.sit; fy += ((0.2 + Math.sin(this.time * 1.6 + side * 1.4) * 0.03) * u - fy) * P0.sit; }
+      if (P0.sit > 0.01) { const kick = onSeat ? 0.17 + Math.sin(this.time * 2.6 + side * 2.2) * 0.05 : 0.2 + Math.sin(this.time * 1.6 + side * 1.4) * 0.03; fx += (0.2 * u + side * 0.02 * u - fx + lx) * P0.sit; fy += (kick * u - fy) * P0.sit; }      // (on a seat her feet dangle off its front and kick)
       if (P0.teeter > 0.01) fy -= Math.max(0, Math.sin(this.time * 7.3 + side)) * 0.05 * u * P0.teeter;
       yarn(lx, ly, (lx + fx) / 2, (ly + fy) / 2, fx, fy, 0.05 * u, side > 0 ? 0.7 : 0.6);
       ctx.beginPath(); ctx.ellipse(fx + 0.025 * u, fy + 0.02 * u, 0.06 * u, 0.035 * u, 0, 0, TAU);
       ctx.fillStyle = g(0.2); ctx.fill(); stroke(0.03, fine * 1.4);
     }
 
-    ctx.translate(0, P0.sit * 0.1 * u);
+    ctx.translate(0, P0.sit * (onSeat ? -0.09 : 0.1) * u);      // on a seat she sits up on the stone; elsewhere on the ground
     // ── body: a knitted sack ──
     const body = () => {
       ctx.beginPath();
@@ -221,6 +245,7 @@ export class Drawer {
       else if (P0.cup > 0.05 || P0.fear > 0.4) { const q = Math.max(P0.cup, (P0.fear - 0.4) * 1.6); ex = (side * 0.22 * (1 - q) + (0.08 + side * 0.05) * q) * u; ey = (-0.03 * (1 - q) - (0.12 + 0.01 * Math.sin(this.time * 3)) * q) * u; }
       else if (P0.teeter > 0.05 || P0.stumble > 0.05) { const a = this.time * 11 + side * 1.6, q = Math.max(P0.teeter, P0.stumble); ex = side * (0.28 + 0.06 * Math.cos(a) * q) * u; ey = (-0.2 + 0.14 * Math.sin(a) * q) * u; }
       else if (P0.push > 0.3) { ex = (0.24 + side * 0.02) * u; ey = (-0.14 - side * 0.05) * u; }
+      else if (P0.lean > 0.2) { ex = (side * 0.21 + 0.05) * u; ey = 0.13 * u; }      // hands down on the seat to push off
       else if (P0.sit > 0.4) { const a = this.time * 1.9; ex = (0.1 + side * 0.07 + Math.cos(a) * 0.02) * u; ey = (-0.03 + Math.sin(a + side) * 0.025) * u; }      // winding yarn in her lap
       else if (p.tieT > 0) { ex = 0.22 * u; ey = (-0.08 + Math.sin(this.time * 30 + side) * 0.03) * u; }
       else if (moving) { ex = ax0 + side * 0.06 * u + Math.sin(legPh + (side > 0 ? Math.PI : 0)) * 0.08 * u; ey = -0.02 * u; }
@@ -244,12 +269,15 @@ export class Drawer {
     ctx.strokeStyle = g(0.62); ctx.lineWidth = fine;
     for (let r = -0.2; r < 0.22; r += 0.04) { ctx.beginPath(); ctx.ellipse(0.01 * u, hy + r * u * 0.3, hr * 1.05, Math.abs(r) * u * 0.9 + 0.01 * u, 0, 0.15, Math.PI - 0.15); ctx.stroke(); }
     ctx.fillStyle = g(0.2, 0.3); ctx.beginPath(); ctx.ellipse(-0.17 * u, hy + 0.03 * u, 0.1 * u, 0.24 * u, 0, 0, TAU); ctx.fill();
+    const fx0 = (P0.face || 0) * 0.08 * u;      // her face turned round toward you: the features slide across the head
+    ctx.translate(fx0, 0);
     // a darned patch behind the eye
     ctx.fillStyle = g(0.66); ctx.beginPath(); ctx.ellipse(-0.12 * u, hy - 0.1 * u, 0.055 * u, 0.045 * u, 0.4, 0, TAU); ctx.fill();
     ctx.strokeStyle = g(0.4);
     for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo((-0.12 + i * 0.018) * u, hy - 0.14 * u); ctx.lineTo((-0.12 + i * 0.018) * u, hy - 0.06 * u); ctx.stroke(); }
     ctx.restore();
     head(); stroke(0.03, lw);
+    ctx.save(); ctx.translate(fx0, 0);
     // seam with cross stitches
     ctx.lineWidth = Math.max(0.8, u * 0.011); ctx.strokeStyle = g(0.25);
     ctx.beginPath(); ctx.arc(-0.06 * u, hy - 0.02 * u, hr * 0.95, -1.2, 0.2); ctx.stroke();
@@ -286,6 +314,7 @@ export class Drawer {
     ctx.setLineDash([0.02 * u, 0.012 * u]);
     ctx.beginPath(); ctx.moveTo(0.0, hy + 0.1 * u); ctx.quadraticCurveTo(0.05 * u, hy + (p.dead ? 0.08 : 0.125) * u, 0.11 * u, hy + 0.095 * u); ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
     // a tuft of yarn loops on top
     const ta = this.tuft.a + Math.sin(this.time * 1.7) * 0.05;
     for (const [ox, len, sp, v] of [[-0.05, 0.16, -1, 0.7], [0.0, 0.2, 1, 0.82], [0.05, 0.14, 1.4, 0.75]]) {
@@ -312,19 +341,23 @@ export class Drawer {
     const gap = (dx) => T.d(p.x + dx, p.y - 0.2) > 0.12 && T.ground(p.x + dx, p.y, 1.3) === null;
     to('teeter', quiet && gap(f * 0.42) && Math.abs(p.vx) < 0.5 ? 1 : 0, 6);
     to('push', p.grounded && Math.abs(p.vx) < 0.3 && this.axis && T.d(p.x + this.axis * 0.36, p.y) < 0.1 ? 1 : 0, 7);
-    to('cup', (w.dim || 0) > 0.05 ? 1 : 0, 6);
     // afraid: something in the earth has stirred, it is on the thread, or they have turned round
     const hand = p.y < -262 && p.y > -342 && w.deep.hands.some((h) => h.st !== 'wait' && h.st !== 'back' && Math.hypot(h.ax - p.x, h.ay - p.y) < 9), c = w.deep.crawler;
     to('fear', hand || (c.on && c.gap < 9) || (p.y < -528 && w.deep.called.some((q) => q.turned && Math.abs(q.x - p.x) < 5)) ? 1 : 0, hand ? 7 : 1.2);
     // left alone
-    Q.idle = quiet && Q.fear < 0.3 && !(w.dim > 0.1) && !this.axis ? Q.idle + dt : 0;
+    Q.idle = quiet && Q.fear < 0.3 && !this.axis ? Q.idle + dt : 0;
     const deep = p.y < -262, safe = !deep && Q.teeter < 0.2;
-    const sit = rest.at ? 1 : Q.idle > 11 && safe ? 1 : 0;
-    to('sit', sit, sit ? 3 : 9);
+    const R = rest.at && rest.ph ? rest : null;
+    if (R) { const a = seatPose(R.ph, R.pt || 0); Q.sit = a.sit; Q.hop = a.hop; Q.sq = a.sq; Q.lean = a.lean; }
+    else { const sit = Q.idle > 11 && safe ? 1 : 0; to('sit', sit, sit ? 3 : 9); Q.hop = Q.sq = Q.lean = 0; }
     const u = (this.time * 0.13 + 0.3) % 1;
     Q.turn = Q.idle > 2.5 && Q.idle < 11 && (deep ? u > 0.6 && u < 0.78 : u > 0.82 && u < 0.92);
     const nod = Q.idle > 2.5 && Q.sit < 0.3 ? (u > 0.2 && u < 0.42 ? 0.55 : u > 0.44 && u < 0.56 && !deep ? -0.6 : 0) : Q.sit > 0.5 ? -0.35 + (u > 0.3 && u < 0.5 ? 0.8 : 0) : 0;
-    Q.nod = (Q.nod || 0) + (nod - (Q.nod || 0)) * Math.min(1, dt * 4);
+    // sat on a seat, she looks about her (GAZE); her face comes round toward you, or she looks back over her shoulder
+    const gz = R && R.ph === 'sit' ? gazeAt(R.pt) : null;
+    if (gz) Q.turn = gz[0] === 'back';
+    to('face', gz && gz[0] !== 'back' ? gz[0] : 0, 5);
+    Q.nod = (Q.nod || 0) + ((gz ? gz[1] : nod) - (Q.nod || 0)) * Math.min(1, dt * 4);
     // where the ground is under each foot, against the flat she would stand on
     Q.foot = [-1, 1].map((sd, i) => {
       const x = p.x + f * sd * 0.1, d = T.d(x, p.y - 0.3), prev = Q.foot ? Q.foot[i] : 0;
@@ -1115,6 +1148,18 @@ function makeForeground(world) {
     const type = zone === 'mere' ? 'stal' : zone === 'gallery' ? (rng() < 0.5 ? 'chain' : 'root') : zone === 'loom' ? 'strand' : 'root';
     // foreground is offset in parallax space, so place relative to its own drift: approximate by world pos
     out.push({ type, x, y: top, len: 2 + rng() * (type === 'stal' ? 4 : 9), w: type === 'stal' ? 0.3 + rng() * 0.5 : 0.05 + rng() * 0.12, seed: rng() * 10, dx: (rng() - 0.5) * 12, sag: rng() * 2 });
+  }
+  // (2026-11-27) east of the old world: stone teeth and old roots over the Dry Falls, chains and loose strands in the Stores
+  const r2 = mulberry(100);
+  for (let i = 0; i < 240; i++) {
+    const x = L.OLD_W + 1 + r2() * (L.WORLD.w - L.OLD_W - 3), y = r2() < 0.45 ? -150 - r2() * 50 : -349 - r2() * 62;
+    if (T.d(x, y) < 1.5) continue;
+    let top = y;
+    for (let k = 0; k < 120; k++) { top += 0.25; if (T.d(x, top) < 0) break; }
+    if (top - y > 28) continue;
+    const falls = y > -210, q = r2();
+    const type = falls ? (q < 0.6 ? 'stal' : 'root') : q < 0.55 ? 'chain' : 'strand';
+    out.push({ type, x, y: top, len: 2 + r2() * (type === 'stal' ? 4 : 9), w: type === 'stal' ? 0.3 + r2() * 0.5 : 0.05 + r2() * 0.12, seed: r2() * 10, dx: (r2() - 0.5) * 12, sag: r2() * 2 });
   }
   // grass tufts along the floors
   for (let i = 0; i < 90; i++) {

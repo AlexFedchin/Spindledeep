@@ -27,8 +27,14 @@ const ZONES = [
 ];
 
 export function placeBuried(T) {
-  const r = mulberry(1907), out = [];
-  const X0 = L.WORLD.x0 + 3, X1 = L.WORLD.x0 + L.WORLD.w - 3, Y0 = L.WORLD.y0 + 6;
+  const out = [];
+  // (2026-11-27) the old world with its own seed and width, so nothing in it moves; then the ground east of it
+  place(T, out, mulberry(1907), L.WORLD.x0 + 3, L.OLD_W - 3);
+  place(T, out, mulberry(1908), L.OLD_W + 3, L.WORLD.x0 + L.WORLD.w - 3);
+  return out;
+}
+function place(T, out, r, X0, X1) {
+  const Y0 = L.WORLD.y0 + 6;
   for (let tries = 0; tries < 12000; tries++) {
     const x = X0 + r() * (X1 - X0), y = -0.6 + r() * (Y0 + 0.6), d = T.d(x, y);
     if (d > -0.45 || d < -1.0) continue;
@@ -52,7 +58,6 @@ export function placeBuried(T) {
     }
     if (ok) out.push({ kind, x, y, s, rot, flip, seed });
   }
-  return out;
 }
 
 export function drawBuried(D, ctx) {

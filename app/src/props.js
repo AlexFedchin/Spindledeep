@@ -59,6 +59,11 @@ export const LORE = [
   ['markers', 14.2, -311.5, 1], ['letters', 11.2, -311.5, 1],
   ['stool', 25.9, -420, 1], ['lantern', 23.4, -420, 1],
   ['ferrylamp', 21.0, -193, 1],                                 // the Mere's far shore: it can be seen from the last island
+  // (2026-11-27) the Dry Falls and the Stores: things left by whoever came to look after them, and nothing more
+  ['lantern', 117, -168.4, 1], ['mineframe', 126.5, -169.4, -1], ['cairn', 142, -171.5, 1], ['markers', 159.5, -175, -1], ['pots', 176.5, -179, 1],
+  ['stool', 196.8, -184, -1], ['bucket', 213.4, -195, 1], ['cairn', 172, -194.8, -1], ['boots', 139.5, -194.3, 1], ['pots', 225.6, -195, -1],
+  ['baskets', 160.5, -358.3, 1], ['baskets', 205.5, -369.8, -1], ['stool', 121.5, -381.4, 1], ['baskets', 124.2, -381.4, -1], ['candles', 114.4, -381.4, 1],
+  ['bucket', 189.5, -393, 1], ['stool', 176, -404.6, -1], ['baskets', 165, -381.4, 1],
 ];
 
 // each prop keeps a faint cold after-glow so its outline reads from a distance; a few carry their own light

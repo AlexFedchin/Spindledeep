@@ -104,7 +104,7 @@ export class Deep {
     // they feel her through the ground: where she is going, while she moves. Dead still, they only have the last they felt
     const sp = Math.hypot(p.vx, p.vy);
     if (sp > 1.4) { this.felt = [p.vx, p.vy]; this.quiet = 0; } else this.quiet = (this.quiet || 0) + dt;
-    const ro = this.roused = Math.max(0, (this.roused || 0) - HAND.calm * dt), dim = W.dim || 0;
+    const ro = this.roused = Math.max(0, (this.roused || 0) - HAND.calm * dt);
     // it follows her under the ground while it is awake: crumbs fall behind her
     if (ro > 0.2 && free && sp > 1.4 && p.y < -262 && p.y > -342) {
       this.stalk = (this.stalk || 0) - dt * (0.6 + ro);
@@ -119,7 +119,7 @@ export class Deep {
       if ((nearBell || !free) && h.st !== 'wait' && !(h.grab && p.dead)) { h.st = 'back'; h.grab = false; }
       const go = (st) => { h.st = st; h.t = 0; };
       if (h.st === 'wait') {
-        const reach = h.reach * (1 + HAND.far * ro) * (1 - 0.45 * dim) + 0.8, gap = HAND.gap * (1 - 0.4 * ro) * (1 + 0.8 * dim);
+        const reach = h.reach * (1 + HAND.far * ro) + 0.8, gap = HAND.gap * (1 - 0.4 * ro);
         if (free && !nearBell && h.cool <= 0 && this.quiet < 0.35 && W.time > (this.lull || 0) && W.time > (this.lastStir || 0) + gap && out < HAND.most + (ro > 0.55 ? 1 : 0) && d < reach && dx * h.nx + dy * h.ny > 0 && this._sees(h, p.x, p.y + 0.45)) { go('stir'); out++; this.lastStir = W.time; W.emit('stir', { x: h.ax, y: h.ay, nx: h.nx, ny: h.ny }); }
       } else if (h.st === 'stir') {
         if (h.t > (h.reach < 3 ? HAND.stirLow : HAND.stir) * (1 - HAND.quick * ro)) {
@@ -129,9 +129,6 @@ export class Deep {
           // she stopped: it strikes where she was heading
           h.deaf = this.quiet > 0.03 && !!this.felt;
           if (h.deaf) { const fx = clamp(this.felt[0] * 0.5, -2.6, 2.6); ax = p.x + (Math.abs(fx) < 1.7 ? Math.sign(fx || p.facing) * 1.7 : fx); ay = p.y; }
-          // in the dark it goes for where she was
-          h.blind = !h.deaf && dim > 0.55;
-          if (h.blind) { ax = p.x - p.vx * 0.34; ay = p.y; }
           h.aimD = Math.min(h.reach + 0.4, Math.hypot(ax - h.ax, ay - h.ay) + 0.3);
           const l = Math.hypot(ax - h.ax, ay - h.ay) || 1;
           h.dx = (ax - h.ax) / l; h.dy = (ay - h.ay) / l; h.ext = 0.1;
@@ -143,10 +140,10 @@ export class Deep {
         if (h.deaf && this.quiet <= 0) h.deaf = false;
         if (lunge) h.ext = Math.min(h.aimD, h.ext + dt * HAND.lunge);
         // it bends toward her: a little while it flies, more as it gropes
-        const ux = dx / (d || 1), uy = dy / (d || 1), turn = h.deaf || h.blind ? 0 : (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
+        const ux = dx / (d || 1), uy = dy / (d || 1), turn = h.deaf ? 0 : (lunge ? HAND.steer : HAND.gropeV) * dt / Math.max(1, h.ext);
         const cr = h.dx * uy - h.dy * ux, an = clamp(Math.atan2(cr, h.dx * ux + h.dy * uy), -turn, turn), cs = Math.cos(an), sn = Math.sin(an);
         [h.dx, h.dy] = [h.dx * cs - h.dy * sn, h.dx * sn + h.dy * cs];
-        if (!lunge && !h.deaf && !h.blind) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
+        if (!lunge && !h.deaf) h.ext += clamp(Math.min(h.reach + 0.5, d) - h.ext, -HAND.gropeV * dt, HAND.gropeV * dt);
         if (lunge && h.ext >= h.aimD) go('grope');
         else if (!lunge && h.t > HAND.grope) { go('back'); h.cool = h.deaf ? 4.5 - 2 * ro : HAND.cool; h.hunt = ro > 0.3 && !h.deaf && h.moved < 2; }       // one that closed on nothing gives up for a while
       } else if (h.st === 'hold') {
@@ -166,7 +163,7 @@ export class Deep {
       }
       h.tx = h.ax + h.dx / l * h.ext; h.ty = h.ay + h.dy / l * h.ext;
       if (h.st === 'hold' && free) { p.x += (h.tx - p.x) * Math.min(1, dt * 14); p.y += (h.ty - p.y) * Math.min(1, dt * 14); p.vx = p.vy = 0; p.climb = null; p._collide(W.gates); }
-      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : h.blind ? 0.34 : HAND.grab) && this._sees(h, p.x, p.y + 0.45)) {
+      if (free && (h.st === 'lunge' || h.st === 'grope') && Math.hypot(h.tx - p.x, h.ty - p.y - 0.1) < (h.deaf ? 0.26 : HAND.grab) && this._sees(h, p.x, p.y + 0.45)) {
         h.grab = true; h.grip = ro > 0.55 ? 2 : 1; go('hold');
         W.emit('seize', { x: p.x, y: p.y });
       }
@@ -264,7 +261,7 @@ export class Deep {
     c.t += dt; c.stun = Math.max(0, c.stun - dt);
     const u = c.t % CRAWL.per, moving = u < CRAWL.move && c.stun <= 0 && !p.dead;
     c.jerk = moving ? 1 : c.stun > 0 ? 1.6 : 0;
-    if (moving) c.s += CRAWL.v * (1 - 0.35 * (W.dim || 0)) * dt;
+    if (moving) c.s += CRAWL.v * dt;
     c.s = Math.max(total - 34, Math.min(c.s, total));
     c.gap = total - c.s;
     const st = Math.floor(u / 0.3);

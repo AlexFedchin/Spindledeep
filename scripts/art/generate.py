@@ -49,6 +49,11 @@ SHOTS = {
                  'heavy heddle frames hanging on chains, dust, machinery of a forgotten mill', 1344, 768),
     'loomdeep': ('a colossal cavern filled with thousands of vertical threads strung from a dark ceiling like a harp, a vast '
                  'woven cloth floor rising in folds like a sea, a wooden beam high above, enormous scale, dread', 1024, 1152),
+    # the two stretches added 2026-11-27 (a longer, lonelier way down)
+    'falls': ('a vast dry limestone cavern, a giant staircase of empty smooth rimstone pools and flowstone terraces stepping down '
+              'into darkness, cracked dry flowstone walls, stone curtains hanging from the roof, dust, ancient and silent', 1344, 768),
+    'stores': ('an immense dusty underground storehouse carved in the rock, endless tall wooden shelves of giant empty bobbins and '
+               'spools, bales of wool hanging from hooks on chains, ladders, cobwebs, forgotten for centuries', 1344, 768),
     'title': ('a tiny knitted yarn doll seen from behind standing on a rock ledge at the edge of an enormous dark abyss, '
               'a single thread trailing behind it up the cliff to a distant lone cottage with a lit window, huge pale moon', 1344, 768),
 }

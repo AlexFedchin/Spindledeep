@@ -39,7 +39,8 @@ for (const mode of ['', 'frayed']) {
   go({ axisX: 1 }, 1.4);
   const b0 = W.wholeLeft(); W.update(DT, I({ pressed: { act: true } }), true);
   say(Math.abs(b0 - W.wholeLeft()) < 0.5, `E away from a seat or peg costs no yarn (${(b0 - W.wholeLeft()).toFixed(2)} m)`);
-  go({ held: { dim: true } }, 1); say(W.dim > 0.95, 'held, the light goes down'); go({ held: { dim: true } }, 5); say(W.dim < 0.05 && W.kindle.spent, 'and not for ever');
-  const s = W.kindle.seats[2]; p.reset(s.x, s.y + 0.4); go({}, 0.5); W.update(DT, I({ pressed: { act: true } }), true); go({}, 1.5); say(W.rest.at === s && W.rest.k > 0.5, 'she sits'); go({ axisX: 1 }, 0.3); say(!W.rest.at, 'and gets up');
+  const s = W.kindle.seats[2]; p.reset(s.x, s.y + 0.4); go({}, 0.5); W.update(DT, I({ pressed: { act: true } }), true); go({}, 1.5); say(W.rest.at === s && W.rest.k > 0.5, 'she sits');
+  { const x0 = p.x; W.update(DT, I({ axisX: 1, pressed: { right: true } }), true); go({ axisX: 1 }, 0.5); say(W.rest.at && Math.abs(p.x - x0) < 0.05, 'a key gets her up, and she is not hers until she is up');
+    go({ axisX: 1 }, 0.5); say(!W.rest.at && Math.abs(p.x - x0) > 0.2, 'then she walks'); }
 }
 process.exit(bad ? 1 : 0);

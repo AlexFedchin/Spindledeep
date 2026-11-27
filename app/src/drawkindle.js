@@ -43,7 +43,7 @@ export function drawPlaces(D, ctx, ectx) {
         // a pale fruit nobody picked
         ctx.fillStyle = g(0.72); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(0.8, 0.016 * k);
         ctx.beginPath(); ctx.ellipse(X(b[0] + q(b[1])), Y(b[1] - b[3]), b[3] * k, b[3] * 1.15 * k, 0, 0, TAU); ctx.fill(); ctx.stroke();
-        ectx.fillStyle = `rgba(190,225,205,${(0.10 + 0.05 * Math.sin(t * 0.9 + b[4] * 3)) * (1 + 1.6 * (W.dim || 0))})`; ectx.beginPath(); ectx.arc(X(b[0] + q(b[1])), Y(b[1] - b[3]), b[3] * 1.3 * k, 0, TAU); ectx.fill();
+        ectx.fillStyle = `rgba(190,225,205,${(0.10 + 0.05 * Math.sin(t * 0.9 + b[4] * 3))})`; ectx.beginPath(); ectx.arc(X(b[0] + q(b[1])), Y(b[1] - b[3]), b[3] * 1.3 * k, 0, TAU); ectx.fill();
         continue;
       }
       const [x0, y0, x1, y1, w, bend] = b, mx = (x0 + x1) / 2 + bend, my = (y0 + y1) / 2;
