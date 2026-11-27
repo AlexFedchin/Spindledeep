@@ -457,6 +457,8 @@ export class World {
     for (const m of this.memories) if (!m.heard && vis(m.x, m.y)) out.push({ x: m.x, y: m.y + 0.1, r: 3.0, i: 0.3 + Math.sin(t * 2 + m.x) * 0.08, c: [0.95, 0.9, 0.8], soft: 10 });
     for (const h of this.husks) if (vis(h.x, h.y)) out.push({ x: h.x, y: h.y + 0.3, r: 1.8, i: 0.1, c: [0.72, 0.74, 0.86], soft: 10 });
     for (const s of this.skeins) if (!s.taken && vis(s.x, s.y)) out.push(s.kind === 'letter' ? { x: s.x, y: s.y + 0.4, r: 2.0, i: 0.32, c: [1, 0.86, 0.66], soft: 10 } : { x: s.x, y: s.y + 0.3, r: 2.2, i: 0.45, c: RED, soft: 10 });
+    // the seats' candles: warm and steady enough to be seen across a cave, a little brighter while she sits by one
+    if (this.kindle) for (const s of this.kindle.seats) if (vis(s.x, s.y)) { const fl = 1 + Math.sin(t * 9.1 + s.x) * 0.05 + Math.sin(t * 13.7 + s.x * 2) * 0.03, on = this.rest.at === s ? 1.3 : 1; out.push({ x: s.x + 0.38 * s.flip, y: s.y + 0.55, r: 5.2, i: 0.55 * fl * on, c: [1.0, 0.66, 0.38], soft: 10 }); }
     // a keepsake gives off only a faint warm glint: enough to catch the eye through a crack, not to find it from afar
     for (const s of this.secrets) if (!s.taken && s.open && vis(s.x, s.y) && !this.hiddenAt(s.x, s.y + 0.2)) out.push({ x: s.x, y: s.y + 0.35, r: 2.2, i: 0.42 + 0.08 * Math.sin(t * 1.7 + s.bob), c: [1.0, 0.86, 0.62], soft: 10 });
     if (!this.noLore) out.push(...loreLights(this.lore, t, (x, y) => vis(x, y) && !this.hiddenAt(x, y)));

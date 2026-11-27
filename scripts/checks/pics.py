@@ -22,6 +22,8 @@ SPOTS = {
     'weigh': (31, None, 15), 'pews': (33, None, 16),
     'h1': (14, None, 15), 'h2': (15, None, 15), 'slabs': (35, None, 15), 'pins': (37, None, 15), 'hush': (17, None, 15), 'hush_e': (16, None, 15),
     'tread': (19, None, 18), 'heddle': (21, None, 18), 'lane': (40, None, 16), 'lower': (42, None, 16), 'well': (29, None, 16),
+    'seat_throat': (12, (64.5, -33), 11), 'seat_gardens': (2, (24.5, -60.4), 11), 'seat_orchard': (3, (72.5, -87.6), 11),
+    'seat_mere': (7, (102.5, -193.8), 11), 'seat_hall': (9, (19.5, -193.8), 11), 'seat_long': (18, (75, -340.8), 11), 'seat_beam': (41, (44, -420.6), 11),
     'loom_in': (23, None, 20), 'cloth': (24, None, 14), 'n2': (45, None, 18), 'machine': (47, None, 16), 'beam': (28, (36, -442), 12),
 }
 HIDE = "document.head.insertAdjacentHTML('beforeend','<style>.card,#card,#hint,#hints,#sub,#subs,#subtitle,#toast,#prompt,#hud,#yarn{opacity:0!important;visibility:hidden!important}</style>');"

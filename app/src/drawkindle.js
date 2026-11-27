@@ -82,5 +82,20 @@ export function drawPlaces(D, ctx, ectx) {
     ctx.fillStyle = g(0.36); ctx.beginPath(); ctx.moveTo(x - 0.5 * k, y + 0.06 * k); ctx.lineTo(x - 0.44 * k, y - 0.13 * k); ctx.quadraticCurveTo(x, y - 0.19 * k, x + 0.46 * k, y - 0.12 * k); ctx.lineTo(x + 0.5 * k, y + 0.06 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = g(0.62); ctx.beginPath(); ctx.moveTo(x - 0.27 * k, y - 0.16 * k); ctx.quadraticCurveTo(x, y - 0.25 * k, x + 0.27 * k, y - 0.16 * k); ctx.lineTo(x + 0.3 * k, y - 0.1 * k); ctx.quadraticCurveTo(x, y - 0.17 * k, x - 0.3 * k, y - 0.1 * k); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = g(0.25); ctx.lineWidth = Math.max(0.6, 0.01 * k); for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 0.1 * k, y - 0.2 * k); ctx.lineTo(x + i * 0.11 * k, y - 0.13 * k); ctx.stroke(); }
+    // a stub of candle at the seat's end, always burning, so a seat is seen from far off (its light: world.js lights)
+    const cx = x + 0.38 * s.flip * k, cb = y - 0.12 * k, ch = 0.17 * k, cw = 0.045 * k;
+    ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(0.8, 0.014 * k); ctx.fillStyle = g(0.8);
+    ctx.beginPath(); ctx.moveTo(cx - cw, cb); ctx.lineTo(cx - cw, cb - ch); ctx.quadraticCurveTo(cx, cb - ch - 0.02 * k, cx + cw, cb - ch); ctx.lineTo(cx + cw, cb); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = g(0.7); ctx.beginPath(); ctx.ellipse(cx + cw * 0.9, cb - ch * 0.55, 0.012 * k, 0.04 * k, 0, 0, TAU); ctx.fill();           // a run of wax down its side
+    ctx.beginPath(); ctx.ellipse(cx, cb + 0.005 * k, cw * 2.2, 0.025 * k, 0, 0, TAU); ctx.fill(); ctx.stroke();                              // the pool it stands in
+    const fl = Math.sin(t * 9.1 + s.x) * 0.5 + Math.sin(t * 13.7 + s.x * 2) * 0.3, fh = (0.13 + 0.02 * fl) * k * (W.rest.at === s ? 1.25 : 1), fx = cx + 0.012 * fl * k, fb = cb - ch - 0.012 * k;
+    ctx.strokeStyle = g(0.05); ctx.lineWidth = Math.max(0.8, 0.012 * k); ctx.beginPath(); ctx.moveTo(cx, cb - ch); ctx.lineTo(cx, fb); ctx.stroke();   // wick
+    const flame = (c) => { c.beginPath(); c.moveTo(fx, fb - fh); c.quadraticCurveTo(cx + 0.05 * k, fb - fh * 0.3, cx, fb + 0.01 * k); c.quadraticCurveTo(cx - 0.05 * k, fb - fh * 0.3, fx, fb - fh); c.fill(); };
+    ctx.fillStyle = g(1); flame(ctx);
+    // the flame glows (emission layer): a halo and the flame itself
+    const hy = fb - fh * 0.4, hr = 0.5 * k * (1 + 0.04 * fl), hg = ectx.createRadialGradient(cx, hy, 0, cx, hy, hr);
+    hg.addColorStop(0, 'rgba(255,190,120,0.4)'); hg.addColorStop(0.18, 'rgba(255,160,90,0.16)'); hg.addColorStop(0.55, 'rgba(255,130,70,0.04)'); hg.addColorStop(1, 'rgba(255,120,60,0)');
+    ectx.fillStyle = hg; ectx.beginPath(); ectx.arc(cx, hy, hr, 0, TAU); ectx.fill();
+    ectx.fillStyle = 'rgba(255,225,170,0.95)'; flame(ectx);
   }
 }
