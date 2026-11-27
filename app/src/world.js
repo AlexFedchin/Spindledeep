@@ -113,6 +113,11 @@ export class World {
     const blank = { axisX: 0, axisY: 0, held: {}, pressed: {} };
     this.deep.pre(dt); this.rig.pre();
     // (in the ending she is walked by ending.js: `ending.walk` is the stick it holds)
+    // (2026-11-27) the Loom from its entry ledge down to the cloth: until she has tied the pole on the cloth, a held thread does not catch,
+    // so she can't hang from it on the way down and swing across to the middle of the climb (the user found that); the rings there wait too
+    const slip = (this.checkpoint.i === 23 || this.checkpoint.i === 42) && p.y < -463.2 && p.y > -539.5;
+    if (slip && inp.held && (inp.held.grip || inp.axisY)) inp = { ...inp, axisY: 0, held: { ...inp.held, grip: false }, pressed: { ...inp.pressed, grip: false } };
+    if (slip && th.locked) th.release(p.bx, p.by);
     p.update(dt, this.ending ? (this.ending.walk || blank) : controls && !p.dead && !this.rest.at ? inp : blank, th, ctx);      // (sat, she is still hers only once she has got up)
     for (const e of p.events) this.emit(e, { x: p.x, y: p.y, v: p.landV });
     th.update(dt, p.bx, p.by, Infinity, false);

@@ -5,7 +5,7 @@ import * as L from './level.js';
 import { clamp, TAU } from './util.js';
 
 const g = (v, a = 1) => `rgba(${(v * 255) | 0},${(v * 255) | 0},${(v * 255) | 0},${a})`;
-export const SPRITES = ['arm0', 'arm1', 'arms', 'back0', 'back1', 'back2', 'back3', 'front0', 'front1', 'front2', 'front3'];
+export const SPRITES = ['arm0', 'arm1', 'arms'];      // (the called are drawn by hand since 2026-11-27)
 
 function img(D, ctx, im, x, y, h, { flip = 1, rot = 0, alpha = 1, dark = 1, ax = 0.5, ay = 1, w = 0 } = {}) {
   if (!im || alpha <= 0) return false;
@@ -96,15 +96,67 @@ export function drawHands(D, ctx, ectx) {
 export function drawCalled(D, ctx, ectx) {
   const c = D.w.deep.called;
   if (!c || D.cam[1] > -500) return;
-  const r = D.w.deep.rise;
+  const r = D.w.deep.rise, k = D.k, t = D.time;
+  const lw = (m) => Math.max(0.7, m * k);
   for (const f of c) {
     if (!D.vis(f.x, f.y + 1, 3)) continue;
-    const im = D.img?.[(f.turned ? 'front' : 'back') + f.kind];
     const woke = r.woke ? clamp(r.t * 1.2, 0, 1) : 0;
-    const h = f.h * (1 + woke * 0.05 * Math.sin(D.time * 23 + f.x));      // when it wakes they all shake
-    img(D, ctx, im, f.x, f.y - 0.06, h, { flip: f.flip, dark: f.tone, rot: f.lean });
-    img(D, ectx, im, f.x, f.y - 0.06, h, { flip: f.flip, rot: f.lean, alpha: f.turned ? 0.055 : 0.03 });
+    const h = f.h * (1 + woke * 0.04 * Math.sin(t * 23 + f.x)), moving = Math.abs(f.x - (f.px ?? f.x)) > 1e-4; f.px = f.x;
+    f.sw = (f.sw || 0) + ((moving ? 1 : 0) - (f.sw || 0)) * 0.05;
+    clothes(D, ctx, ectx, f, h, t, lw, k);
   }
+}
+// (2026-11-27, the user found the photographs of people unclear and did not like them) the called, by hand: the nightclothes each one
+// was called down in, standing as if someone were still in them. No head, no hands. Backs to her; turned, the open collar is all there is,
+// stretched like a mouth. kind: 0 a long nightgown, 1 a nightshirt over trousers, 2 a nightgown and shawl, 3 a long coat thrown over.
+function clothes(D, ctx, ectx, f, h, t, lw, k) {
+  const X = (dx) => D.sx(f.x + dx * f.flip), Y = (dy) => D.sy(f.y - 0.04 + dy);
+  const child = h < 1.45, kind = f.kind, front = f.turned, tone = 0.5 + 0.32 * f.tone, swing = Math.sin(t * (1.1 + f.tone) + f.i) * (0.015 + 0.05 * (f.sw || 0));
+  const sh = h * 0.8, hem = kind === 1 ? h * 0.42 : h * (child ? 0.1 : 0.06), w = h * (child ? 0.15 : 0.13), lean = f.lean * h;
+  ctx.save();
+  ctx.strokeStyle = g(0.03); ctx.lineWidth = lw(0.016);
+  // trousers under a nightshirt, empty at the ankle
+  if (kind === 1) for (const e of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(X(e * w * 0.15), Y(hem + 0.05)); ctx.lineTo(X(e * w * 0.85), Y(hem + 0.05)); ctx.lineTo(X(e * w * 0.7 + swing * 0.5), Y(0.06)); ctx.lineTo(X(e * w * 0.2 + swing * 0.5), Y(0.06)); ctx.closePath();
+    ctx.fillStyle = g(tone - 0.12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = g(0.02); ctx.beginPath(); ctx.ellipse(X(e * w * 0.45 + swing * 0.5), Y(0.07), w * 0.24 * k, 0.03 * k, 0, 0, TAU); ctx.fill();
+  }
+  // the body of it: shoulders, a little fall to the waist, out to the hem; the hem swings
+  const body = () => {
+    ctx.beginPath();
+    ctx.moveTo(X(-w * 0.95 + lean), Y(sh));
+    ctx.quadraticCurveTo(X(-w * 1.08 + lean * 0.6), Y(sh * 0.6), X(-w * (kind === 1 ? 1.0 : 1.32) + swing), Y(hem));
+    for (let q = -1; q <= 1; q += 0.25) ctx.lineTo(X(q * w * (kind === 1 ? 1.0 : 1.32) + swing + Math.sin(q * 9 + f.i) * 0.012), Y(hem + (Math.abs(q * 7 + f.i) % 1) * 0.04));
+    ctx.quadraticCurveTo(X(w * 1.08 + lean * 0.6), Y(sh * 0.6), X(w * 0.95 + lean), Y(sh));
+    ctx.quadraticCurveTo(X(lean), Y(sh + 0.06), X(-w * 0.95 + lean), Y(sh));
+    ctx.closePath();
+  };
+  body(); ctx.fillStyle = g(kind === 3 ? tone - 0.2 : tone); ctx.fill(); ctx.stroke();
+  // folds hanging from the shoulders
+  ctx.lineWidth = lw(0.01);
+  for (let q = -0.7; q <= 0.71; q += 0.35) { ctx.strokeStyle = g(tone - 0.2); ctx.beginPath(); ctx.moveTo(X(q * w * 0.7 + lean * 0.9), Y(sh * 0.92)); ctx.quadraticCurveTo(X(q * w * 0.95 + lean * 0.4), Y(sh * 0.5), X(q * w * 1.2 + swing), Y(hem + 0.05)); ctx.stroke(); }
+  // a shawl over the shoulders, or a coat's lapels
+  if (kind === 2) { ctx.beginPath(); ctx.moveTo(X(-w * 1.05 + lean), Y(sh + 0.02)); ctx.lineTo(X(w * 1.05 + lean), Y(sh + 0.02)); ctx.lineTo(X(w * 0.2 + lean * 0.7), Y(sh * 0.62)); ctx.lineTo(X(-w * 0.3 + lean * 0.7), Y(sh * 0.66)); ctx.closePath(); ctx.fillStyle = g(tone - 0.25); ctx.fill(); ctx.strokeStyle = g(0.03); ctx.lineWidth = lw(0.014); ctx.stroke();
+    ctx.strokeStyle = g(tone - 0.35); ctx.lineWidth = lw(0.008); for (let q = 0; q < 5; q++) { ctx.beginPath(); ctx.moveTo(X(-w * 0.8 + q * 0.4 * w + lean), Y(sh)); ctx.lineTo(X(-w * 0.2 + q * 0.1 * w + lean * 0.7), Y(sh * 0.68)); ctx.stroke(); } }
+  if (kind === 3 && front) for (const e of [-1, 1]) { ctx.beginPath(); ctx.moveTo(X(e * w * 0.2 + lean), Y(sh)); ctx.lineTo(X(e * w * 0.55 + lean * 0.8), Y(sh * 0.7)); ctx.lineTo(X(e * w * 0.1 + lean * 0.7), Y(sh * 0.55)); ctx.strokeStyle = g(tone + 0.1); ctx.lineWidth = lw(0.014); ctx.stroke(); }
+  // buttons down a nightshirt's front
+  if (kind === 1 && front) { ctx.fillStyle = g(0.85); for (let q = 0; q < 4; q++) { ctx.beginPath(); ctx.arc(X(lean * 0.8), Y(sh * (0.9 - q * 0.1)), 0.018 * k, 0, TAU); ctx.fill(); } }
+  // sleeves, hanging empty; the cuffs open on nothing
+  for (const e of [-1, 1]) {
+    const sx = e * w * 0.95 + lean, cx = e * w * 1.12 + swing * 0.7 + lean * 0.3, cy = sh - h * (child ? 0.3 : 0.34);
+    ctx.beginPath(); ctx.moveTo(X(sx - e * 0.02), Y(sh - 0.01)); ctx.quadraticCurveTo(X(sx + e * w * 0.35), Y(sh - h * 0.12), X(cx + e * w * 0.18), Y(cy));
+    ctx.lineTo(X(cx - e * w * 0.2), Y(cy + 0.02)); ctx.quadraticCurveTo(X(sx - e * w * 0.15), Y(sh - h * 0.14), X(sx - e * w * 0.3), Y(sh - 0.05)); ctx.closePath();
+    ctx.fillStyle = g((kind === 3 ? tone - 0.2 : tone) - 0.06); ctx.fill(); ctx.strokeStyle = g(0.03); ctx.lineWidth = lw(0.014); ctx.stroke();
+    ctx.fillStyle = g(0.03); ctx.beginPath(); ctx.ellipse(X(cx), Y(cy + 0.01), w * 0.2 * k, 0.028 * k, 0, 0, TAU); ctx.fill();
+  }
+  // the collar: from behind, a dark sliver; turned toward her, the opening gapes, long and black
+  ctx.fillStyle = g(0.01);
+  if (front) {
+    const gape = 1 + 0.2 * Math.sin(t * 2.3 + f.i);
+    ctx.beginPath(); ctx.ellipse(X(lean), Y(sh - h * 0.035 * gape), w * 0.36 * k, h * 0.06 * gape * k, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = g(tone + 0.15); ctx.lineWidth = lw(0.012); ctx.beginPath(); ctx.ellipse(X(lean), Y(sh - h * 0.035 * gape), w * 0.38 * k, h * 0.063 * gape * k, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  } else { ctx.beginPath(); ctx.ellipse(X(lean), Y(sh + 0.01), w * 0.32 * k, 0.025 * k, 0, 0, TAU); ctx.fill(); }
+  ctx.restore();
 }
 
 // ── the dark that rises ──────────────────────────────────────────────────
@@ -257,6 +309,18 @@ export function drawRemains(D, ctx, ectx) {
   ectx.fillStyle = 'rgba(255,230,190,0.25)'; ectx.beginPath(); ectx.arc(X - 1.95 * k, Y - 0.07 * k, 0.03 * k, 0, TAU); ectx.fill();
   ctx.strokeStyle = g(0.7); ctx.lineWidth = Math.max(0.8, k * 0.016);
   ctx.beginPath(); ctx.moveTo(X + 1.3 * k, Y); ctx.lineTo(X + 2.1 * k, Y - 0.05 * k); ctx.moveTo(X + 1.4 * k, Y - 0.07 * k); ctx.lineTo(X + 2.15 * k, Y + 0.01 * k); ctx.stroke();
+  // her knitting basket, shut, the lid tied down with a twist of grey yarn
+  const BX = D.sx(L.BASKET.x), BY = D.sy(w.remainsY) + 0.04 * k, bw = 0.3 * k, bh = L.BASKET.h * k;
+  ctx.fillStyle = g(0.42); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.018);
+  ctx.beginPath(); ctx.moveTo(BX - bw * 0.86, BY); ctx.lineTo(BX - bw, BY - bh * 0.86); ctx.lineTo(BX + bw, BY - bh * 0.86); ctx.lineTo(BX + bw * 0.86, BY); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.lineWidth = Math.max(0.6, k * 0.01);
+  for (let i = 1; i < 6; i++) { const yy = BY - bh * 0.86 * i / 6, ww = bw * (0.86 + 0.14 * i / 6); ctx.strokeStyle = g(i % 2 ? 0.22 : 0.6); ctx.beginPath(); ctx.moveTo(BX - ww, yy); ctx.lineTo(BX + ww, yy); ctx.stroke(); }      // the weave
+  for (let i = -4; i <= 4; i++) { ctx.strokeStyle = g(0.25); ctx.beginPath(); ctx.moveTo(BX + i * bw * 0.2, BY); ctx.lineTo(BX + i * bw * 0.22, BY - bh * 0.86); ctx.stroke(); }
+  ctx.fillStyle = g(0.5); ctx.strokeStyle = g(0.03); ctx.lineWidth = Math.max(1, k * 0.018);
+  ctx.beginPath(); ctx.ellipse(BX, BY - bh * 0.9, bw * 1.04, bh * 0.16, 0, 0, TAU); ctx.fill(); ctx.stroke();      // the lid
+  ctx.strokeStyle = g(0.72); ctx.lineWidth = Math.max(0.8, k * 0.014);
+  ctx.beginPath(); ctx.moveTo(BX - bw * 0.15, BY - bh * 1.02); ctx.quadraticCurveTo(BX, BY - bh * 0.7, BX + bw * 0.1, BY - bh * 0.4); ctx.stroke();
+  ctx.strokeStyle = g(0.75); ctx.beginPath(); ctx.moveTo(BX + bw * 0.55, BY - bh * 0.95); ctx.lineTo(BX + bw * 1.25, BY - bh * 1.35); ctx.stroke();      // a needle out from under the lid
   // her candle
   const CX = D.sx(L.REMAINS.candle), CY = D.sy(w.finale.candleY);
   ctx.fillStyle = g(0.9); ctx.fillRect(CX - 0.06 * k, CY - 0.4 * k, 0.12 * k, 0.4 * k);

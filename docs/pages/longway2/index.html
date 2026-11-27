@@ -1,0 +1,336 @@
+<title>Spindledeep · Water and Words</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spindledeep changes-page house style. Copy this file for every new page; change content, not the look.
+   Layout: a single reading column of plates; each change is a before/after reveal of engravings with a legend.
+   Deliberately one dark look (the game is an engraving at night). */
+:root {
+  --ink: #0c0b10;
+  --ink-2: #16141c;
+  --rule: #2c2832;
+  --paper: #e8dcc4;
+  --paper-dim: #a99f8c;
+  --red: #d8262c;
+  --display: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+  --fell: 'IM Fell English', Georgia, serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-weight: 300; font-size: 17px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 96px; }
+.col { max-width: 680px; margin: 0 auto; }
+a { color: var(--paper); text-decoration-color: var(--red); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-2); border: 1px solid var(--rule); padding: 1px 6px; overflow-wrap: anywhere; }
+
+header.hero { display: grid; gap: 18px; padding-block: 56px 20px; text-align: center; }
+.hero .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7.5vw, 84px); letter-spacing: 0.12em; margin: 0; line-height: 1.02; text-wrap: balance; }
+.hero .tag { font-family: var(--fell); font-style: italic; font-size: clamp(18px, 2.3vw, 22px); color: var(--paper-dim); margin: 0; }
+.hero .tag span { display: inline-block; width: 46px; height: 1px; background: var(--red); vertical-align: middle; margin: 0 14px; box-shadow: 0 0 6px var(--red); }
+
+.summary { display: grid; gap: 14px; font-size: 18px; margin-top: 18px; }
+.summary p { margin: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); letter-spacing: 0.12em; margin: 80px 0 8px; text-align: center; text-wrap: balance; }
+h2::after { content: ''; display: block; width: 120px; height: 9px; margin: 12px auto 0; background:
+  radial-gradient(circle, var(--red) 0 2px, transparent 2.5px) center / 9px 9px no-repeat,
+  linear-gradient(90deg, transparent, var(--paper-dim) 30%, transparent 44%, transparent 56%, var(--paper-dim) 70%, transparent) center / 100% 1px no-repeat; }
+h3 { font-family: var(--fell); font-weight: 400; font-size: 21px; margin: 30px 0 8px; }
+.ask { font-family: var(--fell); font-style: italic; color: var(--paper-dim); text-align: center; font-size: 18px; margin: 0 auto 22px; max-width: 640px; text-wrap: balance; }
+.ask::before { content: 'You asked: '; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-right: 4px; }
+p { margin: 0 0 14px; }
+
+/* before/after reveal: before underneath, after clipped to the right of a red-thread divider */
+.reveal { position: relative; margin: 8px 0 8px; border: 1px solid var(--rule); background: var(--ink-2); overflow: hidden; touch-action: pan-y; --pos: 50%; max-width: 100%; }
+.reveal img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.reveal img.after { position: absolute; inset: 0; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--pos)); }
+.reveal .bar { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: var(--red); box-shadow: 0 0 8px var(--red), 0 0 2px var(--red); pointer-events: none; }
+.reveal .bar::after { content: ''; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--red); box-shadow: 0 0 10px var(--red); }
+.reveal .lbl { position: absolute; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 3px 8px; background: rgba(12, 11, 16, 0.78); color: var(--paper-dim); pointer-events: none; }
+.reveal .lbl.l { left: 10px; }
+.reveal .lbl.r { right: 10px; color: var(--paper); }
+.reveal input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.reveal:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 3px; }
+.reveal-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 22px; }
+
+.solo { margin: 8px auto 22px; max-width: 520px; display: grid; gap: 8px; }
+.solo img { width: 100%; display: block; border: 1px solid var(--rule); background: var(--ink-2); }
+.solo figcaption { text-align: center; font-family: var(--fell); font-style: italic; font-size: 15px; color: var(--paper-dim); }
+
+ul.what { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+/* list items are plain block flow (never grid/flex): a <b> lead-in followed by text must stay one paragraph */
+ul.what li { position: relative; padding-left: 30px; font-size: 16px; }
+ul.what li::before { content: ''; position: absolute; left: 6px; top: 9px; width: 8px; height: 8px; border: 1px solid var(--red); transform: rotate(45deg); }
+ul.what.open li::before { border-color: var(--paper-dim); }
+
+table.windows { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); margin-top: 6px; }
+table.windows th, table.windows td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.windows th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); background: var(--ink-2); }
+table.windows td.n { font-family: var(--mono); font-size: 13px; }
+table.windows tr:last-child td { border-bottom: 0; }
+
+.chart { border: 1px solid var(--rule); background: var(--ink-2); padding: 14px 14px 8px; margin: 8px 0 22px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 22px; height: 2px; vertical-align: 3px; margin-right: 8px; }
+
+.files { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 18px; }
+.files > div { background: var(--ink); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.files b { font-family: var(--fell); font-weight: 400; font-size: 19px; }
+.files span { font-size: 14.5px; color: var(--paper-dim); }
+
+footer { margin-top: 72px; text-align: center; color: var(--paper-dim); font-family: var(--fell); font-style: italic; }
+
+@media (max-width: 640px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <style>
+    details.seal { margin: 34px 0 10px; border: 1px solid var(--rule); background: var(--ink-2); }
+    details.seal > summary { cursor: pointer; list-style: none; padding: 22px 24px; text-align: center;
+      font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--red); }
+    details.seal > summary::-webkit-details-marker { display: none; }
+    details.seal > summary span { display: block; margin-top: 8px; font-family: var(--fell); font-style: italic;
+      text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--paper-dim); }
+    details.seal[open] > summary { border-bottom: 1px solid var(--rule); }
+    details.seal .inner { padding: 4px 24px 26px; }
+  </style>  <header class="hero">
+    <div class="eyebrow">Spindledeep &middot; the long way, again</div>
+    <h1>Water and Words</h1>
+    <p class="tag">The falls still drip<span></span>and every seat has something to say</p>
+  </header>
+
+  <div class="col summary">
+    <p>A second pass over the two new stretches and the end of the game. The Dry Falls' seat now shows the whole cave and has its words, water drips and the walls sweat. The Underway has things to come upon. The Stores are less than half as long, with things in the way. Every seat has a line. The Loom can't be skipped by hanging on the thread, the figures on its floor are drawn by hand, and the bitten ending plays in the order you asked for. She bends her knees when she sits.</p>
+  </div>
+
+  <h2>The Dry Falls</h2>
+  <p class="ask">The seat in the dry falls should have some text shown. And the view should show the whole magestic room. Also add some dripping droplets from the stalactites and some veins from high humidity. And you can remove the second seat in the bottom of the falls.</p>
+  <div class="col">
+    <p>Sitting at the seat on the lowest basin, after the camera has opened out:</p>
+    <div class="reveal">
+      <img src="img/basin_before.jpg" alt="Before: the usual small step back">
+      <img class="after" src="img/basin_after.jpg" alt="After: the whole cave of basins, roof to floor">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-basin" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>The whole room.</b> A seat can now carry its own view. This one opens out over about two seconds to the entire cave, 44 m tall and 78 m wide, and closes again when she gets up.</li>
+      <li><b>Its words.</b> It shows a line the first time she sits there (sealed below, with the others).</li>
+      <li><b>Water.</b> A drop swells on the tip of each stone tooth, lets go, falls, splashes on a wet patch with rings spreading over it, and makes a small plink nearby. There are nine over the basins and four in the Underway. They are harmless.</li>
+      <li><b>Wet seams.</b> About eighty dark wet streaks run down the walls and roof, each with a glint of light sliding down it.</li>
+      <li><b>One seat.</b> The Cistern's seat is gone; the room stays.</li>
+    </ul>
+    <figure style="margin:22px 0"><img src="img/drip.jpg" alt="A drop falling from one of the stone teeth" style="width:100%;display:block"><figcaption>A drop falling from one of the stone teeth</figcaption></figure>
+    <div class="reveal">
+      <img src="img/seeps_before.jpg" alt="Before: dry rock">
+      <img class="after" src="img/seeps_after.jpg" alt="After: wet seams down the wall, catching the light">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-seeps" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>The Underway</h2>
+  <p class="ask">The long corridor after the falls should have more details and points of interest. Nothin interactable but something interesting, right now ther e is nothing.</p>
+  <div class="col">
+    <p>Going west from the Cistern, in order:</p>
+    <div class="reveal">
+      <img src="img/underway_crack_before.jpg" alt="Before: bare tunnel">
+      <img class="after" src="img/underway_crack_after.jpg" alt="After: a crack of grey light in the roof, a mooring post under it, water dripping">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-crack" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/underway_boat_before.jpg" alt="Before: bare tunnel">
+      <img class="after" src="img/underway_boat_after.jpg" alt="After: a ferry left high and dry, its lamp still on its post">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-boat" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/underway_bones_before.jpg" alt="Before: bare roof">
+      <img class="after" src="img/underway_bones_after.jpg" alt="After: a skeleton the length of a boat set into the roof">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-bones" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/underway_shrine_before.jpg" alt="Before: bare floor">
+      <img class="after" src="img/underway_shrine_after.jpg" alt="After: a ledge with candles and stones on it, a tooth of stone dripping">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-shrine" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <ul class="what">
+      <li><b>None of it can be touched.</b> Besides these there are teeth of stone hanging from the roof, rubble where it came in, and wide places. The bones are cut into the rock like the other buried things, so they only show in her light.</li>
+    </ul>
+  </div>
+
+  <h2>The Stores, shorter</h2>
+  <p class="ask">The storage is also waaay too long and boring, I just walk in zig zag. Add some more obstacles and make sure that each pillow has some world story shown.</p>
+  <div class="col">
+    <p>Five galleries became two, and the walk is less than half as long. The bot now crosses it in 37 s instead of 59 s, for about 140 m of walking instead of 330. The hall is 76 m long instead of 86.</p>
+    <figure style="margin:22px 0"><img src="img/map_stores.jpg" alt="The Stores in plan: in from the heddle corridor top left; along the top past the crates to the gap (the bin under it), off the end, back along the second gallery over the bales and crates, down the hole, west out of the floor. The pocket on the left is the Drying Loft" style="width:100%;display:block"><figcaption>The Stores in plan: in from the heddle corridor top left; along the top past the crates to the gap (the bin under it), off the end, back along the second gallery over the bales and crates, down the hole, west out of the floor. The pocket on the left is the Drying Loft</figcaption></figure>
+
+    <ul class="what">
+      <li><b>Crates</b> on the top gallery to hop.</li>
+      <li><b>A gap with a ring over it,</b> the same reach as the Bell Gallery's. Miss it and you land in a bin below with a rope back up, so there is no way round it and nothing is lost.</li>
+      <li><b>A wall of bales</b> on the second gallery, four metres high, with a rope up its face and a seat on top.</li>
+      <li><b>A hole in the floor of the gallery</b> to drop through to the way out. Jump over it instead to reach the Drying Loft.</li>
+      <li>Both rope climbs and the ring were played by the bot: through the gap, and out of the bin after a miss.</li>
+    </ul>
+    <figure style="margin:22px 0"><img src="img/stores_crates.jpg" alt="Crates on the top gallery" style="width:100%;display:block"><figcaption>Crates on the top gallery</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_ring.jpg" alt="The gap, its ring and the bin" style="width:100%;display:block"><figcaption>The gap, its ring and the bin</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_bales.jpg" alt="The wall of bales and its rope" style="width:100%;display:block"><figcaption>The wall of bales and its rope</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_seat.jpg" alt="The seat on top of the bales" style="width:100%;display:block"><figcaption>The seat on top of the bales</figcaption></figure>
+    <figure style="margin:22px 0"><img src="img/stores_hole.jpg" alt="The hole to the floor; the Loft is past it" style="width:100%;display:block"><figcaption>The hole to the floor; the Loft is past it</figcaption></figure>
+
+  </div>
+
+  <h2>Every seat has its words</h2>
+  <p class="ask">make sure that each pillow has some world story shown. Also remove the second pillow from the ink room.</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>Nine seats, nine lines.</b> The Mere's second seat is gone and its line moved to the Dry Falls' basin, which is at the same depth. The Drying Loft and the new seat on the bales have new lines, written to sit between the Long Room's and the lower room's on the story map. Each shows once, the first time she sits there, and waits for her voice if she is speaking.</li>
+      <li><b>Saves</b> now remember which seats have spoken by where the seat is, so taking seats out can't move one seat's memory onto another.</li>
+    </ul>
+    <details class="seal">
+      <summary>The three new or moved lines<span>Written text at the seats. Story.</span></summary>
+      <div class="inner">
+        <ul class="what">
+          <li><b>The lowest basin, the Dry Falls</b> (moved from the Mere): Pins stuck in the seat in a row, the way she kept them on her sleeve. Eleven. One for each doll that got this far.</li>
+          <li><b>The Drying Loft:</b> The skeins on the poles have all been unwound from the bottom, as if something underneath found the loose ends and pulled. One is left whole, knotted tight, and hung where nothing could reach it.</li>
+          <li><b>On the bales, the Stores:</b> Someone slept up here on the bales, with a thread tied from her wrist to the post, so she would wake if she was carried off in the night. The thread has been cut, neatly, close to the wrist.</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <h2>Knees</h2>
+  <p class="ask">Also when the doll is sitting anywhere make it slightly bend the knees.</p>
+  <div class="col">
+    <div class="reveal">
+      <img src="img/knees_before.jpg" alt="Before: straight legs out">
+      <img class="after" src="img/knees_after.jpg" alt="After: knees bent a little, feet hanging">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-knees" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <p>This applies wherever she sits: on a seat, on the ground when left alone, and in the ending. A seat also says how high it is now, and she sits on top of it, with her feet hanging as far as her legs reach.</p>
+  </div>
+
+  <h2>No shortcut in the Loom</h2>
+  <p class="ask">I have also found a way to cheat the loom: if I hang on the thread while falling into it I can climb on like the middle of the way up already. please fix it.</p>
+  <div class="col">
+    <p>From the ledge where you come into the Loom down to the cloth, until you have tied the pole on the cloth, holding the thread does nothing and reeling in does nothing. If you were already hanging on it, you let go. Tested by running off the ledge holding the thread and reeling up:</p>
+    <div class="tablebox"><table class="windows">
+      <thead><tr><th>Run off the ledge, holding and reeling</th><th>Before</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td>Straight off</td><td>hangs at &minus;467, 73 m above the cloth</td><td>lands on the cloth</td></tr>
+        <tr><td>Swinging back and forth</td><td>hangs at &minus;467</td><td>lands on the cloth</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:14px">On the cloth the thread behaves as before. The rings further up the Loom are only reached after the cloth, so they are unaffected.</p>
+  </div>
+
+  <h2>The floor of the Loom</h2>
+  <p class="ask">And I don't like the pictures of women in the bottom of the loom. Please either make them by hand or come up with something better there, I don't even understand what they mean.</p>
+  <div class="col">
+    <p>The photographs are gone, and the figures are drawn by hand in the game's own line. Each one is the nightclothes someone wore, standing upright with nobody inside: a long nightgown, a nightshirt over trousers, a gown with a shawl, or a coat thrown over. There is no head and no hands. The sleeves hang empty and the hems sway. When one turns toward her, the collar gapes open, long and black. They still turn, follow her and shake when the dark wakes, as before.</p>
+    <div class="reveal">
+      <img src="img/called_back_before.jpg" alt="Before: photographs of people from behind">
+      <img class="after" src="img/called_back_after.jpg" alt="After: drawn, empty nightclothes from behind">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-calledb" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/called_front_before.jpg" alt="Before: photographs turned round">
+      <img class="after" src="img/called_front_after.jpg" alt="After: turned round, the collars gaping">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-calledf" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+    <details class="seal">
+      <summary>What they are<span>Your question, answered. Story.</span></summary>
+      <div class="inner"><p>Yes: they are the called, everyone it called down by name over the years, standing where they came to on the floor of the Loom. Drawn as only their nightclothes, it reads as people taken from their beds, with nothing of them left inside.</p></div>
+    </details>
+  </div>
+
+  <h2>The bitten ending</h2>
+  <p class="ask">For the thread biting ending: first show the main cutscene, then texts on black screen and then the last cutscene. Only then the titles go. And after the monster tries to climb out and the doll is walking to the candle - make it sit on something, right now it sits on nothing. And the monster's head and neck should be behind the doll, not over it.</p>
+  <div class="col">
+    <ul class="what">
+      <li><b>In order.</b> Its film, then the cards on black, then the last film, then the titles, then back to the title screen. Holding to skip the cards goes straight to the last film; skipping the titles goes to the title screen.</li>
+      <li><b>Something to sit on.</b> Her knitting basket now stands by the candle, shut, with a needle out from under the lid. The doll walks to it and sits on top, knees bent and feet hanging.</li>
+      <li><b>Behind her.</b> For this scene the doll, the candle and what is around them are drawn over the thing, so its neck and head pass behind her.</li>
+    </ul>
+    <div class="reveal">
+      <img src="img/ask1_before.jpg" alt="Before: sitting on nothing">
+      <img class="after" src="img/ask1_after.jpg" alt="After: sitting on her basket">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-ask1" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+    <div class="reveal">
+      <img src="img/ask3_before.jpg" alt="Before: the neck over her">
+      <img class="after" src="img/ask3_after.jpg" alt="After: the neck behind her">
+      <span class="lbl l">Before</span><span class="lbl r">After</span>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="rv-ask3" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+    </div>
+    <p class="reveal-cap">Drag the thread to compare</p>
+
+  </div>
+
+  <h2>Checked</h2>
+  <div class="col">
+    <ul class="what">
+      <li><b>The whole game by bot,</b> plain (seeds 1 and 2) and frayed: it reaches the choice every time. The Stores take it 37 s.</li>
+      <li><b>Route checks</b> (lip, gal, reach, shelfrun, fuzz, hands, rooms, quiet): all pass.</li>
+      <li><b>The Loom shortcut,</b> run off the ledge before and after (table above). The rope out of the bin and the rope up the bales were climbed in a test.</li>
+      <li><b>The bitten ending</b> was played through to its film, in the hidden test window.</li>
+    </ul>
+  </div>
+  <div class="col"><div class="files">
+    <div><b>app/src/level.js</b><span>the Stores rebuilt; the Underway's crack, teeth, ledge, rubble; drips; seats and their lines; the basket</span></div>
+    <div><b>app/src/drawfalls.js</b><span>new: drips and wet seams</span></div>
+    <div><b>app/src/drawend.js</b><span>the called drawn by hand; the basket</span></div>
+    <div><b>app/src/kindle.js, draw.js, main.js</b><span>seat views and heights, knees, saves by place; the bitten ending's order</span></div>
+    <div><b>app/src/world.js</b><span>the Loom: the thread does not catch on the way down</span></div>
+    <div><b>app/src/shaders.js, renderer.js, ending.js</b><span>the doll in front of the thing in the last scene</span></div>
+    <div><b>app/src/props.js, buried.js, drawrooms.js</b><span>the boat, shrine, mooring; the bones in the roof; the Stores' furniture</span></div>
+  </div></div>
+  <footer>Earlier pages: <a href="https://claude.ai/artifact/X7CAu6EX2KnXzAq5mpNZbz">the original write-up</a> &middot; <a href="https://claude.ai/artifact/75LuG1uAroYU4dzHWNbkHc">the polish pass</a> &middot; <a href="https://claude.ai/artifact/SrvQP1ij65rUBgeNK4R38z">the long way</a></footer>
+</div>
+<script>
+document.querySelectorAll('.reveal').forEach((r) => {
+  const i = r.querySelector('input');
+  const set = () => r.style.setProperty('--pos', i.value + '%');
+  i.addEventListener('input', set); set();
+});
+</script>

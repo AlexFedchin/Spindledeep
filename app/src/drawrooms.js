@@ -23,10 +23,12 @@ function make(T) {
   for (let x = 36; x < 98; x += 6.3) { add('post', x, floor(x, -417), { top: roof(x, -417) }); if (r() < 0.7) add('wires', x + 3, roof(x + 3, -417), { len: 2.4 + r() * 3 }); }
   // (2026-11-27) the Stores: shelves of great empty bobbins on every gallery, posts holding the galleries up, bales of wool on chains
   const r2 = mulberry(89), add2 = (kind, x, y, o = {}) => out.push({ kind, x, y, s: 0.85 + r2() * 0.35, t: 0.15 + r2() * 0.12, f: r2() < 0.5 ? -1 : 1, q: r2() * 100, ...o });
-  for (const [a, b, top] of [[127, 195, -358.3], [143, 215, -369.8], [125, 197, -381.4], [143, 215, -393.0], [129, 213, -404.6]]) {
-    for (let x = a + 3 + r2() * 3; x < b - 2.5; x += 6.5 + r2() * 4) add2('shelf', x, top, { h: 3.2 + r2() * 1.6, n: 3 + ((r2() * 2) | 0), w: 1.2 + r2() * 0.6 });
-    for (let x = a + 4; x < b - 2; x += 13 + r2() * 6) add2('post', x, floor(x, top + 1), { top: roof(x, top + 1) });
-    for (let x = a + 6 + r2() * 5; x < b - 4; x += 9 + r2() * 9) { const t = roof(x, top + 2); if (t - top > 6) add2('bale', x, t, { len: 1.2 + r2() * Math.min(3, t - top - 6) }); }
+  // (the galleries as rebuilt: not in front of the crates, the bales, the bin or the hole)
+  const clear = (x) => ![[144.5, 150], [166, 179.5], [150.5, 156], [135.5, 141]].some(([p, q]) => x > p && x < q);
+  for (const [a, b, top] of [[127, 169, -358.3], [177, 195, -358.3], [125, 203, -381.4], [129, 203, -404.6]]) {
+    for (let x = a + 3 + r2() * 3; x < b - 2.5; x += 6.5 + r2() * 4) if (clear(x)) add2('shelf', x, top, { h: 3.2 + r2() * 1.6, n: 3 + ((r2() * 2) | 0), w: 1.2 + r2() * 0.6 });
+    for (let x = a + 4; x < b - 2; x += 13 + r2() * 6) if (clear(x)) add2('post', x, floor(x, top + 1), { top: roof(x, top + 1) });
+    for (let x = a + 6 + r2() * 5; x < b - 4; x += 9 + r2() * 9) { const t = roof(x, top + 2); if (clear(x) && t - top > 6) add2('bale', x, t, { len: 1.2 + r2() * Math.min(3, t - top - 6) }); }
   }
   // the Drying Loft: skeins hung over poles to dry, long ago
   for (const x of [115.4, 118.7, 122.0]) add2('skeins', x, roof(x, -380), { n: 4 + ((r2() * 3) | 0) });

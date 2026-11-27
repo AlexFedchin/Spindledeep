@@ -13,6 +13,7 @@ import { drawRooms } from './drawrooms.js';
 import { Life } from './life.js';
 import { drawPlaces } from './drawkindle.js';
 import { SIT } from './kindle.js';
+import { drawFalls } from './drawfalls.js';
 
 // sitting down on a seat and getting up again (kindle.js runs the clock): how far she is sat, how high she hops, how squashed, how far she
 // leans forward to push off. Down: a little crouch, a hop, a plop and a bounce. Up: hands down, lean, push off, a hop, a wobble on landing.
@@ -95,6 +96,7 @@ export class Drawer {
     this.drawTrees(ctx);
     this.drawCottage(ctx, ectx);
     drawRooms(this, ctx);
+    drawFalls(this, ctx, ectx);
     drawPlaces(this, ctx, ectx);
     this.life.draw(this, ctx, ectx);
     drawLore(this, ctx, ectx);
@@ -132,7 +134,7 @@ export class Drawer {
     const f = p.facing;
     const swing = th.locked && !p.grounded;
     const moving = p.grounded && Math.abs(p.vx) > 0.4;
-    const P0 = this.doll(dt, moving, swing), onSeat = !!(this.w.rest && this.w.rest.at && this.w.rest.ph);
+    const P0 = this.doll(dt, moving, swing), seat = this.w.rest && this.w.rest.at && this.w.rest.ph ? this.w.rest.at : null, seatH = seat ? seat.h ?? 0.19 : 0;      // (on a seat she sits seatH up)
     const sq = p.squash + P0.stumble * 0.16 + (P0.sq || 0);
     const sxk = (1 + sq * 0.6) * s, syk = (1 - sq) * s;
     // springs: the yarn tuft and the ribbon tails lag behind the motion
@@ -141,7 +143,7 @@ export class Drawer {
     const rib = clamp(-p.vx * 0.06 * f + p.vy * 0.03, -0.6, 0.6) + Math.sin(this.time * 2.6) * 0.06;
 
     ctx.save();
-    ctx.translate(X, Y - (P0.hop || 0) * k * s);
+    ctx.translate(X, Y - ((P0.hop || 0) + P0.sit * seatH) * k * s);
     let tilt = 0;
     if (swing) { const P = th.pivots[th.pivots.length - 1]; tilt = Math.atan2(p.bx - P.x, -(p.by - P.y)) * 0.6; }
     else if (!p.grounded) tilt = clamp(p.vx * 0.03, -0.25, 0.25);
@@ -175,14 +177,15 @@ export class Drawer {
       let fx = lx + (side * legA + (p.grounded ? 0 : 0.03)) * u, fy = (0.25 - (moving ? Math.max(0, Math.sin(legPh * side)) * 0.06 : 0)) * u;
       // each foot finds the ground under itself; sitting, they go out in front of her and swing a little
       if (p.grounded && !wi) { const off = clamp(P0.foot[side < 0 ? 0 : 1], -0.14, 0.2); fy -= off * u / Math.max(0.5, s); fx += Math.sin(P0.slope) * off * 0.3 * u; }
-      if (P0.sit > 0.01) { const kick = onSeat ? 0.17 + Math.sin(this.time * 2.6 + side * 2.2) * 0.05 : 0.2 + Math.sin(this.time * 1.6 + side * 1.4) * 0.03; fx += (0.2 * u + side * 0.02 * u - fx + lx) * P0.sit; fy += (kick * u - fy) * P0.sit; }      // (on a seat her feet dangle off its front and kick)
+      if (P0.sit > 0.01) { const kick = seat ? Math.min(0.25 + seatH - 0.07, 0.27) + Math.sin(this.time * 2.6 + side * 2.2) * 0.05 : 0.2 + Math.sin(this.time * 1.6 + side * 1.4) * 0.03; fx += (0.2 * u + side * 0.02 * u - fx + lx) * P0.sit; fy += (kick * u - fy) * P0.sit; }      // (on a seat her feet dangle off its front and kick)
       if (P0.teeter > 0.01) fy -= Math.max(0, Math.sin(this.time * 7.3 + side)) * 0.05 * u * P0.teeter;
-      yarn(lx, ly, (lx + fx) / 2, (ly + fy) / 2, fx, fy, 0.05 * u, side > 0 ? 0.7 : 0.6);
+      // sitting, the knee comes up a little (the bend is in the middle of the leg, forward and up)
+      yarn(lx, ly, (lx + fx) / 2 + 0.05 * u * P0.sit, (ly + fy) / 2 - 0.08 * u * P0.sit, fx, fy, 0.05 * u, side > 0 ? 0.7 : 0.6);
       ctx.beginPath(); ctx.ellipse(fx + 0.025 * u, fy + 0.02 * u, 0.06 * u, 0.035 * u, 0, 0, TAU);
       ctx.fillStyle = g(0.2); ctx.fill(); stroke(0.03, fine * 1.4);
     }
 
-    ctx.translate(0, P0.sit * (onSeat ? -0.09 : 0.1) * u);      // on a seat she sits up on the stone; elsewhere on the ground
+    ctx.translate(0, P0.sit * 0.1 * u);      // sat: down on what is under her (a seat lifts the whole of her, above)
     // ── body: a knitted sack ──
     const body = () => {
       ctx.beginPath();

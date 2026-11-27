@@ -19,8 +19,8 @@ export class Renderer {
     this.format = navigator.gpu.getPreferredCanvasFormat();
     this.ctx.configure({ device: this.device, format: this.format, alphaMode: 'opaque' });
     const d = this.device;
-    this.ubo = d.createBuffer({ size: 272, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.u = new Float32Array(68);
+    this.ubo = d.createBuffer({ size: 288, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.u = new Float32Array(72);
     this.lightBuf = d.createBuffer({ size: MAX_LIGHTS * 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
     this.lightData = new Float32Array(MAX_LIGHTS * 8);
     this.ptBuf = d.createBuffer({ size: MAX_PTS * 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
@@ -256,6 +256,7 @@ export class Renderer {
       u[36 + k * 4] = b.cx; u[37 + k * 4] = b.cy; u[38 + k * 4] = b.w; u[39 + k * 4] = b.h;
       u[52 + k * 4] = b.par; u[53 + k * 4] = b.layer; u[54 + k * 4] = b.alpha; u[55 + k * 4] = 0;
     }
+    u[68] = f.front || 0;
     d.queue.writeBuffer(this.ubo, 0, u);
     const L = this.lightData, nl = Math.min(f.lights.length, MAX_LIGHTS);
     for (let i = 0; i < nl; i++) {

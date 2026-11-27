@@ -6,12 +6,14 @@ import * as L from './level.js';
 import { clamp } from './util.js';
 
 export const SIT = { down: 0.95, up: 0.8 };
+const OLD_SEATS = ['69.6,-33.2', '28.5,-60.6', '78,-87.8', '107,-194', '15,-194', '80,-341', '49,-420.8', '223.5,-195', '117.5,-381.4', '194,-184'];
 
 export class Kindle {
   constructor(W) {
     this.W = W;
     W.rest = { k: 0, at: null };
-    this.seats = L.RESTS.map(([x, y, flip]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; return { x, y: (W.T.ground(x, y0, 6) ?? y) - 0.02, flip: flip || 1, used: false, said: false }; });
+    // h: how high she sits (the seats' stone); view: what the camera opens out to while she sits there; key: the seat's place, for saves
+    this.seats = L.RESTS.map(([x, y, flip, view]) => { let y0 = y + 0.4; for (let k = 0; k < 60 && W.T.d(x, y0) < 0.1; k++) y0 += 0.05; return { x, y: (W.T.ground(x, y0, 6) ?? y) - 0.02, flip: flip || 1, view, h: 0.19, key: `${x},${y}`, used: false, said: false }; });
     this.places = L.PLACES.map((q) => ({ ...q, seen: false }));
   }
 
@@ -52,10 +54,12 @@ export class Kindle {
     for (const q of this.places) if (!q.seen && ((p.x - q.x) / q.rx) ** 2 + ((p.y - q.y) / q.ry) ** 2 < 1) { q.seen = true; W.emit('place', { name: q.name, x: p.x, y: p.y }); }
   }
 
-  save() { return { places: this.places.map((q) => q.seen), said: this.seats.map((s) => s.said) }; }
+  save() { return { places: this.places.map((q) => q.seen), saidAt: this.seats.filter((s) => s.said).map((s) => s.key) }; }
   load(s) {
     if (!s) return;
     (s.places || []).forEach((v, i) => { if (this.places[i]) this.places[i].seen = v; });
-    (s.said || []).forEach((v, i) => { if (this.seats[i]) this.seats[i].said = v; });
+    // (older saves kept `said` by the seat's place in a list that has since lost two seats: OLD_SEATS says where each one was)
+    const at = new Set(s.saidAt || (s.said || []).map((v, i) => (v ? OLD_SEATS[i] : null)).filter(Boolean));
+    for (const q of this.seats) q.said = at.has(q.key);
   }
 }

@@ -62,8 +62,11 @@ export const LORE = [
   // (2026-11-27) the Dry Falls and the Stores: things left by whoever came to look after them, and nothing more
   ['lantern', 117, -168.4, 1], ['mineframe', 126.5, -169.4, -1], ['cairn', 142, -171.5, 1], ['markers', 159.5, -175, -1], ['pots', 176.5, -179, 1],
   ['stool', 196.8, -184, -1], ['bucket', 213.4, -195, 1], ['cairn', 172, -194.8, -1], ['boots', 139.5, -194.3, 1], ['pots', 225.6, -195, -1],
-  ['baskets', 160.5, -358.3, 1], ['baskets', 205.5, -369.8, -1], ['stool', 121.5, -381.4, 1], ['baskets', 124.2, -381.4, -1], ['candles', 114.4, -381.4, 1],
-  ['bucket', 189.5, -393, 1], ['stool', 176, -404.6, -1], ['baskets', 165, -381.4, 1],
+  ['baskets', 160.5, -358.3, 1], ['baskets', 192, -381.4, -1], ['stool', 121.5, -381.4, 1], ['baskets', 124.2, -381.4, -1], ['candles', 114.4, -381.4, 1],
+  ['bucket', 174.2, -366.5, 1], ['stool', 150, -404.6, -1], ['baskets', 165, -381.4, 1],
+  // the Underway (the user: something to come upon, nothing to touch): the Mere's other ferry, left high and dry when the water went;
+  // a ledge somebody made a shrine of; a mooring post where the crack lets a little light in
+  ['boat', 163.5, -194.5, -1], ['candles', 127.5, -193.9, 1], ['markers', 130.2, -194.3, -1], ['mooring', 186.6, -194.4, 1], ['ferrylamp', 158.2, -194.6, -1],
 ];
 
 // each prop keeps a faint cold after-glow so its outline reads from a distance; a few carry their own light

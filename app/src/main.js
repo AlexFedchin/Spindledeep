@@ -458,6 +458,7 @@ function handleEvents() {
         D.spawn('ring', p.x, p.y + 0.1, 1, { speed: 0, life: 0.8 });
         break;
       // the thread's light (kindle.js)
+      case 'waterdrip': A.any('plop', { vol: 0.14, rate: 1.5 + Math.random() * 0.5, x: e.x, y: e.y, verb: 1.3 }); break;
       case 'getUp': A.any('st_soft', { vol: 0.25, rate: 0.9, x: e.x, y: e.y }); A.pick(['cloth1', 'cloth2', 'cloth3'], { vol: 0.18, rate: 1.3, x: e.x, y: e.y }); break;
       case 'rise':
         log('the dark wakes');
@@ -585,7 +586,8 @@ function makeEnding() {
     setState: (s) => { if (s === 'ending' && state === 'play') finishRun(); state = s; },
     // that ending's film, then what became of everyone, then the credits
     // the run's save stays at its last pole, so Continue goes back to the choice
-    film: (cards, name = 'outro', cut = false) => { passage(() => { E.dark = 1; playCine(name, () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => rollCredits(cut)); }); return 'keep'; }, { out: 0.6 }); },
+    // (the bitten one, 2026-11-27, the user: its film, the cards on black, its last film, and only then the titles)
+    film: (cards, name = 'outro', cut = false) => { passage(() => { E.dark = 1; playCine(name, () => { state = 'ending'; E.mode = 'over'; endCards(cards, () => (cut ? coda() : rollCredits(false))); }); return 'keep'; }, { out: 0.6 }); },
   });
 }
 // the run is over: how long it took, and that it has been done
@@ -643,12 +645,11 @@ let creditsRun = null;
 function leaveCredits(skipped) {
   creditsRun = null;
   log('credits ' + (skipped ? 'skipped' : 'over'));
-  const cut = $('credits').classList.contains('cut');
-  const go = () => { $('credits').classList.remove('rolling'); show($('credits'), false); if (cut) coda(); else enterTitle(); };
+  const go = () => { $('credits').classList.remove('rolling'); show($('credits'), false); enterTitle(); };
   // skipped: through black, like a film; at their end they fade by themselves
-  if (skipped && !cut) passage(() => { go(); }, { out: 0.8, back: 1.2 }); else go();
+  if (skipped) passage(() => { go(); }, { out: 0.8, back: 1.2 }); else go();
 }
-// after the credits of the second ending: the bottom of the well, and what is going through the names there (scripts/cine N1).
+// after the cards of the second ending, before its titles: the bottom of the well, and what is going through the names there (scripts/cine N1).
 // [frame the name is said on, which name]
 const NAMES_AT = [[90, 5], [148, 6], [206, 7], [264, 8], [322, 9], [428, 10], [498, 11]];
 function coda() {
@@ -660,7 +661,7 @@ function coda() {
   const out = () => {
     state = 'coda';
     show($('sub'), false); document.body.classList.remove('names');
-    passage(() => enterTitle(), { out: 0.05, hold: 0.8, back: 1.6 });      // (the film ends in the dark)
+    passage(() => { rollCredits(true, true); }, { out: 0.05, hold: 0.8, back: 1.6 });      // (the film ends in the dark; the titles come up out of it)
   };
   passage(() => { document.body.classList.add('names'); playCine('names', out); return 'keep'; }, { out: 0.6 });
 }
@@ -1048,7 +1049,11 @@ function updateCamera(dt) {
     // a very wide window sees far to the sides already: it comes a little nearer instead, so she is not lost in it
     const asp = R.w / R.h; if (asp > 1.95) vh *= Math.pow(1.95 / asp, 0.42);
     // sitting: the place opens out round her
-    if (W.rest) { const q = W.rest.k * W.rest.k * (3 - 2 * W.rest.k); vh = lerp(vh, Math.min(OPEN.vhMax, vh * 1.22 + 2), q); ty += q * 0.9; }
+    if (W.rest) {
+      const q = W.rest.k * W.rest.k * (3 - 2 * W.rest.k), v = W.rest.at && W.rest.at.view;
+      // (a seat with its own view opens out to the whole of the place: the Dry Falls' basins)
+      if (v) { tx = lerp(tx, v[0], q); ty = lerp(ty, v[1], q); vh = lerp(vh, v[2], q); } else { vh = lerp(vh, Math.min(OPEN.vhMax, vh * 1.22 + 2), q); ty += q * 0.9; }
+    }
     ty -= fallCam * vh * 0.24;
     if (a.id === 'loom' && p.y > -452) { const q = smooth(25, 17, p.x); vh = 10.5 - 4.0 * q; tx -= 1.3 * q; }         // at the top of the Loom: close, so little of the place is seen
     if (a.id === 'loom' && p.y < -528 && !W.deep.rise.woke) vh = Math.min(vh, 11);     // among the called
@@ -1225,6 +1230,7 @@ function tick(now) {
   const respawnFade = Math.max(W.intro ? 1 - smooth(0.15, WALK.fade, W.intro.t) : 0,      // the walk-out fades up from black
     1 - smooth(0.1, 1.3, time - respawnT));                                                // and so does every respawn
   R.frame({
+    front: state === 'ending' && E.front ? 1 : 0,      // (sprites over the figures: the doll in front of what comes to ask)
     cam: [cx, cy], viewH: cam.viewH, time, ambient, moon, figs: STAGE ? STAGE.frame(W, [cx, cy], viewW, cam.viewH, gdt, time).concat(ITEMS.frame(W, [cx, cy], viewW, cam.viewH, dt, time)) : [],
     lights: W.lights([cx, cy], viewW, cam.viewH), pts, nPts, bg: bg.slice(0, 4),
     inkPool: inkVis ? ink : null, fade: Math.max(deathFade, respawnFade), flash: 0, red: 1, hush: SHOW && SHOW.shelf ? (SHOW.phase === 'out' ? 0.6 * (1 - smooth(0, 0.6, SHOW.o)) : SHOW.mode === 'item' ? lerp(0.6, 1, smooth(0, 0.6, SHOW.k * 0.75)) : 0.6 * smooth(0, 0.8, SHOW.t)) : SHOW && SHOW.item ? (SHOW.phase === 'in' ? smooth(0, 1, SHOW.t) : 1 - smooth(0.2, 1, SHOW.o)) : 0,

@@ -242,11 +242,12 @@ let LEGS = [
   [20, (k) => (p.x > 31 || ring(k, 1, 26, 32)) && (p.x > 43 || ring(k, 1, 38, 44)) && ring(k, 1, 50, 56) && M.walk(61)],
   [21, () => M.rope(68.6, -357.6, 1) && M.walk(74)],
   [22, () => M.heddles(106)],
-  // (2026-11-27) on east into the Stores: along a gallery, off its end, back along the next, five deep, and west out of the floor
+  // (2026-11-27) on east into the Stores: over the crates, the ring over the gap, off the end; back west, up the bales on the rope,
+  // over the crates, down the hole to the floor and west out of it
   [55, () => M.walk(131, 20)],
-  [56, () => M.walk(199, 30, { drop: 1 }) && M.walk(150, 30)],
-  [57, () => M.walk(139, 20, { drop: 1 }) && M.walk(190, 30)],
-  [58, () => M.walk(201, 20, { drop: 1 }) && M.walk(150, 30)],
+  [56, (k) => (p.y > -362 || M.rope(170.7, -359.4, -1)) && ((p.x > 176.2 && p.y > -359.6) || (M.walk(167.5, 20) && ring(k, 1, 170, 176.2))) && M.walk(186, 15)],      // (a miss lands in the bin: up its rope)
+  [57, () => M.walk(197.5, 20, { drop: 1 }) && M.walk(190, 10)],
+  [58, () => (p.x < 172 || (M.walk(174.4, 10) && M.rope(173.7, -377.6, -1))) && M.walk(160, 20)],
   [59, () => M.walk(139, 20, { drop: 1 }) && M.walk(134, 10)],
   [29, () => M.walk(108.5, 20)],
   [39, () => M.walk(98)],

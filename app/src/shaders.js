@@ -15,6 +15,7 @@ struct U {
   lightRes: vec2f, hush: f32, red: f32,
   bgRect: array<vec4f, 4>, // cx, cy, w, h
   bgPar: array<vec4f, 4>,  // parallax, layer, alpha, style
+  front: vec4f,            // x: the sprite layer covers the figures (the bitten ending's last scene: the doll in front of it)
 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var sdfTex: texture_2d<f32>;
@@ -491,7 +492,7 @@ fn expose(v: f32) -> f32 { return 1.0 - exp(-max(v, 0.0) * 3.0); }
     let fl = fc.rgb / fc.a;
     // (a figure writes 1 in its normal's alpha, a thing lying about 0.5, a thing held up 0: that one is in front of the rock)
     let prop = step(fnA.a, 0.75);
-    let fa = fc.a * mix(smoothstep(-0.30, -0.05, d), 1.0, step(fnA.a, 0.25));
+    let fa = fc.a * mix(smoothstep(-0.30, -0.05, d), 1.0, step(fnA.a, 0.25)) * (1.0 - sa * u.front.x);
     let spF = sp * 0.62;
     let ph = dirPhase(px, 0.5, spF) + nx.y * 1.3 + nx.x * 0.7 + wob * 0.3;
     let ph2f = dirPhase(px, -0.75, spF) + nx.x * 1.1 + wob * 0.3;

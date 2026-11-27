@@ -247,7 +247,7 @@ ours to hand out; without the files the figures are just absent). `figure.js`: j
 any length, poses (`poseKneel`, `poseClimb`, `poseReach`), no baked clips. `stage.js`: which figure is where, from `W.thing`, `W.climber`,
 `deep.crawler`. Renderer: `_figures` pass (4x MSAA, lit per pixel by the game's lights, a light's optional `z` = nearer the viewer), engraved in
 ENGRAVE (figTex/figNrm), hidden by rock. A new model: an entry in export.py's MODELS (its bone names), then `STAGE.load(name)`.
-Still pictures left: the hands in the Hush, the called, the arms in the rising dark. Any monster the user supplies goes through this.
+Still pictures left: the hands in the Hush, the arms in the rising dark (the called are drawn by hand since 2026-11-27). Any monster the user supplies goes through this.
 
 ## The thread and rock
 
@@ -289,10 +289,18 @@ The world is 240 m wide (`WORLD.w`, `OLD_W` = 120 the old edge). Nothing west of
 keeps its old pass and width and gets a second pass with its own seed for x > 120; keep it that way. The Brink and the Throat keep the old camera edge (main.js,
 `cam.y > -52`), and a rock fill above ground east of 120.4 stops her walking out of the old world. Two stretches east of it, no dangers, rings, ropes or words:
 **the Dry Falls** (shaft foot → dry channel → seven basins → chute → the Cistern → the Underway west → the Mere's east shore; poles 51-54) and **the Stores**
-(heddle corridor → five galleries, east/west, dropping off each end → west to the well's old ledge; the well is filled; the Drying Loft off the third; poles 55-59).
+(heddle corridor → top gallery: crates, a ring over a gap with a bin and rope under it → off its end → second gallery west: a wall of bales with a rope up it,
+crates, a hole down to the floor → west to the well's old ledge; the well is filled; the Drying Loft past the hole; poles 55-59).
 Their furniture is in drawrooms.js (`shelf`, `bale`, `skeins`, `well`), props in `LORE`, paintings `falls`/`stores` (generate.py, pack.py), sound in `LIFE`/`AREA_BEDS`.
-Bot legs for 51-59 are in play.mjs. Seats 7-9 and places 2-3 have no words (the user wants no new narration). pics.py has views for them.
+Bot legs for 51-59 are in play.mjs. Every seat has a line (`REST_SAYS` in `RESTS` order; the user asked for that later the same day); a seat may carry its own camera view (`RESTS[i][3]`,
+the Dry Falls' basin seat shows the whole cave) and a height (`h`; she sits on top, knees bent). Saves keep spoken seats by place (`saidAt`).
+The Dry Falls drip and sweat (drawfalls.js, `WATER_DRIPS`). The Underway's sights: boat, shrine ledge, mooring under a roof crack, bones in the roof
+(`FIXED` in buried.js). pics.py has views for all of it.
 Seats (`SIT` in kindle.js, `seatPose`/`GAZE` in draw.js): sit down, look about, any key (not pause) starts getting up and she is not controllable until up.
 Voice notes queue (`MEMQ` in main.js): none starts over another or over an open letter; a seat's line waits for the voice too (`W.voiceBusy`).
 The rising earth in the Loom (`drawDark`, drawend.js): arm feet stay under the earth's lowest point across their width; cold lights ride its crest (world.js lights).
+The Loom: from its entry ledge to the cloth (checkpoint 23/42) a held thread does not catch (world.js `slip`), so it can't be hung from and swung to
+mid-climb. The called are drawn by hand as empty nightclothes (`clothes` in drawend.js; their photos are gone). The bitten ending: film, cards,
+names film, then the credits (main.js `film`/`coda`); in its last scene `E.front` lets sprites cover the figure (uniform `front`), and the doll sits on
+her basket (`BASKET`, drawn in drawRemains).
 

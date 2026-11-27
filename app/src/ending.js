@@ -22,7 +22,7 @@ export class Ending {
   constructor(c) { this.c = c; this.reset(); }
   reset() {
     this.mode = null; this.t = 0; this.done = new Set(); this.hold = { act: 0, pluck: 0 }; this.wait = 0; this.said = {};
-    this.dark = 0; this.black = 0; this.view = null; this.open = false; this.pulse = null; this.lights = []; this.part = null; this.s = 0; this.parted = 0; this.spin = 0; this.reached = 0;
+    this.front = 0; this.dark = 0; this.black = 0; this.view = null; this.open = false; this.pulse = null; this.lights = []; this.part = null; this.s = 0; this.parted = 0; this.spin = 0; this.reached = 0;
     const el = this.c.$('choice'); this.c.show(el, false); document.body.classList.remove('choosing');
   }
   // a camera cut (behind black) asked for by a timeline
@@ -396,14 +396,14 @@ export class Ending {
   // at the bottom: the doll, the candle, what is left of her, and what comes to ask
   startAsk() {
     const { W, A } = this.c, w = W(), p = w.player;
-    w.hideDoll = false; p.facing = 1; this.pulse.hang = true;
+    w.hideDoll = false; p.facing = 1; this.pulse.hang = true; this.front = 1;      // (what comes to ask stays behind her)
     this.view = { x: p.x + 1, y: p.y + 1.1, vh: 6.2 }; this.snap = true;
     A.beds({ amb_breath: 0.3 });
     w.lamps = w.lamps.map((l) => (l.finale ? (this.lamp = { ...l }) : l));
     this.next('ask'); this.reached = 0;
   }
   cut_ask(dt, t) {
-    const { W, A, playLine, log } = this.c, w = W(), th = w.thing, p = w.player, GOAL = 24.9;
+    const { W, A, playLine, log } = this.c, w = W(), th = w.thing, p = w.player, GOAL = L.BASKET.x;
     const palm = (dx, v) => A.pick(['palm1', 'palm2', 'palm3'], { vol: v, vary: 0.2, x: p.x + dx, y: p.y, verb: 1 });
     // back along her own dead thread to the light, and to her
     if (!this.reached) {
@@ -420,7 +420,7 @@ export class Ending {
     if (this.lamp) this.lamp.i = 0.9 * (1 - (on ? 0.8 * smooth(3, 10, r) : 0));
     this.dark = Math.max(1 - smooth(0.1, 1.4, t), on ? smooth(19.5, 20.3, r) : 0);
     // and sits down beside it, facing it
-    R(0.5, 'sit', () => { w.rest.at = { x: p.x, y: p.y, flip: 1, held: true }; A.pick(['cloth1', 'cloth2'], { vol: 0.3, rate: 1.1, x: p.x, y: p.y }); });
+    R(0.5, 'sit', () => { w.rest.at = { x: L.BASKET.x, y: p.y, flip: 1, held: true, h: L.BASKET.h }; /* on her basket (drawRemains) */ A.pick(['cloth1', 'cloth2'], { vol: 0.3, rate: 1.1, x: p.x, y: p.y }); });
     R(0.4, 'r1', () => palm(-7, 0.6)); R(1.2, 'r2', () => palm(-5.8, 0.7)); R(1.7, 'r3', () => palm(-4.8, 0.85));
     R(2.0, 'drg', () => A.play('drag', { vol: 0.5, rate: 0.7, x: p.x - 5, y: p.y }));
     th.lean = on ? smooth(2.4, 5, r) * 0.5 : 0;                 // (the candle leans away from it)

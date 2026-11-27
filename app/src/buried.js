@@ -31,7 +31,20 @@ export function placeBuried(T) {
   // (2026-11-27) the old world with its own seed and width, so nothing in it moves; then the ground east of it
   place(T, out, mulberry(1907), L.WORLD.x0 + 3, L.OLD_W - 3);
   place(T, out, mulberry(1908), L.OLD_W + 3, L.WORLD.x0 + L.WORLD.w - 3);
+  // set on purpose: something long dead in the roof of the Underway, the length of a boat, head to the east (2026-11-27)
+  for (const q of FIXED) if (inRock(T, q)) out.push({ ...q, flip: q.flip || 1, seed: q.seed || 7 }); else console.warn('buried: not in rock', q.kind, q.x, q.y);
   return out;
+}
+const FIXED = [
+  { kind: 'spine', x: 141.4, y: -190.05, s: 1.9, rot: -0.04 }, { kind: 'spine', x: 144.2, y: -189.95, s: 1.9, rot: 0.02 }, { kind: 'spine', x: 147.0, y: -189.95, s: 1.9, rot: 0.05 },
+  { kind: 'spine', x: 149.8, y: -190.05, s: 1.9, rot: 0.0 }, { kind: 'spine', x: 152.6, y: -190.0, s: 1.9, rot: -0.05 },
+  { kind: 'ribs', x: 145.2, y: -189.35, s: 1.6, rot: Math.PI, seed: 11 }, { kind: 'ribs', x: 148.6, y: -189.35, s: 1.7, rot: Math.PI, seed: 12 }, { kind: 'ribs', x: 151.6, y: -189.4, s: 1.5, rot: Math.PI, seed: 13 },
+  { kind: 'skull', x: 155.6, y: -190.0, s: 2.4, rot: 0.1, flip: -1, seed: 21 }, { kind: 'claw', x: 146.3, y: -190.45, s: 1.4, rot: 0.3, seed: 31 }, { kind: 'claw', x: 150.9, y: -190.45, s: 1.4, rot: -0.2, seed: 32 },
+];
+function inRock(T, q) {
+  const [hw, hh] = SIZE[q.kind], c = Math.cos(q.rot), n = Math.sin(q.rot);
+  for (let i = -2; i <= 2; i++) for (let j = -1; j <= 1; j++) { const px = i / 2 * hw * q.s, py = j * hh * q.s; if (T.d(q.x + px * c - py * n, q.y + px * n + py * c) > -0.22) return false; }
+  return true;
 }
 function place(T, out, r, X0, X1) {
   const Y0 = L.WORLD.y0 + 6;

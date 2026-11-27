@@ -25,8 +25,8 @@ does, and what became of the knitter and the doll are all said in plain words, i
   doll has just laid one. "When it begs you with my voice, bite your thread in two."
 
 ## The Loom
-- **The floor: the called.** Twenty-one people in nightclothes with their backs turned. Whoever the doll is not looking at turns
-  round (no eyes, mouth stretched open) and comes a little nearer. She can only walk among them.
+- **The floor: the called.** Twenty-one sets of nightclothes standing as if worn, nobody in them, backs turned (drawn by hand since 2026-11-27;
+  they were photographs of people before). Whoever the doll is not looking at turns round (the open collar gapes like a stretched mouth) and comes a little nearer. She can only walk among them.
 - **The dark.** When she leaves the peg (and m10 has been heard out) every mouth calls at once and a dark full of arms rises.
   Something on all fours comes up the far wall after her, in jerks.
 - **The top.** A high dark place. Her candle, what is left of her under the shawl, her spectacles. Past the light
@@ -49,7 +49,7 @@ does, and what became of the knitter and the doll are all said in plain words, i
   well, and what sits in her chair with the doll in its lap, whispering names, until it looks up. Cards: it can never climb out, no one will
   be called again; she had been dead since the first night; the snow melted; the doll is still down there, nameless, so it cannot call
   her; it is trying every name there is.
-  After the credits: the film `names.mp4` (N1): the doll sits in the light of the well, it goes round the walls behind her and tries names; at the
+  Before the credits (since 2026-11-27: film, cards, this film, then the titles): the film `names.mp4` (N1): the doll sits in the light of the well, it goes round the walls behind her and tries names; at the
   fifth she looks up; it reaches the mouth of the well and the light goes.
 
 ## The deep
@@ -63,8 +63,10 @@ does, and what became of the knitter and the doll are all said in plain words, i
   small, sorry about the mouths; the bells counted; the ringer's wife; he said her name and something said it back (Ink Mere, with m5);
   the room of chairs, don't tell it anything else (Hall, with m7); his voice at her door, which doesn't know who takes sugar (Hush); the
   garden moving under the snow (Hush); the night it called her, going down with the last doll (Treadles). Kept on her shelf.
-- **Seats** (`REST_SAYS`, written, not spoken): a tally that stops; a knitted cushion; the barren orchard; a scratched line above the ink,
-  rising; eleven pins, one per doll that got this far; a seat still warm; DO NOT SLEEP HERE, in three hands, the last hers.
+- **Seats** (`REST_SAYS`, written, not spoken; route order): a tally that stops; a knitted cushion; the barren orchard; eleven pins, one per doll
+  that got this far (the Dry Falls' lowest basin, moved from the Mere's removed second seat); a scratched line above the ink, rising; a seat still
+  warm; skeins unwound from below by something pulling the loose ends (the Drying Loft); a thread from her wrist to the post, cut close to the
+  wrist (on the bales in the Stores); DO NOT SLEEP HERE, in three hands, the last hers.
 
 ## Escalation map (deeper = darker)
 | Area | Knot | What it adds | Remains |
